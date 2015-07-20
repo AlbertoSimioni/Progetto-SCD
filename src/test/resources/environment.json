@@ -1,0 +1,109 @@
+{"nodes" : [
+	{
+		"id" : "C1",
+		"position" : {
+			"x" : 1,
+			"y" : 6
+		},
+		"typology" : "crossroad",
+		"incoming_edges" : [
+			"S8",
+			"S2"
+		],
+		"outcoming_edges" : [
+			"S1",
+			"S7"
+		]
+	},
+	{
+		"id" : "C2",
+		"position" : {
+			"x" : 6,
+			"y" : 6
+		},
+		"typology" : "crossroad",
+		"incoming_edges" : [
+			"S1",
+			"S4"
+		],
+		"outcoming_edges" : [
+			"S2",
+			"S3"
+		]
+	},
+	{
+		"id" : "C3",
+		"position" : {
+			"x" : 6,
+			"y" : 1
+		},
+		"typology" : "crossroad",
+		"incoming_edges" : [
+			"S3",
+			"S6"
+		],
+		"outcoming_edges" : [
+			"S4",
+			"S5"
+		]
+	},
+	{
+		"id" : "C4",
+		"position" : {
+			"x" : 1,
+			"y" : 1
+		},
+		"typology" : "crossroad",
+		"incoming_edges" : [
+			"S5",
+			"S7"
+		],
+		"outcoming_edges" : [
+			"S6",
+			"S8"
+		]
+	}
+],
+"edges" : [
+	{
+		"id" : "S1",
+		"start_node" : "C1",
+		"end_node" : "C2"
+	},
+	{
+		"id" : "S2",
+		"start_node" : "C2",
+		"end_node" : "C1"
+	},
+	{
+		"id" : "S3",
+		"start_node" : "C2",
+		"end_node" : "C3"
+	},
+	{
+		"id" : "S4",
+		"start_node" : "C3",
+		"end_node" : "C2"
+	},
+	{
+		"id" : "S5",
+		"start_node" : "C3",
+		"end_node" : "C4"
+	},
+	{
+		"id" : "S6",
+		"start_node" : "C4",
+		"end_node" : "C3"
+	},
+	{
+		"id" : "S7",
+		"start_node" : "C1",
+		"end_node" : "C4"
+	},
+	{
+		"id" : "S8",
+		"start_node" : "C4",
+		"end_node" : "C1"
+	}
+]
+}
