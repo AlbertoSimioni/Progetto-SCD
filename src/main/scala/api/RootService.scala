@@ -15,13 +15,17 @@ import scala.reflect.ClassTag
 import spray.can.Http
 import spray.routing.{ HttpServiceActor, Route }
 
+//RootService è una classe generica per creare un generico service con il parametro dato in imput
 //tag è un valore che contine il tipo del parametro di tipo RA. cioè o BasicRouteActor o WebSocketServer
 class RootService[RA <: RouteActor](val route : Route)(implicit tag : ClassTag[RA]) extends HttpServiceActor with ActorLogging {
   override def receive = {
     case connected : Http.Connected =>
-      // implement the "per-request actor" pattern
+
+      // implement the "per-request actor" pattern (e.g. Ad ogni nuova connessione crea un nuovo
+      // WebSocketWorker)
       //questa classe risponde solo al primo messaggio di tipo http connected poi crea un attore apposito
-      // per gestire tutte le successive chiamate
+      // per gestire tutte le successive chiamate. Questa classe quindi ha solo il compito di istanziare
+      //gli appositi gestori della connessione
       sender ! Http.Register(context.actorOf(Props(tag.runtimeClass, sender, route)))
     case whatever => log.debug("RootService got some {}", whatever)
   }

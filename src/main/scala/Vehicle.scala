@@ -4,7 +4,8 @@ import akka.contrib.pattern.ClusterSharding
 import scala.util.Random.shuffle
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.ExecutionContext.Implicits.global
-
+import pubsub.{Publisher,PublisherInstance}
+import pubsub.Messages.Moved
 // Test per testare se il destinatario è remoto o meno
 case object Test
 case object TravelIn
@@ -21,6 +22,8 @@ class Vehicle(id : String, iter : List[String]) extends Actor with ActorLogging 
     case Test =>
       currentPlace = iter(index)
       index = (index + 1)%10
+      val publisher = PublisherInstance.getPublisher(context.system)
+      publisher ! Moved(index)
       val senderIp = context.system.settings.config.getString("akka.remote.netty.tcp.hostname")
       region ! UrbanElement.isRemoteQuest(currentPlace, self, senderIp)
     case UrbanElement.isRemoteAnswer(flag) =>

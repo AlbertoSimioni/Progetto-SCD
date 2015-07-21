@@ -26,7 +26,9 @@ import java.net.InetSocketAddress
 import spray.can.Http
 import spray.can.server.UHttp
 
-object UrbanSimulatorApp extends App with ReactiveApi with MainActors with ReactiveSecurityConfig {
+import pubsub.Subscriber
+
+object UrbanSimulatorApp extends App with ReactiveApi with MainActors  with ReactiveSecurityConfig {
 
   // la porta viene letta da file di configurazione
   // l'override della porta non funziona a causa della keyword "lazy"
@@ -83,6 +85,7 @@ object UrbanSimulatorApp extends App with ReactiveApi with MainActors with React
 			// We could use IO(UHttp) here instead of killing the "/user/IO-HTTP" actor
 			IO(Http) ! Http.Bind(rootService, Configuration.host, Configuration.portHttp)
 			sys.addShutdownHook({ IO(UHttp) ! Http.Unbind; IO(Http) ! Http.Unbind; system.shutdown })
+      system.actorOf(Props[Subscriber], "subscriber1")
 		}
 	}
 }

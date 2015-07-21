@@ -26,6 +26,7 @@ trait AbstractSystem {
   implicit def system : ActorSystem
 }
 
+//In questa classe mettiamo i service con le rispettive routes
 trait ReactiveApi extends RouteConcatenation with StaticRoute with AbstractSystem {
   this : MainActors =>
   private def showReq(req : HttpRequest) = LogEntry(req.uri, InfoLevel)

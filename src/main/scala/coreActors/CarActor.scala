@@ -15,7 +15,7 @@ class CarActor extends Actor with ActorLogging {
   override def receive = {
     case WebSocket.Open(ws) =>
       context.system.scheduler.schedule(5 seconds,5 seconds, self, CarActor.startAnimation(ws))
-      ()
+
     case CarActor.startAnimation(ws) =>
       ws.send("lol");
   }

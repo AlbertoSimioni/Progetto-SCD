@@ -6,10 +6,11 @@ scalaVersion := "2.11.6"
 
 scalacOptions ++= Seq("-feature","-deprecation","-language:postfixOps", "-encoding", "UTF-8", "-target:jvm-1.8", "-unchecked",
   "-Ywarn-adapted-args", "-Ywarn-value-discard", "-Xlint")
-  
+
 scalacOptions in Test ++= Seq("-Yrangepos")
 
 resolvers += "Typesafe repository releases" at "http://repo.typesafe.com/typesafe/releases/"
+
 resolvers += "Scalaz Bintray Repo" at "http://dl.bintray.com/scalaz/releases"
 
 libraryDependencies ++= {

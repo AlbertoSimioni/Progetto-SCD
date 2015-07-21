@@ -10,23 +10,28 @@ import spray.routing.{Rejected, RequestContext, Route}
 
 import scala.concurrent.duration.DurationInt
 
-//serverConnection è il sender passatogli dal rootservice, ogni istanza di questa classe
-// gestisce la sua connessione
+//serverConnection è il sender passatogli dal rootservice,
+// ogni istanza di questa classe gestisce una sola connessione
   class WebSocketWorker(val serverConnection: ActorRef, val route: Route) extends RouteActor with WebSocketServerWorker with WebSocket {
   import context.dispatcher
+
   override lazy val connection = serverConnection
+
   //route è la parte logica delle risposte del websocket
   override def receive = matchRoute(route) orElse handshaking orElse closeLogic
+
   private def matchRoute(route : Route) : Receive = {
-    //viene invocato per primo questo messaggio poi verrà inviato il WebSocket.register come risposta
+
+    //Primo messaggio ricevuto che fa partire l'handshaking del WebSocket
     case request : HttpRequest =>
       val ctx = RequestContext(request, self, request.uri.path)
       log.debug("HTTP request for uri {}", request.uri.path)
       route(ctx.withResponder(self))
       handshaking(request)
+
       //Register è inviato dal service che risponde all'indirizzo della richiesta
     case WebSocket.Register(request, actor, ping) =>
-      //se il websocket prevede ping pong, allora viene inizializzato e ogni tot si fa questo protocollo
+      //se il websocket prevede ping pong (lo si capisce dal parametro in input), allora viene inizializzato e ogni tot si fa questo protocollo
       if (ping) pinger = Some(context.system.scheduler.scheduleOnce(110.seconds, self, WebSocket.Ping))
       handler = actor
       uripath = request.uri.path.toString
@@ -35,7 +40,11 @@ import scala.concurrent.duration.DurationInt
       log.info("Rejecting with {}", rejections)
       context stop self
   }
-  // this is the actor's behavior after the WebSocket handshaking resulted in an upgraded request 
+
+
+
+  // this is the actor's behavior after the WebSocket handshaking resulted in an upgraded request
+  //Sono i messaggi che arrivano in input al WebSocket dal browser oppure
   override def businessLogic = {
     //Arrivo informazioni dal browser
     case TextFrame(message) =>
