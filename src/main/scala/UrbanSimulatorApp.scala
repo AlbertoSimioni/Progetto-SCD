@@ -10,6 +10,7 @@ import akka.actor.Identify
 import akka.pattern.ask
 import akka.actor.ActorIdentity
 import akka.actor.PoisonPill
+import akka.cluster.Cluster
 import _root_.akka.actor.ActorSystem
 import _root_.akka.io.IO
 import _root_.akka.io.Tcp
@@ -25,19 +26,21 @@ import java.net.InetSocketAddress
 import spray.can.Http
 import spray.can.server.UHttp
 
-object UrbanSimulatorApp extends App with ReactiveApi with MainActors  with ReactiveSecurityConfig {
+object UrbanSimulatorApp extends App with ReactiveApi with MainActors with ReactiveSecurityConfig {
 
   // la porta viene letta da file di configurazione
-  // l'override della porta non funziona a causa delle keywords "implicit" e "lazy"
+  // l'override della porta non funziona a causa della keyword "lazy"
   // pertanto è necessario scrivere la porta in file di configurazione PRIMA dell'accensione del sistema
   // la riga sottostante non è necessaria
   
-	// crea la configurazione
-	// val config = ConfigFactory.parseString("akka.remote.netty.tcp.port=" + args(0)).withFallback(ConfigFactory.load())
+  // crea la configurazione
+  //val config = ConfigFactory.parseString("akka.remote.netty.tcp.port = " + args(0))
+  //                  .withFallback(ConfigFactory.parseString(""" akka.cluster.roles = ["""" + args(1) + """"]"""))
+  //                  .withFallback(ConfigFactory.load())
 	
   // crea l'ActorSystem
 	implicit lazy val system = ActorSystem("UrbanSimulator", ConfigFactory.load())
-	
+  
   // inizializza il DB
 	// un DB comune in un solo nodo, il seed
 	//startUpDB(system, port)
@@ -62,22 +65,26 @@ object UrbanSimulatorApp extends App with ReactiveApi with MainActors  with Reac
 		idExtractor = UrbanElement.idExtractor,
 		shardResolver = UrbanElement.shardResolver,
 		allocationStrategy = ShardingPolicy)
-	// avvio seed node + controller
-	if(args(0) == "2551") {
-		// attiva Controller
-		val controller = system.actorOf(Props[Controller])
-		controller ! StartInjection
+  
+	Cluster(system) registerOnMemberUp {
+		// recupero il ruolo
+		val role = system.settings.config.getList("akka.cluster.roles").get(0).unwrapped
+		// avvio seed node + controller
+		if(role == "controller") {
+			// attiva Controller
+			val controller = system.actorOf(Props[Controller])
+			controller ! StartInjection
+		}
+		// avvio server http
+    else if(role == "guihandler") {
+			IO(UHttp) ! Http.Bind(wsService, Configuration.host, Configuration.portWs)
+			// Since the UTttp extension extends from Http extension, it starts an actor whose name will later collide with the Http extension.
+			system.actorSelection("/user/IO-HTTP") ! PoisonPill
+			// We could use IO(UHttp) here instead of killing the "/user/IO-HTTP" actor
+			IO(Http) ! Http.Bind(rootService, Configuration.host, Configuration.portHttp)
+			sys.addShutdownHook({ IO(UHttp) ! Http.Unbind; IO(Http) ! Http.Unbind; system.shutdown })
+		}
 	}
-	// avvio server http
-	if(args(0) == "2552") {
-		IO(UHttp) ! Http.Bind(wsService, Configuration.host, Configuration.portWs)
-		// Since the UTttp extension extends from Http extension, it starts an actor whose name will later collide with the Http extension.
-		system.actorSelection("/user/IO-HTTP") ! PoisonPill
-		// We could use IO(UHttp) here instead of killing the "/user/IO-HTTP" actor
-		IO(Http) ! Http.Bind(rootService, Configuration.host, Configuration.portHttp)
-		sys.addShutdownHook({ IO(UHttp) ! Http.Unbind; IO(Http) ! Http.Unbind; system.shutdown })
-	}
-
 }
 
 // configurazione per Server HTTP
