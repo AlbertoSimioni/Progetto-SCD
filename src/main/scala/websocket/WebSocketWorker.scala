@@ -31,7 +31,8 @@ import scala.concurrent.duration.DurationInt
 
       //Register è inviato dal service che risponde all'indirizzo della richiesta
     case WebSocket.Register(request, actor, ping) =>
-      //se il websocket prevede ping pong (lo si capisce dal parametro in input), allora viene inizializzato e ogni tot si fa questo protocollo
+      //se il websocket prevede ping pong (lo si capisce dal parametro in input), allora viene inizializzato e
+      // ogni tot si fa questo protocollo
       if (ping) pinger = Some(context.system.scheduler.scheduleOnce(110.seconds, self, WebSocket.Ping))
       handler = actor
       uripath = request.uri.path.toString
@@ -43,25 +44,34 @@ import scala.concurrent.duration.DurationInt
 
 
 
-  // this is the actor's behavior after the WebSocket handshaking resulted in an upgraded request
-  //Sono i messaggi che arrivano in input al WebSocket dal browser oppure
+  /* this is the actor's behavior after the WebSocket handshaking resulted in an upgraded request
+  Sono i messaggi che arrivano in input al WebSocket dal browser oppure quando ci sono cambi di stato nella
+  connessione
+
+  Dopo aver ricevuto messaggi, ne invia a sua volta verso l'handler o indietro verso il browser
+  i messaggi che invia all'handler sono: Message - Error - Close
+  */
   override def businessLogic = {
+
     //Arrivo informazioni dal browser
     case TextFrame(message) =>
       ping
       handler ! WebSocket.Message(this, message.utf8String)
-    //boh
+
     case UpgradedToWebSocket =>
       // nothing to do
+
     //chiamato da un timer per mandare un PingFrame al browser
     case WebSocket.Ping =>
       send(PingFrame())
+
     case PongFrame(payload) =>
       ping
     case Http.Aborted =>  // questi messaggi qua sono inviati in automatico dal modulo
       handler ! WebSocket.Error(this, "aborted")
     case Http.ErrorClosed(cause) =>
       handler ! WebSocket.Error(this, cause)
+
     //5 divers casi in cui il websocket viene considerato chiuso
     case CloseFrame(status, reason) =>
       handler ! WebSocket.Close(this, status.code, reason)
@@ -76,6 +86,8 @@ import scala.concurrent.duration.DurationInt
     case whatever =>
       log.debug("WebSocket received '{}'", whatever)
   }
+
+
   //funzione ausiliaria per scrivere la send più brevemente. usata solo nei test
   def send(message : String) = send(TextFrame(message))
   //funzione ausiliaria per chiudere la connessione più velocemente. usata solo nei test

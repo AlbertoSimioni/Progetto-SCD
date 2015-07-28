@@ -2,8 +2,8 @@ package pubsub
 
 import akka.actor.{ActorLogging, Actor}
 import akka.contrib.pattern.{DistributedPubSubMediator,DistributedPubSubExtension}
+import coreActors.ActiveConnections
 import pubsub.Messages.Moved
-
 /**
  * Created by Alberto on 20/07/2015.
  */
@@ -19,7 +19,7 @@ class Subscriber extends Actor with ActorLogging {
   }
 
   def ready: Actor.Receive = {
-    case Moved(p) =>  log.info("Got {}", p)
+    case Moved(p) =>   context.actorSelection("/user/activeConnections") ! ActiveConnections.SendMessageToClients(p.toString)
 
   }
 }

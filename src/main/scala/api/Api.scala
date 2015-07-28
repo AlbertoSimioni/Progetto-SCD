@@ -15,7 +15,7 @@ import _root_.spray.routing.directives.LogEntry
 
 import akka.actor.{ ActorSystem, Props }
 import akka.event.Logging.InfoLevel
-import services.CarService
+import services.ConnectionService
 import websocket.WebSocketWorker
 import scala.reflect.ClassTag
 import spray.http.{ HttpRequest, StatusCodes }
@@ -45,11 +45,11 @@ trait ReactiveApi extends RouteConcatenation with StaticRoute with AbstractSyste
   //un WebSocketServer
   val wsService = system.actorOf(Props(new RootService[WebSocketWorker](wsroutes)), "wss")
   lazy val wsroutes = logRequest(showReq _) {
-    new CarService(carActor).wsroute ~  //sono diverse dal rootservice di prima
-     //ì new HideService(hide).wsroute ~
+    new ConnectionService(connectionsActor).wsroute ~  //sono diverse dal rootservice di prima
+     // new HideService(hide).wsroute ~
       complete(StatusCodes.NotFound)
   }
-  // val socketService = system.actorOf(Props[SocketService], "tcp")
+
 }
 
 

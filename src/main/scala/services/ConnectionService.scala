@@ -10,11 +10,11 @@ import spray.http.StatusCodes
 import spray.routing.Directives
 
 
-class CarService(carActor : ActorRef)(implicit system : ActorSystem) extends Directives {
+class ConnectionService(connectionsActor : ActorRef)(implicit system : ActorSystem) extends Directives {
   //invocata solo alla connessione di un nuovo broswer WebSocket
   lazy val wsroute =
       path("ws") {
         implicit ctx =>
-          ctx.responder ! WebSocket.Register(ctx.request, carActor, true)
+          ctx.responder ! WebSocket.Register(ctx.request, connectionsActor, true)
     }
 }
