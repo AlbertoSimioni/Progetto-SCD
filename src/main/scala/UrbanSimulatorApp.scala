@@ -27,6 +27,7 @@ import spray.can.Http
 import spray.can.server.UHttp
 
 import pubsub.Subscriber
+import time.TimeCounter
 
 object UrbanSimulatorApp extends App with ReactiveApi with MainActors  with ReactiveSecurityConfig {
 
@@ -71,6 +72,10 @@ object UrbanSimulatorApp extends App with ReactiveApi with MainActors  with Reac
 	Cluster(system) registerOnMemberUp {
 		// recupero il ruolo
 		val role = system.settings.config.getList("akka.cluster.roles").get(0).unwrapped
+    if(role == "worker")
+      system.actorOf(Props(classOf[Subscriber], "timeEvent"), "subscriberTime")
+      system.actorOf(Props[TimeCounter], "timeCounter")
+      //codice per l'avvio dell'attore subscriber degli eventi del tempo e dell'attore che tiene il contatore
 		// avvio seed node + controller
 		if(role == "controller") {
 			// attiva Controller

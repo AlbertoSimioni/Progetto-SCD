@@ -7,16 +7,37 @@
 import akka.actor.Actor
 import akka.actor.ActorLogging
 import akka.actor.Props
+import pubsub.Messages.CurrentTime
+import pubsub.PublisherInstance
 import scala.util.Random.shuffle
+import scala.concurrent.duration._
 
 case object StartInjection
 case class CreateVehicle(ID : String)
 
 class Controller extends Actor with ActorLogging {
-  
+  import context.dispatcher
   val vehicles = List("Alfa Romeo", "Mercedes", "Fiat", "Peugeot", "Opel", "Ford", "Subaru", "Nissan", "Kia", "Dacia")
-  
+
+  //Campi per la gestione del tempo
+  val tick = context.system.scheduler.schedule(0 millis, 1000 millis, self, "tick")
+  var dayElapsed = 0
+  var minutesElapsed = 0
+  val maxMinutes = 1440
+
+  override def postStop() = tick.cancel()
+
   def receive : Receive = {
+
+    case "tick" =>
+      val publisher = PublisherInstance.getPublisherTimeEvents(context.system)
+      publisher ! CurrentTime(dayElapsed,minutesElapsed)
+      if(minutesElapsed == maxMinutes){
+        dayElapsed += 1
+        minutesElapsed = 0
+      }
+      else minutesElapsed += 1
+      log.info(minutesElapsed.toString)
     case StartInjection =>
       vehicles foreach { vehicle =>
         self ! CreateVehicle(vehicle)

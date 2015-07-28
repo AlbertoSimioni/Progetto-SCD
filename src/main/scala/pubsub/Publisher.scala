@@ -6,27 +6,36 @@ import akka.contrib.pattern.{DistributedPubSubMediator,DistributedPubSubExtensio
 /**
  * Created by Alberto on 20/07/2015.
  */
-class Publisher extends Actor {
+
+class Publisher(messageType: String) extends Actor {
 
   import DistributedPubSubMediator.Publish
-
   // activate the extension
   val mediator = DistributedPubSubExtension(context.system).mediator
-
   def receive = {
     case in: Any ⇒
-     // val out = in.toUpperCase
-      mediator ! Publish("content", in)
+      mediator ! Publish(messageType, in)
   }
 }
+
+
 object PublisherInstance {
 
-  var publisher : ActorRef = null;
+  var publisherModel : ActorRef = null;
+  var publisherTime : ActorRef = null;
 
-  def getPublisher(system: ActorSystem) : ActorRef = {
-    if (publisher == null){
-      publisher =  system.actorOf(Props[Publisher], "publisher");
+  def getPublisherModelEvents(system: ActorSystem) : ActorRef = {
+    if (publisherModel == null){
+      publisherModel =  system.actorOf(Props(classOf[Publisher], "modelEvent"), "publisherModel")
+      publisherModel
     }
-    return publisher;
+    return publisherModel;
+  }
+  def getPublisherTimeEvents(system: ActorSystem) : ActorRef = {
+    if (publisherTime == null){
+      publisherTime =  system.actorOf(Props(classOf[Publisher], "timeEvent"), "publisherTime")
+        publisherTime
+    }
+    return publisherTime;
   }
 }

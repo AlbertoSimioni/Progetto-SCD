@@ -5,5 +5,6 @@ package pubsub
  */
 object Messages {
   sealed trait PubSubMessages
-  case class Moved(position: Int)
+  case class CurrentTime(dayElapsed: Int, minutesElapsed: Int) extends PubSubMessages
+  case class Moved(position: Int) extends PubSubMessages
 }

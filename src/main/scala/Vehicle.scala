@@ -22,7 +22,7 @@ class Vehicle(id : String, iter : List[String]) extends Actor with ActorLogging 
     case Test =>
       currentPlace = iter(index)
       index = (index + 1)%10
-      val publisher = PublisherInstance.getPublisher(context.system)
+      val publisher = PublisherInstance.getPublisherModelEvents(context.system)
       publisher ! Moved(index)
       val senderIp = context.system.settings.config.getString("akka.remote.netty.tcp.hostname")
       region ! UrbanElement.isRemoteQuest(currentPlace, self, senderIp)
