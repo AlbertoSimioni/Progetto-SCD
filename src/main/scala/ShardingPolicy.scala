@@ -24,11 +24,14 @@ object ShardingPolicy extends ShardAllocationStrategy {
   // The number of ongoing rebalancing processes is limited to this number.
   // max-simultaneous-rebalance = 3
   val defaultStrategy = new LeastShardAllocationStrategy(2, 3)
-  
+
+
+  //DA IMPLEMENTARE
   override def allocateShard(requester: ActorRef, shardId: ShardId, currentShardAllocations: Map[ActorRef, immutable.IndexedSeq[ShardId]]): ActorRef = {
     defaultStrategy.allocateShard(requester, shardId, currentShardAllocations)
   }
-  
+
+  //DA IMPLEMENTARE
   override  def rebalance(currentShardAllocations: Map[ActorRef, immutable.IndexedSeq[ShardId]], rebalanceInProgress: Set[ShardId]): Set[ShardId] = {
     defaultStrategy.rebalance(currentShardAllocations, rebalanceInProgress)
   }

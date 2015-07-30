@@ -5,7 +5,7 @@ import scala.util.Random.shuffle
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.ExecutionContext.Implicits.global
 import pubsub.{Publisher,PublisherInstance}
-import pubsub.Messages.Moved
+import pubsub.Messages.{NewCar, Moved}
 // Test per testare se il destinatario è remoto o meno
 case object Test
 case object TravelIn
@@ -17,13 +17,14 @@ class Vehicle(id : String, iter : List[String]) extends Actor with ActorLogging 
   val region = ClusterSharding(context.system).shardRegion(UrbanElement.typeOfEntries)
   var index = 0
   var currentPlace : String = ""
-  
+  val publisher = PublisherInstance.getPublisherModelEvents(context.system)
+  publisher ! NewCar(id,index)
   def receive : Receive = {
     case Test =>
       currentPlace = iter(index)
       index = (index + 1)%10
-      val publisher = PublisherInstance.getPublisherModelEvents(context.system)
-      publisher ! Moved(index)
+
+      publisher ! Moved(id,index)
       val senderIp = context.system.settings.config.getString("akka.remote.netty.tcp.hostname")
       region ! UrbanElement.isRemoteQuest(currentPlace, self, senderIp)
     case UrbanElement.isRemoteAnswer(flag) =>

@@ -1,12 +1,13 @@
 package pubsub
 
 import coreActors.ActiveConnections
+import messagesFormatter.BrowserMessagesFormatter
 import time.TimeCounter
 import TimeCounter.UpdateTime
 import akka.actor.{ActorLogging, Actor}
 import akka.contrib.pattern.{DistributedPubSubMediator,DistributedPubSubExtension}
 import coreActors.ActiveConnections
-import pubsub.Messages.{CurrentTime, Moved}
+import pubsub.Messages._
 /**
  * Created by Alberto on 20/07/2015.
  */
@@ -27,7 +28,10 @@ class Subscriber(contentType : String) extends Actor with ActorLogging {
   }
 
   def readyModel: Actor.Receive = {
-    case Moved(p) =>   context.actorSelection("/user/activeConnections") ! ActiveConnections.SendMessageToClients(p.toString)
+    case m @ Moved(id,p) =>   context.actorSelection("/user/activeConnections") !
+      ActiveConnections.SendMessageToClients(BrowserMessagesFormatter.CarMovedMessageFormat(m))
+    case m @ NewCar(id,p) =>   context.actorSelection("/user/activeConnections") !
+      ActiveConnections.SendMessageToClients(BrowserMessagesFormatter.NewCarMessageFormat(m))
 
   }
   def readyTime: Actor.Receive = {
