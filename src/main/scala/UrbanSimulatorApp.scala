@@ -29,7 +29,7 @@ import spray.can.server.UHttp
 import pubsub.Subscriber
 import time.TimeCounter
 
-object UrbanSimulatorApp extends App with ReactiveApi with MainActors  with ReactiveSecurityConfig {
+object UrbanSimulatorApp extends App with ReactiveApi with MainActors with ReactiveSecurityConfig {
 
   // la porta viene letta da file di configurazione
   // l'override della porta non funziona a causa della keyword "lazy"
@@ -42,7 +42,7 @@ object UrbanSimulatorApp extends App with ReactiveApi with MainActors  with Reac
   //                  .withFallback(ConfigFactory.load())
 	
   // crea l'ActorSystem
-	implicit lazy val system = ActorSystem("UrbanSimulator", ConfigFactory.load())
+	implicit lazy val system : akka.actor.ActorSystem = ActorSystem("UrbanSimulator", ConfigFactory.load())
   
   // inizializza il DB
 	// un DB comune in un solo nodo, il seed
@@ -93,6 +93,7 @@ object UrbanSimulatorApp extends App with ReactiveApi with MainActors  with Reac
       system.actorOf(Props[Subscriber], "subscriber1")
 		}
 	}
+  
 }
 
 // configurazione per Server HTTP

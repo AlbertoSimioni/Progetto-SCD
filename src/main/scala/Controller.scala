@@ -52,17 +52,17 @@ class Controller extends Actor with ActorLogging {
   
   def generateIter() : List[String] = {
     // aggiungi primo elemento
-    var iter = List[String](shuffle(JSONReader.getAllEdges()).head)
+    var iter = List[String](shuffle(JSONReaderOld.getAllEdges()).head)
     var i = 1
     for(i <- 1 to 9) {
       // bisogna alternare edges e nodes
       if(i%2 == 1) {
         // siamo su un arco, bisogna raggiungere il nodo
-        iter = iter :+ JSONReader.getEdgeEndNode(iter.last)
+        iter = iter :+ JSONReaderOld.getEdgeEndNode(iter.last)
       }
       else {
         // siamo su un nodo, bisogna scegliere un arco
-        iter = iter :+ shuffle(JSONReader.getNodeOutcomingEdges(iter.last)).head
+        iter = iter :+ shuffle(JSONReaderOld.getNodeOutcomingEdges(iter.last)).head
       }
     }
     return iter

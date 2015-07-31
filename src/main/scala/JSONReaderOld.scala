@@ -2,7 +2,7 @@ import org.json4s._
 import org.json4s.DefaultFormats
 import org.json4s.jackson.JsonMethods._
 
-object JSONReader {
+object JSONReaderOld {
   
   // necessario per corretto parsing
   implicit lazy val formats = DefaultFormats

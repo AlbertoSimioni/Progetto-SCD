@@ -64,9 +64,21 @@ object UrbanElement {
   // 1) allocateshard
   // 2) rebalance
   // che sono definite nella shardallocationstrategy, parametro del metodo start del clustersharding
+  //
+  // si noti che il calcolo dell'id dello shard è eseguito a partire dall'id dell'identità
+  //
+  // idea: divisione della mappa in quadranti, ciascun quadrante corrisponde ad uno shard
+  // l'id è contraddistinto dalla coordinata del vertice più in basso e più a sinistra
   val shardResolver: ShardRegion.ShardResolver = msg => msg match {
     case cmd: Command => (math.abs(cmd.UrbanElementId.hashCode) % 100).toString
     case original : isRemoteQuest => (math.abs(original.UrbanElementId.hashCode) % 100).toString
+    /*
+     * Aggiornamento della funzione
+     * basta dare
+     * 
+     * decideShard(UrbanElementId)
+     * 
+     */
   }
   
   val typeOfEntries : String = "UrbanElementActor"
