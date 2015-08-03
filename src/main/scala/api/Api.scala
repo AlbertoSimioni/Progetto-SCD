@@ -64,11 +64,11 @@ trait ReactiveApi extends RouteConcatenation with StaticRoute with AbstractSyste
         pathPrefix("images") {
           getFromResourceDirectory("images/")
         } ~
-        /*pathPrefix("css") {
-          getFromResourceDirectory("css/")
-        } ~*/
         pathPrefix("js") {
           getFromResourceDirectory("js/")
+        } ~
+        pathPrefix("css") {
+          getFromResourceDirectory("css/")
         } ~
         pathEndOrSingleSlash {
           getFromResource("index.html")

@@ -11,7 +11,7 @@ object BrowserMessagesFormatter {
     s"""{"type": "CarMoved", "info":{"id":"${m.id}","position":"${m.position}"}}"""
   }
 
-  def NewCarMessageFormat(m : NewCar) : String =  {
+  /*def NewCarMessageFormat(m : NewCar) : String =  {
     s"""{"type": "NewCar", "info":{"id":"${m.id}","position":"${m.position}"}}"""
-  }
+  }*/
 }

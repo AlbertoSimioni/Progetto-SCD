@@ -29,7 +29,7 @@ class TimeCounter extends Actor with ActorLogging {
     case UpdateTime(daysElapsed, minutesElapsed) =>
       CurrentDay = daysElapsed
       CurrentMinutes = minutesElapsed
-      log.info(minutesElapsed.toString)
+      //log.info(minutesElapsed.toString)
       if(!firstMessageArrived) {
         firstMessageArrived = true
         for(vehicle <- waitingVehicles)

@@ -37,7 +37,7 @@ class Controller extends Actor with ActorLogging {
         minutesElapsed = 0
       }
       else minutesElapsed += 1
-      log.info(minutesElapsed.toString)
+      //log.info(minutesElapsed.toString)
     case StartInjection =>
       vehicles foreach { vehicle =>
         self ! CreateVehicle(vehicle)

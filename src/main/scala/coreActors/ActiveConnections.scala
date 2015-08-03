@@ -52,6 +52,7 @@ class ActiveConnections extends Actor with ActorLogging {
 
     case ActiveConnections.SendMessageToClients(message) =>
       for(client <- clients) client.send(message)
+      log.info("CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC")
   }
 
 

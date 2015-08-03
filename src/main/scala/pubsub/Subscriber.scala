@@ -30,8 +30,10 @@ class Subscriber(contentType : String) extends Actor with ActorLogging {
   def readyModel: Actor.Receive = {
     case m @ Moved(id,p) =>   context.actorSelection("/user/activeConnections") !
       ActiveConnections.SendMessageToClients(BrowserMessagesFormatter.CarMovedMessageFormat(m))
-    case m @ NewCar(id,p) =>   context.actorSelection("/user/activeConnections") !
+      log.info("BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB")
+    /*case m @ NewCar(id,p) =>   context.actorSelection("/user/activeConnections") !
       ActiveConnections.SendMessageToClients(BrowserMessagesFormatter.NewCarMessageFormat(m))
+      log.info("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")*/
 
   }
   def readyTime: Actor.Receive = {

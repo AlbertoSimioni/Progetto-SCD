@@ -1,0 +1,10 @@
+body {
+    margin: 0;
+    overflow: hidden;
+}
+#myCanvas {
+    cursor: -webkit-grab;
+    cursor: -moz-grab;
+    height: 700;
+    width: 1000;
+}
