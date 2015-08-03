@@ -7,6 +7,8 @@ import akka.contrib.pattern.{DistributedPubSubMediator,DistributedPubSubExtensio
  * Created by Alberto on 20/07/2015.
  */
 
+//Publisher: fa il forwarding ai subscriber di tutti i messaggi dati in input. Come tipo del messaggio
+//utilizza quello dato in input
 class Publisher(messageType: String) extends Actor {
 
   import DistributedPubSubMediator.Publish
@@ -18,12 +20,13 @@ class Publisher(messageType: String) extends Actor {
   }
 }
 
-
+//Oggetto per richiedere le uniche istanze dei publisher
 object PublisherInstance {
 
   var publisherModel : ActorRef = null;
   var publisherTime : ActorRef = null;
 
+  //istanza creata nei worker (una per ogni nodo)
   def getPublisherModelEvents(system: ActorSystem) : ActorRef = {
     if (publisherModel == null){
       publisherModel =  system.actorOf(Props(classOf[Publisher], "modelEvent"), "publisherModel")
@@ -31,6 +34,8 @@ object PublisherInstance {
     }
     return publisherModel;
   }
+
+  //Istanza creata nel controller
   def getPublisherTimeEvents(system: ActorSystem) : ActorRef = {
     if (publisherTime == null){
       publisherTime =  system.actorOf(Props(classOf[Publisher], "timeEvent"), "publisherTime")

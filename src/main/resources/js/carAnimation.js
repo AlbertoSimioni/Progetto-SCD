@@ -36,16 +36,14 @@ window.onload = function() {
                registry.addCar(msg.id, msg.position,9)
           }*/
         //msg.info.position = msg.info.position * 50;
-        var position = parseInt(msg.info.position)
+        var position = msg.info.position
         console.log(JSON.stringify(msg))
         if (msg.type == "CarMoved") {
             var car = registry.findCar(msg.info.id)
             console.log(JSON.stringify(car))
             if (!car) {
-                console.log("3333333");
                 registry.addCar(msg.info.id,position)
             } else {
-                console.log("444444444")
                 car.move(position, 90)
             }
         }

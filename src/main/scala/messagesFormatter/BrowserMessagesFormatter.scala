@@ -5,10 +5,11 @@ import pubsub.Messages._
 /**
  * Created by Alberto on 29/07/2015.
  */
+//Funzioni che formattano in JSON i messaggi da inviare ai browser
 object BrowserMessagesFormatter {
 
   def CarMovedMessageFormat(m : Moved) : String =  {
-    s"""{"type": "CarMoved", "info":{"id":"${m.id}","position":"${m.position}"}}"""
+    s"""{"type": "CarMoved", "info":{"id":"${m.id}","position":${m.position}}}"""
   }
 
   /*def NewCarMessageFormat(m : NewCar) : String =  {

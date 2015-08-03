@@ -18,13 +18,11 @@ class Vehicle(id : String, iter : List[String]) extends Actor with ActorLogging 
   var index = 0
   var currentPlace : String = ""
   val publisher = PublisherInstance.getPublisherModelEvents(context.system)
-  //publisher ! NewCar(id,index)
   def receive : Receive = {
     case Test =>
       currentPlace = iter(index)
       val r = new scala.util.Random
       index = (index + 1)  %10
-      //log.info("PORCOILDIOCANELADROMAIALE")
       publisher ! Moved(id,index * r.nextInt(100))
       val senderIp = context.system.settings.config.getString("akka.remote.netty.tcp.hostname")
       region ! UrbanElement.isRemoteQuest(currentPlace, self, senderIp)

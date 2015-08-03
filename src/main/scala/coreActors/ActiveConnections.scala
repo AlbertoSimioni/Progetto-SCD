@@ -19,6 +19,11 @@ object ActiveConnections {
 
 }
 
+/*classe che gestisce l'elenco dei browser connessi tramite WebSocket
+Per Inviare un messaggio a tutti i browser basta utilizzare il metodo
+SendMessageToClients con la stringa contenente il messaggio.
+La stringa deve essere già stata formattata in JSON
+*/
 class ActiveConnections extends Actor with ActorLogging {
 
   val clients = mutable.ListBuffer[WebSocket]()
@@ -38,7 +43,7 @@ class ActiveConnections extends Actor with ActorLogging {
     case WebSocket.Error(ws, ex) =>
       self ! ActiveConnections.Unregister(ws)
 
-    //messaggio da parte del Client (come in AJAX) non so bene
+    //messaggio da parte del Client (come in AJAX) Per ora i browser non inviano messaggi
     case WebSocket.Message(ws, msg) =>
       if (null != ws)
         log.debug("url {} received msg '{}'", ws.path, msg)
@@ -52,8 +57,6 @@ class ActiveConnections extends Actor with ActorLogging {
 
     case ActiveConnections.SendMessageToClients(message) =>
       for(client <- clients) client.send(message)
-      log.info("CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC")
   }
-
 
 }

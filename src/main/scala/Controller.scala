@@ -19,7 +19,7 @@ class Controller extends Actor with ActorLogging {
   import context.dispatcher
   val vehicles = List("Alfa Romeo", "Mercedes", "Fiat", "Peugeot", "Opel", "Ford", "Subaru", "Nissan", "Kia", "Dacia")
 
-  //Campi per la gestione del tempo
+  //Campi per la gestione del tempo. Invio periodico (ogni secondo) di un messaggio a se stesso
   val tick = context.system.scheduler.schedule(0 millis, 1000 millis, self, "tick")
   var dayElapsed = 0
   var minutesElapsed = 0
@@ -28,7 +28,7 @@ class Controller extends Actor with ActorLogging {
   override def postStop() = tick.cancel()
 
   def receive : Receive = {
-
+    //messaggio periodico che produce l'invio del tempo corrente a tutti i nodi worker tramite pub sub
     case "tick" =>
       val publisher = PublisherInstance.getPublisherTimeEvents(context.system)
       publisher ! CurrentTime(dayElapsed,minutesElapsed)
@@ -38,6 +38,7 @@ class Controller extends Actor with ActorLogging {
       }
       else minutesElapsed += 1
       //log.info(minutesElapsed.toString)
+
     case StartInjection =>
       vehicles foreach { vehicle =>
         self ! CreateVehicle(vehicle)

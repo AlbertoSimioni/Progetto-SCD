@@ -10,6 +10,8 @@ import scala.collection.mutable
  * Created by Alberto on 28/07/2015.
  */
 
+
+//classe presente in ogni worker, serve per ricevere gli aggiornamenti del tempo inviati dal controller
 object TimeCounter{
   sealed trait TimeMessages
   case class UpdateTime(days : Int, minutes: Int) extends TimeMessages
