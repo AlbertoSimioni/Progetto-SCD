@@ -70,6 +70,9 @@ trait ReactiveApi extends RouteConcatenation with StaticRoute with AbstractSyste
         pathPrefix("css") {
           getFromResourceDirectory("css/")
         } ~
+        pathPrefix("fonts") {
+          getFromResourceDirectory("fonts/")
+        } ~
         pathEndOrSingleSlash {
           getFromResource("index.html")
         } ~ complete(StatusCodes.NotFound)

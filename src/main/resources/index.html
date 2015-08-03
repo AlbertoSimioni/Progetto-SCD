@@ -6,12 +6,14 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
     <link rel='stylesheet' type='text/css' href="css/bootstrap-theme.min.css"/>
     <link rel='stylesheet' type='text/css' href="css/bootstrap.min.css"/>
+    <link rel='stylesheet' type='text/css' href="css/style.css"/>
     <title>Pimp my ride</title>
 
     <!-- Load the external library here -->
     <script type="text/javascript" src="js/external/paper.js"></script>
     <script type='text/javascript' src="js/external/jquery-2.1.4.js"></script>
     <script type='text/javascript' src="js/external/bootstrap.min.js"></script>
+    <script type="text/javascript" src="js/external/jquery.mousewheel.js"></script>
 
 
     <!-- Load scripts here -->
@@ -19,6 +21,20 @@
     <script type='text/javascript' src="js/entities/Car.js"></script>
     <script type='text/javascript' src="js/entities/Entitiesregistry.js"></script>
     <script type="text/javascript" src="js/carAnimation.js " canvas="myCanvas" ></script>
+    <script type="text/javascript">
+    function fitMap(){
+        if(project.activeLayer.children.length > 0){
+          var g = project.activeLayer;
+          var xP = view.size.width / g.bounds.width;
+          var yP = view.size.height / g.bounds.height;
+          var z = xP;
+          if(Math.abs(yP) < Math.abs(xP))
+            z = yP;
+          view.zoom = view.zoom * z;
+          view.center = project.activeLayer.position;
+        }
+      }
+</script>
 
 
 
@@ -28,19 +44,36 @@
 <div class="navbar navbar-inverse">
     <div class="container">
         <div class='navbar-header'>
-            <a class="navbar-brand" href="/">Pimp my ride</a>
+            <a class="navbar-brand" href="">Pimp my ride</a>
         </div>
         <div class="navbar-collapse collapse"></div>
     </div>
 </div>
+
 <div class="container">
-    <canvas id="myCanvas" resize keepalive="true"></canvas>
-</div>
-<div id="footer">
-    <div class="container">
-        <p class="text-muted" target="_blank">Alberto Simioni & Matteo Pozza</p>
+    <div class="row">
+        <div class="col-md-11">
+            <canvas  id="myCanvas" resize hidpi="off" keepalive="true"></canvas>
+        </div>
+        <div class="col-md-1">
+            <div id="controls-div">
+                <div class="btn-group-vertical" role="group" aria-label="...">
+                    <button type="button" class="btn btn-default glyphicon glyphicon-zoom-in" onClick="zoomIn()"  data-toggle="tooltip" data-placement="right" title="Zoom Im"></button>
+                    <button type="button" class="btn btn-default glyphicon glyphicon-zoom-out" onClick="zoomOut()"  data-toggle="tooltip" data-placement="right" title="Zoom out"></button>
+                </div>
+                <div class="divisor-small"></div>
+                <div>
+                    <button id="fitMapButton" type="button" class="btn btn-default glyphicon glyphicon-fullscreen" data-toggle="tooltip" data-placement="right" title="Centra e ridimensiona" onClick="fitMap()"></button>
+                </div>
+            </div>
+        </div>
     </div>
-</div>
-    <img style="display:none;" id="car" src="images/car.png" width="50" height="25"></img>
+    <div class="divisor-small"></div>
+
+    <div id="footer">
+        <div class="container">
+            <p class="text-muted" target="_blank">Alberto Simioni &amp; Matteo Pozza</p>
+        </div>
+    </div>
 </body>
 </html>
