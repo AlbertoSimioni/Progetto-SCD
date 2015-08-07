@@ -1,4 +1,5 @@
 import org.scalatest._
+import map.JSONReaderOld
 
 class JSONReaderTest extends UnitSpec {
 	

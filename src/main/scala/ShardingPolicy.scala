@@ -7,8 +7,8 @@ import scala.concurrent.Future
 import scala.math._
 import scala.util.control.Breaks._
 
-import Domain._
-import JSONUtilities._
+import map.JSONUtilities._
+import map._
 
 /*
  * Template per l'implementazione di una strategia di ridistribuzione degli shard
@@ -123,7 +123,7 @@ object ShardingPolicy extends ShardAllocationStrategy with Serializable {
     // 3) segnala come "da riallocare" gli shard che non appartengono alle rispettive liste e che non sono già in spostamento
     
     /*
-     * 
+     *
     val rectangles = computeRectangles(currentShardAllocations.size, current_map_x, current_map_y)
     val map = associateRectanglesNodes(rectangles, currentShardAllocations)
     var toBeReallocated = Set[ShardId]()
@@ -138,7 +138,7 @@ object ShardingPolicy extends ShardAllocationStrategy with Serializable {
       val outside = findShardsNotInRectangle(association._2, shardList)
       toBeReallocated = toBeReallocated ++ outside
     }
-    return toBeReallocated
+    return toBeReallocated.diff(rebalanceInProgress)
     * 
     */
     // FINE CUSTOM REBALANCE
@@ -199,7 +199,7 @@ object ShardingPolicy extends ShardAllocationStrategy with Serializable {
             toBeRemoved ::= rectangle
         }
       }
-      rectangleList = rectangleList.diff(toBeRemoved)
+      rectangleList = rectangleList.toSet.diff(toBeRemoved.toSet).toList
       // crea nuovi
       val newRegionY = (map_y.toDouble / (factor_y-1)).floor.toInt
       for(y <- 0 to (factor_y-2)) {
@@ -246,7 +246,7 @@ object ShardingPolicy extends ShardAllocationStrategy with Serializable {
       // associa nodo a rettangolo
       associationMap = associationMap + (node._1.path.toString -> modifiableRectangleList(maxRectangleIndex))
       // elimina il rettangolo dalla lista
-      modifiableRectangleList = modifiableRectangleList.diff(List(modifiableRectangleList(maxRectangleIndex)))
+      modifiableRectangleList = modifiableRectangleList.toSet.diff(Set(modifiableRectangleList(maxRectangleIndex))).toList
     }
     return associationMap
   }

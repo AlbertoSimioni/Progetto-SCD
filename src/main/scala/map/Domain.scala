@@ -1,3 +1,4 @@
+package map;
 import org.json4s._
 import org.json4s.JsonDSL._
 import JSONUtilities._
@@ -42,6 +43,15 @@ object Domain {
 			case `right` => return "right"
 			}
 		}
+    
+    def getOpposite(position : position) : position = {
+      position match {
+        case `up` => return down
+        case `down` => return up
+        case `left` => return right
+        case `right` => return left
+      }
+    }
 
 	}
 
@@ -64,25 +74,31 @@ object Domain {
 	import category._
 	import position._
 	import variety._
+  case class dimensions(x : Int, y : Int)
   case class point(x : Int, y : Int)
   case class begin(point : point, id : String)
   case class end(point : point, id : String)
   case class coordinates(begin : begin, end : end)
   case class road(id : String, coordinates : coordinates, lanesIDs : List[String], zonesIDs : List[String])
-  case class lane(id : String, road : String, begintoend : Boolean, tram : Boolean)
+  case class lane(id : String, road : String, begintoend : Boolean, tram : Boolean, bus_routes : List[Int])
   case class vertex(point : point, id : String)
   case class crossroad(id : String, vertexes : List[vertex], category : category, extendable : Boolean)
   case class pedestrian_crossroad(id : String, coordinates : coordinates)
   case class bus_stop(id : String, coordinates : coordinates, position : position, route : Int)
   case class tram_stop(id : String, coordinates : coordinates, position : position, route : Int)
   case class zone(id : String, road : String, coordinates : coordinates, variety : variety, position : position)
-  case class urban_elements(roads : List[road],
+  case class urban_elements(dimensions : dimensions,
+                            roads : List[road],
 		                        lanes : List[lane],
 		                        crossroads : List[crossroad],
 		                        pedestrian_crossroads : List[pedestrian_crossroad],
 		                        bus_stops : List[bus_stop],
 		                        tram_stops : List[tram_stop],
 		                        zones : List[zone])
+                            
+   def dimensionsToJValue(dimensions : dimensions) : JValue = {
+    return ("x" -> dimensions.x) ~ ("y" -> dimensions.y) 
+   }
                             
    def pointToJValue(point : point) : JValue = {
      return ("x" -> point.x) ~ ("y" -> point.y) 
@@ -113,7 +129,8 @@ object Domain {
     val road = ("road" -> lane.road)
     val beginToEnd = ("begintoend" -> lane.begintoend)
     val tram = ("tram" -> lane.tram)
-    return id ~ road ~ beginToEnd ~ tram
+    val bus_routes = ("bus_routes" -> lane.bus_routes)
+    return id ~ road ~ beginToEnd ~ tram ~ bus_routes
   }
   
   def vertexToJValue(vertex : vertex) : JValue = {
@@ -160,6 +177,7 @@ object Domain {
   }
   
   def urbanElementsToJValue(urban_elements : urban_elements) : JValue = {
+    val dimensions = ("dimensions" -> dimensionsToJValue(urban_elements.dimensions))
     val roads = ("roads" -> urban_elements.roads.map { road => roadToJValue(road) })
     val lanes = ("lanes" -> urban_elements.lanes.map { lane => laneToJValue(lane) })
     val crossroads = ("crossroads" -> urban_elements.crossroads.map { crossroad => crossroadToJValue(crossroad) })
@@ -167,21 +185,13 @@ object Domain {
     val bus_stops = ("bus_stops" -> urban_elements.bus_stops.map { bus_stop => busStopToJValue(bus_stop) })
     val tram_stops = ("tram_stops" -> urban_elements.tram_stops.map { tram_stop => tramStopToJValue(tram_stop) })
     val zones = ("zones" -> urban_elements.zones.map { zone => zoneToJValue(zone) })
-    return roads ~ lanes ~ crossroads ~ pedestrian_crossroads ~ bus_stops ~ tram_stops ~ zones
+    return dimensions ~ roads ~ lanes ~ crossroads ~ pedestrian_crossroads ~ bus_stops ~ tram_stops ~ zones
   }
                               
    val path = getClass.getResource("/map.json").getPath
    
-   // dati della mappa
-   val map_x_dimension = 56
-   val map_y_dimension = 41
-   val left_to_right_length_top = 5
-   val left_to_right_length_bottom = 4
-   val down_to_up_length_left = 2
-   val down_to_up_length_right = 1
-   
    // dati della mappa corrente
-   lazy val current_map_x = getMapDimensions(readAll("map.json"))._1
-   lazy val current_map_y = getMapDimensions(readAll("map.json"))._2
+   lazy val current_map_x = getDimensionsX(readAll("map.json"))
+   lazy val current_map_y = getDimensionsY(readAll("map.json"))
 
 }

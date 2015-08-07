@@ -12,6 +12,8 @@ import pubsub.PublisherInstance
 import scala.util.Random.shuffle
 import scala.concurrent.duration._
 
+import map._
+
 case object StartInjection
 case class CreateVehicle(ID : String)
 

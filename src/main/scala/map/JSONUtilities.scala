@@ -1,3 +1,4 @@
+package map;
 import com.typesafe.config.ConfigFactory
 
 import Domain._
@@ -65,16 +66,6 @@ object JSONUtilities {
         println("ID: " + id)
       }
     }
-  }
-  
-  def getMapDimensions(map : urban_elements) : (Int,Int) = {
-    // il numero di zone in una mappa singola è 37
-    val numZones = 37
-    var factor = 1
-    while((numZones * (factor^2)) != map.zones.length) {
-      factor = factor + 1
-    }
-    return (map_x_dimension * factor, map_y_dimension * factor)
   }
   
   def getDimensionsOfShard(numNodes : Int, map_x : Int, map_y : Int) : (Int,Int) = {

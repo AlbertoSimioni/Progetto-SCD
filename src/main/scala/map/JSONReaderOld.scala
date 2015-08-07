@@ -1,3 +1,4 @@
+package map;
 import org.json4s._
 import org.json4s.DefaultFormats
 import org.json4s.jackson.JsonMethods._

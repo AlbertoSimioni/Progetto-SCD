@@ -1,3 +1,4 @@
+package map;
 import org.json4s._
 import org.json4s.DefaultFormats
 import org.json4s.jackson.JsonMethods._
@@ -35,101 +36,123 @@ object JSONWriter {
 					)
 			)
 
-	def addRoad(environment : urban_elements, road : road) : urban_elements = {
-		environment match {
-		case (urban_elements(roads,lanes,crossroads,pedestrian_crossroads,bus_stops,tram_stops,zones)) =>
-		return urban_elements(roads :+ road,
-				lanes,
-				crossroads, 
-				pedestrian_crossroads,
-				bus_stops,
-				tram_stops,
-				zones)
-		}
-	}
+	def addDimensions(environment : urban_elements, dimensions : dimensions) : urban_elements = {
+    environment match {
+    case (urban_elements(_, roads,lanes,crossroads,pedestrian_crossroads,bus_stops,tram_stops,zones)) =>
+    return urban_elements(dimensions,
+        roads,
+        lanes,
+        crossroads, 
+        pedestrian_crossroads,
+        bus_stops,
+        tram_stops,
+        zones)
+    }
+  }
 
-	def addLane(environment : urban_elements, lane : lane) : urban_elements = {
-		environment match {
-		case (urban_elements(roads,lanes,crossroads,pedestrian_crossroads,bus_stops,tram_stops,zones)) =>
-		return urban_elements(roads,
-				lanes :+ lane,
-				crossroads, 
-				pedestrian_crossroads,
-				bus_stops,
-				tram_stops,
-				zones)
-		}
-	}
+  def addRoad(environment : urban_elements, road : road) : urban_elements = {
+    environment match {
+    case (urban_elements(dimensions, roads,lanes,crossroads,pedestrian_crossroads,bus_stops,tram_stops,zones)) =>
+    return urban_elements(dimensions,
+        roads :+ road,
+        lanes,
+        crossroads, 
+        pedestrian_crossroads,
+        bus_stops,
+        tram_stops,
+        zones)
+    }
+  }
 
-	def addCrossroad(environment : urban_elements, crossroad : crossroad) : urban_elements = {
-		environment match {
-		case (urban_elements(roads,lanes,crossroads,pedestrian_crossroads,bus_stops,tram_stops,zones)) =>
-		return urban_elements(roads,
-				lanes,
-				crossroads :+ crossroad, 
-				pedestrian_crossroads,
-				bus_stops,
-				tram_stops,
-				zones)
-		}
-	}
+  def addLane(environment : urban_elements, lane : lane) : urban_elements = {
+    environment match {
+    case (urban_elements(dimensions, roads,lanes,crossroads,pedestrian_crossroads,bus_stops,tram_stops,zones)) =>
+    return urban_elements(dimensions,
+        roads,
+        lanes :+ lane,
+        crossroads, 
+        pedestrian_crossroads,
+        bus_stops,
+        tram_stops,
+        zones)
+    }
+  }
 
-	def addPedestrianCrossroad(environment : urban_elements, pedestrian_crossroad : pedestrian_crossroad) : urban_elements = {
-		environment match {
-		case (urban_elements(roads,lanes,crossroads,pedestrian_crossroads,bus_stops,tram_stops,zones)) =>
-		return urban_elements(roads,
-				lanes,
-				crossroads, 
-				pedestrian_crossroads :+ pedestrian_crossroad,
-				bus_stops,
-				tram_stops,
-				zones)
-		}
-	}
+  def addCrossroad(environment : urban_elements, crossroad : crossroad) : urban_elements = {
+    environment match {
+    case (urban_elements(dimensions, roads,lanes,crossroads,pedestrian_crossroads,bus_stops,tram_stops,zones)) =>
+    return urban_elements(dimensions,
+        roads,
+        lanes,
+        crossroads :+ crossroad, 
+        pedestrian_crossroads,
+        bus_stops,
+        tram_stops,
+        zones)
+    }
+  }
 
-	def addBusStop(environment : urban_elements, bus_stop : bus_stop) : urban_elements = {
-		environment match {
-		case (urban_elements(roads,lanes,crossroads,pedestrian_crossroads,bus_stops,tram_stops,zones)) =>
-		return urban_elements(roads,
-				lanes,
-				crossroads, 
-				pedestrian_crossroads,
-				bus_stops :+ bus_stop,
-				tram_stops,
-				zones)
-		}
-	}
+  def addPedestrianCrossroad(environment : urban_elements, pedestrian_crossroad : pedestrian_crossroad) : urban_elements = {
+    environment match {
+    case (urban_elements(dimensions, roads,lanes,crossroads,pedestrian_crossroads,bus_stops,tram_stops,zones)) =>
+    return urban_elements(dimensions,
+        roads,
+        lanes,
+        crossroads, 
+        pedestrian_crossroads :+ pedestrian_crossroad,
+        bus_stops,
+        tram_stops,
+        zones)
+    }
+  }
 
-	def addTramStop(environment : urban_elements, tram_stop : tram_stop) : urban_elements = {
-		environment match {
-		case (urban_elements(roads,lanes,crossroads,pedestrian_crossroads,bus_stops,tram_stops,zones)) =>
-		return urban_elements(roads,
-				lanes,
-				crossroads, 
-				pedestrian_crossroads,
-				bus_stops,
-				tram_stops :+ tram_stop,
-				zones)
-		}
-	}
+  def addBusStop(environment : urban_elements, bus_stop : bus_stop) : urban_elements = {
+    environment match {
+    case (urban_elements(dimensions, roads,lanes,crossroads,pedestrian_crossroads,bus_stops,tram_stops,zones)) =>
+    return urban_elements(dimensions,
+        roads,
+        lanes,
+        crossroads, 
+        pedestrian_crossroads,
+        bus_stops :+ bus_stop,
+        tram_stops,
+        zones)
+    }
+  }
 
-	def addZone(environment : urban_elements, zone : zone) : urban_elements = {
-		environment match {
-		case (urban_elements(roads,lanes,crossroads,pedestrian_crossroads,bus_stops,tram_stops,zones)) =>
-		return urban_elements(roads,
-				lanes,
-				crossroads, 
-				pedestrian_crossroads,
-				bus_stops,
-				tram_stops,
-				zones :+ zone)
-		}
-	}
+  def addTramStop(environment : urban_elements, tram_stop : tram_stop) : urban_elements = {
+    environment match {
+    case (urban_elements(dimensions, roads,lanes,crossroads,pedestrian_crossroads,bus_stops,tram_stops,zones)) =>
+    return urban_elements(dimensions,
+        roads,
+        lanes,
+        crossroads, 
+        pedestrian_crossroads,
+        bus_stops,
+        tram_stops :+ tram_stop,
+        zones)
+    }
+  }
+
+  def addZone(environment : urban_elements, zone : zone) : urban_elements = {
+    environment match {
+    case (urban_elements(dimensions, roads,lanes,crossroads,pedestrian_crossroads,bus_stops,tram_stops,zones)) =>
+    return urban_elements(dimensions,
+        roads,
+        lanes,
+        crossroads, 
+        pedestrian_crossroads,
+        bus_stops,
+        tram_stops,
+        zones :+ zone)
+    }
+  }
   
   def removeRoad(environment : urban_elements, road : road) : urban_elements = {
     environment match {
-    case (urban_elements(roads,lanes,crossroads,pedestrian_crossroads,bus_stops,tram_stops,zones)) =>
-    return urban_elements(roads diff List(road),
+    case (urban_elements(dimensions, roads,lanes,crossroads,pedestrian_crossroads,bus_stops,tram_stops,zones)) =>
+    return urban_elements(dimensions,
+        roads diff List(road),
         lanes,
         crossroads, 
         pedestrian_crossroads,
@@ -141,8 +164,9 @@ object JSONWriter {
 
   def removeLane(environment : urban_elements, lane : lane) : urban_elements = {
     environment match {
-    case (urban_elements(roads,lanes,crossroads,pedestrian_crossroads,bus_stops,tram_stops,zones)) =>
-    return urban_elements(roads,
+    case (urban_elements(dimensions, roads,lanes,crossroads,pedestrian_crossroads,bus_stops,tram_stops,zones)) =>
+    return urban_elements(dimensions,
+        roads,
         lanes diff List(lane),
         crossroads, 
         pedestrian_crossroads,
@@ -154,8 +178,9 @@ object JSONWriter {
 
   def removeCrossroad(environment : urban_elements, crossroad : crossroad) : urban_elements = {
     environment match {
-    case (urban_elements(roads,lanes,crossroads,pedestrian_crossroads,bus_stops,tram_stops,zones)) =>
-    return urban_elements(roads,
+    case (urban_elements(dimensions, roads,lanes,crossroads,pedestrian_crossroads,bus_stops,tram_stops,zones)) =>
+    return urban_elements(dimensions,
+        roads,
         lanes,
         crossroads diff List(crossroad), 
         pedestrian_crossroads,
@@ -167,8 +192,9 @@ object JSONWriter {
 
   def removePedestrianCrossroad(environment : urban_elements, pedestrian_crossroad : pedestrian_crossroad) : urban_elements = {
     environment match {
-    case (urban_elements(roads,lanes,crossroads,pedestrian_crossroads,bus_stops,tram_stops,zones)) =>
-    return urban_elements(roads,
+    case (urban_elements(dimensions, roads,lanes,crossroads,pedestrian_crossroads,bus_stops,tram_stops,zones)) =>
+    return urban_elements(dimensions,
+        roads,
         lanes,
         crossroads, 
         pedestrian_crossroads diff List(pedestrian_crossroad),
@@ -180,8 +206,9 @@ object JSONWriter {
 
   def removeBusStop(environment : urban_elements, bus_stop : bus_stop) : urban_elements = {
     environment match {
-    case (urban_elements(roads,lanes,crossroads,pedestrian_crossroads,bus_stops,tram_stops,zones)) =>
-    return urban_elements(roads,
+    case (urban_elements(dimensions, roads,lanes,crossroads,pedestrian_crossroads,bus_stops,tram_stops,zones)) =>
+    return urban_elements(dimensions,
+        roads,
         lanes,
         crossroads, 
         pedestrian_crossroads,
@@ -193,8 +220,9 @@ object JSONWriter {
 
   def removeTramStop(environment : urban_elements, tram_stop : tram_stop) : urban_elements = {
     environment match {
-    case (urban_elements(roads,lanes,crossroads,pedestrian_crossroads,bus_stops,tram_stops,zones)) =>
-    return urban_elements(roads,
+    case (urban_elements(dimensions, roads,lanes,crossroads,pedestrian_crossroads,bus_stops,tram_stops,zones)) =>
+    return urban_elements(dimensions,
+        roads,
         lanes,
         crossroads, 
         pedestrian_crossroads,
@@ -206,8 +234,9 @@ object JSONWriter {
 
   def removeZone(environment : urban_elements, zone : zone) : urban_elements = {
     environment match {
-    case (urban_elements(roads,lanes,crossroads,pedestrian_crossroads,bus_stops,tram_stops,zones)) =>
-    return urban_elements(roads,
+    case (urban_elements(dimensions, roads,lanes,crossroads,pedestrian_crossroads,bus_stops,tram_stops,zones)) =>
+    return urban_elements(dimensions,
+        roads,
         lanes,
         crossroads, 
         pedestrian_crossroads,
@@ -218,10 +247,17 @@ object JSONWriter {
   }
   
   def merge(maps : List[urban_elements]) : urban_elements = {
-    var initial = urban_elements(List[road](), List[lane](), List[crossroad](), List[pedestrian_crossroad](), List[bus_stop](), List[tram_stop](), List[zone]())
+    // la lista è lunga quanto il quadrato di un numero naturale
+    // noto il numero, prendo le dimensioni di una qualunque delle mappe e le moltiplico di conseguenza
+    var factor = 1
+    while((factor*factor) != maps.length) {
+      factor = factor + 1
+    }
+    val mergedDimensions = dimensions(maps(0).dimensions.x * factor, maps(0).dimensions.y * factor)
+    var initial = urban_elements(mergedDimensions, List[road](), List[lane](), List[crossroad](), List[pedestrian_crossroad](), List[bus_stop](), List[tram_stop](), List[zone]())
     for(map <- maps) {
       map match {
-        case urban_elements(roads,lanes,crossroads,pedestrian_crossroads,bus_stops,tram_stops,zones) =>
+        case urban_elements(dimensions, roads,lanes,crossroads,pedestrian_crossroads,bus_stops,tram_stops,zones) =>
           for(road <- roads) {
             initial = addRoad(initial,road)
           }
@@ -248,18 +284,18 @@ object JSONWriter {
     return initial
   }
 
-	// metodo per la scrittura finale
+  // metodo per la scrittura finale
 
-	def writeAll(environment : urban_elements, name : String) : Unit = {
-		val json = urbanElementsToJValue(environment)
+  def writeAll(environment : urban_elements, name : String) : Unit = {
+    val json = urbanElementsToJValue(environment)
     val finalPath = path.replace("map.json", name)
     val pre_existingFile = new File(finalPath)
     if(pre_existingFile.exists()) {
       println("Removing previous " + name + "...")
       pre_existingFile.delete()
     }
-		val output:Output = Resource.fromFile(finalPath)
-		output.write(pretty(render(json)))(Codec.UTF8)
-	}
+    val output:Output = Resource.fromFile(finalPath)
+    output.write(pretty(render(json)))(Codec.UTF8)
+  }
 
 }
