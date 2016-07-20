@@ -86,7 +86,7 @@ object Routes {
     val firstRouteReplaced = routeReplacement(firstRoute, busRoutesSlices, tramRoutesSlices)
     val secondRouteReplaced = routeReplacement(secondRoute, busRoutesSlices, tramRoutesSlices)
     val thirdRouteReplaced = routeReplacement(thirdRoute, busRoutesSlices, tramRoutesSlices)
-    // flag per segnalare se il percorso include nel complesso l'ultilizzo di un mezzo pubblico
+    // flag per segnalare se il percorso include nel complesso l'utilizzo di un mezzo pubblico
     val flag = (firstRoute != firstRouteReplaced) || (secondRoute != secondRouteReplaced) || (thirdRoute != thirdRouteReplaced)
     return (pedestrian_route(times._1, firstRouteReplaced, times._2, secondRouteReplaced, times._3, thirdRouteReplaced), flag)
   }

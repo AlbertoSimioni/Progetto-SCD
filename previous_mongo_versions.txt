@@ -1,0 +1,2 @@
+"com.github.scullxbones" 			%% "akka-persistence-mongo-rxmongo" % "0.3.0",
+"org.reactivemongo" 				%% "reactivemongo" 					% "0.10.5.0.akka23",

@@ -191,7 +191,10 @@ object Domain {
    val path = getClass.getResource("/map.json").getPath
    
    // dati della mappa corrente
-   lazy val current_map_x = getDimensionsX(readAll("map.json"))
-   lazy val current_map_y = getDimensionsY(readAll("map.json"))
+   val current_map_x = getDimensionsX(current_map)
+   val current_map_y = getDimensionsY(current_map)
+   
+   // mappa corrente
+   lazy val current_map = readAll("map.json")
 
 }
