@@ -1,4 +1,4 @@
-name := "A Project"
+name := "UrbanSimulator"
 
 version := "1.0"
 
@@ -22,9 +22,9 @@ libraryDependencies ++= {
 	"com.typesafe.akka" 				%% "akka-testkit" 					% akkaV 				withSources() withJavadoc,
 	"org.scalatest" 					% "scalatest_2.11" 					% "2.2.4" 				% "test",
 	"com.typesafe.akka" 				%% "akka-contrib" 					% akkaV 				withSources() withJavadoc,
-	"com.typesafe.akka" 				%% "akka-persistence-experimental" 	% akkaV 				withSources() withJavadoc,
-	"com.github.scullxbones" 			%% "akka-persistence-mongo-rxmongo" % "0.3.0",
-	"org.reactivemongo" 				%% "reactivemongo" 					% "0.10.5.0.akka23",
+	"com.typesafe.akka" 				%% "akka-persistence-experimental"	% akkaV 				withSources() withJavadoc,
+	"com.github.scullxbones" 			%% "akka-persistence-mongo-casbah"  % "0.4.2",
+	"org.mongodb" 						%% "casbah" 						% "2.8.2",
 	"org.json4s" 						%% "json4s-native" 					% "3.2.11",
 	"org.json4s" 						%% "json4s-ext" 					% "3.2.11",
 	"org.json4s" 						%% "json4s-jackson" 				% "3.2.11",
