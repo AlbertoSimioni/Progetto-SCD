@@ -11,6 +11,7 @@ import spray.routing.Directives
 
 
 //URL delle chiamate sul websocket che possono essere effettuate dal browser
+//eventuali altre chiamate vanno effettuate qua
 class ConnectionService(connectionsActor : ActorRef)(implicit system : ActorSystem) extends Directives {
   //invocata solo alla connessione di un nuovo broswer WebSocket
   lazy val wsroute =

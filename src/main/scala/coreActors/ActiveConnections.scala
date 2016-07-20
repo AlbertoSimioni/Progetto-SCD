@@ -1,8 +1,12 @@
 package coreActors
 
 import akka.actor.{Actor, ActorLogging}
+import map.Domain._
 import websocket.WebSocket
-
+import org.json4s._
+import org.json4s.DefaultFormats
+import org.json4s.jackson.JsonMethods._
+import java.io._
 import scala.collection.mutable
 
 /**
@@ -45,8 +49,16 @@ class ActiveConnections extends Actor with ActorLogging {
 
     //messaggio da parte del Client (come in AJAX) Per ora i browser non inviano messaggi
     case WebSocket.Message(ws, msg) =>
-      if (null != ws)
+      if (null != ws) {
         log.debug("url {} received msg '{}'", ws.path, msg)
+        if (msg == "MAP"){
+          val path = getClass.getResource("/map.json").getPath
+          val source = scala.io.Source.fromFile(new File(path))
+          val environmentString = try source.getLines mkString finally source.close()
+          ws.send(environmentString)
+        }
+
+      }
 
       //elimina il websocket
     case ActiveConnections.Unregister(ws) =>

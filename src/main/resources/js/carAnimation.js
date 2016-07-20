@@ -54,30 +54,22 @@ window.onload = function() {
             $('#myCanvas').mousewheel(function(event) {
                 event.deltaY > 0 ? zoomIn() : zoomOut();
             });
-    // Create a new path and style it:
-    var path = new paper.Path({
-        // 80% black:
-        strokeColor: [0.8],
-        strokeWidth: 30,
-        strokeCap: 'square'
-    });
-
-    // Add 5 segment points to the path spread out
-    // over the width of the view:
-    for (var i = 0; i <= amount; i++) {
-        path.add(new Point((i / amount) * view.size.width, view.center.y));
-    }
+    var amount = 2;
     paper.view.setViewSize(1100, 800)
     paper.view.draw();
 
 
     var registry = new EntitiesRegistry()
-
+    var mapRegistry = new MapRegistry();
 
 
     var WS = window['MozWebSocket'] ? MozWebSocket : WebSocket
     var mapSocket = new WS("ws" + location.protocol.substring(4) + "//" + window.location.hostname + ":6696/ws")
     $(".alert").alert()
+    mapSocket.onopen = function() {
+       // Web Socket is connected, send data using send()
+        mapSocket.send("MAP");
+        };
     mapSocket.onmessage = function(event) {
         var msg = JSON.parse(event.data);
         /* if(msg.type == "NewCar"){
@@ -85,9 +77,13 @@ window.onload = function() {
                registry.addCar(msg.id, msg.position,9)
           }*/
         //msg.info.position = msg.info.position * 50;
-        var position = msg.info.position
         console.log(JSON.stringify(msg))
+        if(msg.hasOwnProperty('dimensions')){
+            mapRegistry.buildMap(msg);
+            paper.view.draw();
+        }
         if (msg.type == "CarMoved") {
+            var position = msg.info.position
             var car = registry.findCar(msg.info.id)
             console.log(JSON.stringify(car))
             if (!car) {
