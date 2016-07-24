@@ -31,3 +31,16 @@ Street.prototype.isTripleLane = function(){
     if(this.lanes.length == 3) return true;
     else return false;
 }
+
+Street.prototype.getTramPosition = function(){
+    "use strict"
+    if(this.lanes.length == 2) return "";
+    if(this.lanes[0].isHorizontal){
+        if(this.lanes[0].tram) return "down";
+        else return "up";
+    }
+    else{
+        if(this.lanes[0].tram) return "left";
+        else return "right";
+    }
+}

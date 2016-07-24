@@ -29,11 +29,22 @@ class Subscriber(contentType : String) extends Actor with ActorLogging {
   }
   //Messaggi inviati dai worker per inviare al guihandler gli aggiornamenti nel model
   def readyModel: Actor.Receive = {
-    case m @ Moved(id,p) =>   context.actorSelection("/user/activeConnections") !
-      ActiveConnections.SendMessageToClients(BrowserMessagesFormatter.CarMovedMessageFormat(m))
-    /*case m @ NewCar(id,p) =>   context.actorSelection("/user/activeConnections") !
-      ActiveConnections.SendMessageToClients(BrowserMessagesFormatter.NewCarMessageFormat(m))*/
-
+    case m @ carPosition(id,lat,long,dir) =>   context.actorSelection("/user/activeConnections") !
+      ActiveConnections.SendMessageToClients(BrowserMessagesFormatter.CarPositionToJson(m))
+    case m @ busPosition(id,lat,long,dir) =>   context.actorSelection("/user/activeConnections") !
+      ActiveConnections.SendMessageToClients(BrowserMessagesFormatter.BusPositionToJson(m))
+    case m @ tramPosition(id,lat,long,dir) =>   context.actorSelection("/user/activeConnections") !
+      ActiveConnections.SendMessageToClients(BrowserMessagesFormatter.TramPositionToJson(m))
+    case m @ pedestrianPosition(id,lat,long,dir) =>   context.actorSelection("/user/activeConnections") !
+      ActiveConnections.SendMessageToClients(BrowserMessagesFormatter.PedestrianPositionToJson(m))
+    case m @ hideCar(id) =>   context.actorSelection("/user/activeConnections") !
+      ActiveConnections.SendMessageToClients(BrowserMessagesFormatter.HideCarToJson(m))
+    case m @ hideBus(id) =>   context.actorSelection("/user/activeConnections") !
+      ActiveConnections.SendMessageToClients(BrowserMessagesFormatter.HideBusToJson(m))
+    case m @ hidePedestrian(id) =>   context.actorSelection("/user/activeConnections") !
+      ActiveConnections.SendMessageToClients(BrowserMessagesFormatter.HidePedestrianToJson(m))
+    case m @ hideTram(id) =>   context.actorSelection("/user/activeConnections") !
+      ActiveConnections.SendMessageToClients(BrowserMessagesFormatter.HideTramToJson(m))
   }
 
   //Messaggi inviati dal controller ai worker per fare avanzare il tempo

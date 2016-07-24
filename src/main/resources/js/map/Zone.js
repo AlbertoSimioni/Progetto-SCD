@@ -18,8 +18,6 @@ Zone.width = 12;
 
 Zone.prototype.draw = function(){
     "use strict";
-    console.log(this.from);
-    console.log(this.to);
     this.path = new Path.Rectangle(this.from,this.to);
     if(this.type == "houseplace") this.path.fillColor = "yellow";
     if(this.type == "workplace") this.path.fillColor = "purple";

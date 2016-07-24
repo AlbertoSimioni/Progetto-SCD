@@ -23,7 +23,7 @@ class Vehicle(id : String, iter : List[String]) extends Actor with ActorLogging 
       currentPlace = iter(index)
       val r = new scala.util.Random
       index = (index + 1)  %10
-      publisher ! Moved(id,index * r.nextInt(100))
+      publisher ! tramPosition(id,index * r.nextInt(100),index* r.nextInt(100),"right")
       val senderIp = context.system.settings.config.getString("akka.remote.netty.tcp.hostname")
       region ! UrbanElement.isRemoteQuest(currentPlace, self, senderIp)
     case UrbanElement.isRemoteAnswer(flag) =>

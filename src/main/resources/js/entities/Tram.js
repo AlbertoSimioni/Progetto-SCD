@@ -1,7 +1,7 @@
-Pedestrian.prototype = new Entity();
-Pedestrian.prototype.constructor = Pedestrian;
+Tram.prototype = new Entity();
+Tram.prototype.constructor = Tram;
 
-function Pedestrian(id, lat,long, direction) {
+function Tram(id, lat,long, direction) {
     "use strict";
     this.id = id;
     this.direction = direction;
@@ -13,28 +13,30 @@ function Pedestrian(id, lat,long, direction) {
     var currLat = 0;
     var currLong = 0;
     if(this.isHorizontal){
-        size = new Size(Pedestrian.leng,Pedestrian.height);
-        currLat = lat + Pedestrian.leng/2.0;
-        currLong = long + Pedestrian.height/2.0;
+        size = new Size(Tram.leng,Tram.height);
+        currLat = lat + Tram.leng/2.0;
+        currLong = long + Tram.height/2.0;
         }
     else{
-        size = new Size(Pedestrian.height,Pedestrian.leng);
-        currLat = lat + Pedestrian.height/2;
-        currLong = long + Pedestrian.leng/2;
+        size = new Size(Tram.height,Tram.leng);
+        currLat = lat + Tram.height/2;
+        currLong = long + Tram.leng/2;
         }
     this.currentLat = currLat;
     this.currentLong = currLong;
+    console.log(Tram.leng);
+    console.log(size);
     this.shape = new Shape.Rectangle(new Point(this.currentLat, this.currentLong),size);
-    this.shape.fillColor = new Color(0.1, 0.85, 0.72);
+    this.shape.fillColor = new Color(0.33, 0.33, 0.33);
 };
 
 
-Pedestrian.leng = 1;
-Pedestrian.height = 1;
+Tram.leng = 10;
+Tram.height = 4;
 
 
 
-Pedestrian.prototype.move = function(lat,long, direction) {
+Tram.prototype.move = function(lat,long, direction) {
     "use strict";
     this.direction = direction;
     var isHor = false;
@@ -43,12 +45,12 @@ Pedestrian.prototype.move = function(lat,long, direction) {
     var currLat = 0;
     var currLong = 0;
     if(isHor){
-        currLat = lat + Pedestrian.leng/2.0;
-        currLong = long + Pedestrian.height/2.0;
+        currLat = lat + Tram.leng/2.0;
+        currLong = long + Tram.height/2.0;
         }
     else{
-        currLat = lat + Pedestrian.height/2.0;
-        currLong = long + Pedestrian.leng/2.0;
+        currLat = lat + Tram.height/2.0;
+        currLong = long + Tram.leng/2.0;
         }
     this.currentLat = currLat;
     this.currentLong = currLong;
@@ -60,7 +62,7 @@ Pedestrian.prototype.move = function(lat,long, direction) {
 
 
 
-Pedestrian.prototype.draw = function() {
+Tram.prototype.draw = function() {
     "use strict";
     // calling the "super" method
     Entity.prototype.draw.call(this);

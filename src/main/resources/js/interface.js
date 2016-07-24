@@ -72,38 +72,82 @@ window.onload = function() {
         };
     mapSocket.onmessage = function(event) {
         var msg = JSON.parse(event.data);
-        /* if(msg.type == "NewCar"){
-             console.log("4444444")
-               registry.addCar(msg.id, msg.position,9)
-          }*/
-        //msg.info.position = msg.info.position * 50;
-        console.log(JSON.stringify(msg))
-        if(msg.hasOwnProperty('dimensions')){
+        //console.log(JSON.stringify(msg))
+        if(msg.hasOwnProperty('dimensions')){ //MAP ARRIVED
             mapRegistry.buildMap(msg);
             paper.view.draw();
         }
-        if (msg.type == "CarMoved") {
-            var position = msg.info.position
+        if (msg.type == "CarPosition") {
+            var lat = msg.info.lat
+            var long = msg.info.long
             var car = registry.findCar(msg.info.id)
-            console.log(JSON.stringify(car))
             if (!car) {
-                registry.addCar(msg.info.id,position)
+                registry.addCar(msg.info.id,lat,long,msg.info.direction)
             } else {
-                car.move(position, 90)
+                car.move(lat,long, msg.info.direction)
+                car.show();
             }
         }
-        /*
-            var rasterCar = new paper.Raster('car');
+        if (msg.type == "PedestrianPosition") {
+            var lat = msg.info.lat
+            var long = msg.info.long
+            var pedestrian = registry.findPedestrian(msg.info.id)
+            if (!pedestrian) {
+                registry.addPedestrian(msg.info.id,lat,long,msg.info.direction)
+            } else {
+                pedestrian.move(lat,long, msg.info.direction)
+                pedestrian.show();
+            }
+        }
+        if (msg.type == "TramPosition") {
+            var lat = msg.info.lat
+            var long = msg.info.long
+            var tram = registry.findTram(msg.info.id)
+            if (!tram) {
+                registry.addTram(msg.info.id,lat,long,msg.info.direction)
+            } else {
+                tram.move(lat,long, msg.info.direction)
+                tram.show();
+            }
+        }
+        if (msg.type == "BusPosition") {
+            var lat = msg.info.lat
+            var long = msg.info.long
+            var bus = registry.findBus(msg.info.id)
+            if (!bus) {
+                registry.addBus(msg.info.id,lat,long,msg.info.direction)
+            } else {
+                bus.move(lat,long, msg.info.direction)
+                bus.show();
+            }
+        }
 
-            // Move the raster to the center of the view
-            rasterCar.position.x = 0;
-            rasterCar.position.y = view.center.y;
-           	// Draw the view now:
-            paper.view.draw();
-            view.onFrame = function(event) {
-               // On each frame, rotate the path by 3 degrees:
-               rasterCar.position.x += 1;
-            }*/
+        if(msg.type == "HideCar"){
+            var car = registry.findCar(msg.info.id);
+            if(car){
+                car.hide();
+            }
+        }
+        if(msg.type == "HideBus"){
+            var bus = registry.findBus(msg.info.id);
+            if(bus){
+                bus.hide();
+            }
+        }
+        if(msg.type == "HideTram"){
+            var tram = registry.findTram(msg.info.id);
+            if(tram){
+                tram.hide();
+            }
+        }
+        if(msg.type == "HidePedestrian"){
+            var pedestrian = registry.findPedestrian(msg.info.id);
+            if(pedestrian){
+                pedestrian.hide();
+            }
+        }
+
+
     }
 
     // if errors on websocket
