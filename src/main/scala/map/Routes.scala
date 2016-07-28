@@ -7,6 +7,7 @@ import Domain.position._
 import JSONReader._
 import BreadthFirst._
 import JSONUtilities._
+import time.TimeMessages._
 
 /*
  * I percorsi possono essere generati per un pedone, per un'automobile, per un autobus o per un tram
@@ -42,8 +43,6 @@ object Routes {
   class TramRouteVertexNotFoundException extends Exception
   class NoSlicesAvailableException extends Exception
   
-  case class time(hours : Int, minutes : Int)
-  
   case class direction(position : position, beginToEnd : Boolean)
   
   trait step
@@ -56,10 +55,17 @@ object Routes {
   case class zone_step(zone : zone, direction : direction) extends step
   
   trait route
-  case class pedestrian_route(houseEndTime : time, houseToWorkRoute : List[step], workEndTime : time, workToFunRoute : List[step], funEndTime : time, funToHomeRoute : List[step]) extends route
-  case class car_route(houseEndTime : time, houseToWorkRoute : List[step], workEndTime : time, workToFunRoute : List[step], funEndTime : time, funToHomeRoute : List[step]) extends route
+  case class pedestrian_route(houseEndTime : TimeValue, houseToWorkRoute : List[step], workEndTime : TimeValue, workToFunRoute : List[step], funEndTime : TimeValue, funToHomeRoute : List[step]) extends route
+  case class car_route(houseEndTime : TimeValue, houseToWorkRoute : List[step], workEndTime : TimeValue, workToFunRoute : List[step], funEndTime : TimeValue, funToHomeRoute : List[step]) extends route
   case class bus_route(route : List[step]) extends route
   case class tram_route(route : List[step]) extends route
+  
+  /*
+   * I PEZZI DI PERCORSO DI PEDONI E MACCHINE SEGUONO QUESTA LOGICA:
+   * - INCLUDONO LA ZONA DI PARTENZA
+   * - NON INCLUDONO LA ZONA DI DESTINAZIONE
+   * LE TRATTE DI BUS E TRAM INIZIANO SEMPRE CON UNA DELLE STAZIONI
+   */
   
   /*
    * Funzione per la creazione di un percorso per pedone
@@ -323,17 +329,7 @@ object Routes {
     return tram_route(tram_route_steps)
   }
   
-  /*
-   * Genera tre orari casualmente, separati da otto ore ciascuno
-   */
-  def createTimes() : (time, time, time) = {
-    // 1440 minuti in 24 ore
-    // 480 minuti in 8 ore
-    val houseEndTime = nextInt(1440)
-    val workEndTime = (houseEndTime + 480) % 1440
-    val funEndTime = (workEndTime + 480) % 1440
-    return (minutesToTime(houseEndTime), minutesToTime(workEndTime), minutesToTime(funEndTime))
-  }
+  
   
   /*
    * Genera tre zone casualmente, con i vincoli che:
@@ -360,13 +356,6 @@ object Routes {
       }
     }
     return (houseplace.id, workplace.id, funplace.id)
-  }
-  
-  /*
-   * Funzione di utilità: converte il numero di minuti totali in una coppia ore-minuti
-   */
-  def minutesToTime(minutes : Int) : time = {
-    return time(minutes / 60, minutes % 60)
   }
   
   /*

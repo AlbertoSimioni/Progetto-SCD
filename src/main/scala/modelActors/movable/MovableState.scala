@@ -2,12 +2,23 @@ package modelActors.movable
 
 import akka.persistence.AtLeastOnceDelivery.AtLeastOnceDeliverySnapshot
 
+import map.Domain._
 import map.Routes
 import map.Routes._
+import time.TimeMessages._
 
 /**
  * @author pocia
  */
+object MovableState {
+  
+  import common.CommonMessages._
+  
+  case class BeginOfTheStep(pointsSequence : List[List[point]]) extends Event
+  case object IncrementPointIndex extends Event
+  
+}
+
 class MovableState {
   
   var pedestrianRoute : pedestrian_route = null
@@ -18,7 +29,7 @@ class MovableState {
   var currentRoute : List[step] = null
   var index = 0
   
-  def handleIndexOverrun : Unit = {
+  def handleIndexOverrun() : Unit = {
     if(pedestrianRoute != null) {
       if(currentRoute == pedestrianRoute.houseToWorkRoute) {
         currentRoute = pedestrianRoute.workToFunRoute
@@ -65,78 +76,183 @@ class MovableState {
         return bus_stop.id
       case tram_stop_step(tram_stop, _, _) =>
         return tram_stop.id
+      case zone_step(zone, _) =>
+        return zone.id
     }
   }
   
   def getPreviousStepId : String = {
+    return Routes.getStepId(getPreviousStep(index))
+  }
+  
+  def getStepIdAt(offset : Int) : String = {
+    return Routes.getStepId(getStepAt(offset))
+  }
+  
+  def getPreviousStep(index : Int) : step = {
     if(pedestrianRoute != null) {
       if(currentRoute == pedestrianRoute.houseToWorkRoute) {
         if(index == 0) {
-          return Routes.getStepId(pedestrianRoute.funToHomeRoute(pedestrianRoute.funToHomeRoute.length-1))
+          return pedestrianRoute.funToHomeRoute(pedestrianRoute.funToHomeRoute.length-1)
         }
         else {
-          return Routes.getStepId(currentRoute(index-1))
+          return currentRoute(index-1)
         }
       }
       else if(currentRoute == pedestrianRoute.workToFunRoute) {
         if(index == 0) {
-          return Routes.getStepId(pedestrianRoute.houseToWorkRoute(pedestrianRoute.houseToWorkRoute.length-1))
+          return pedestrianRoute.houseToWorkRoute(pedestrianRoute.houseToWorkRoute.length-1)
         }
         else {
-          return Routes.getStepId(currentRoute(index-1))
+          return currentRoute(index-1)
         }
       }
       else {
         if(index == 0) {
-          return Routes.getStepId(pedestrianRoute.workToFunRoute(pedestrianRoute.workToFunRoute.length-1))
+          return pedestrianRoute.workToFunRoute(pedestrianRoute.workToFunRoute.length-1)
         }
         else {
-          return Routes.getStepId(currentRoute(index-1))
+          return currentRoute(index-1)
         }
       }
     }
     else if(carRoute != null) {
       if(currentRoute == carRoute.houseToWorkRoute) {
         if(index == 0) {
-          return Routes.getStepId(carRoute.funToHomeRoute(carRoute.funToHomeRoute.length-1))
+          return carRoute.funToHomeRoute(carRoute.funToHomeRoute.length-1)
         }
         else {
-          return Routes.getStepId(currentRoute(index-1))
+          return currentRoute(index-1)
         }
       }
       else if(currentRoute == carRoute.workToFunRoute) {
         if(index == 0) {
-          return Routes.getStepId(carRoute.houseToWorkRoute(carRoute.houseToWorkRoute.length-1))
+          return carRoute.houseToWorkRoute(carRoute.houseToWorkRoute.length-1)
         }
         else {
-          return Routes.getStepId(currentRoute(index-1))
+          return currentRoute(index-1)
         }
       }
       else {
         if(index == 0) {
-          return Routes.getStepId(carRoute.workToFunRoute(carRoute.workToFunRoute.length-1))
+          return carRoute.workToFunRoute(carRoute.workToFunRoute.length-1)
         }
         else {
-          return Routes.getStepId(currentRoute(index-1))
+          return currentRoute(index-1)
         }
       }
     }
     else if(busRoute != null) {
       if(index == 0) {
-        return Routes.getStepId(busRoute.route(busRoute.route.length-1))
+        return busRoute.route(busRoute.route.length-1)
       }
       else {
-        return Routes.getStepId(currentRoute(index-1))
+        return currentRoute(index-1)
       }
     }
     else {
       if(index == 0) {
-        return Routes.getStepId(tramRoute.route(tramRoute.route.length-1))
+        return tramRoute.route(tramRoute.route.length-1)
       }
       else {
-        return Routes.getStepId(currentRoute(index-1))
+        return currentRoute(index-1)
       }
     }
+  }
+  
+  /*
+   * Noto l'indice attuale (index), restituisce lo step a (index + offset), con offest possibilmente negativo o nullo
+   */
+  def getStepAt(offset : Int) : step = {
+    if(pedestrianRoute != null) {
+      // crea una lista unica
+      val commonList = pedestrianRoute.houseToWorkRoute ++ pedestrianRoute.workToFunRoute ++ pedestrianRoute.funToHomeRoute
+      // aggiusta l'indice
+      var targetIndex = 0
+      if(currentRoute == pedestrianRoute.houseToWorkRoute) {
+        // l'indice è già giusto, bisogna solo aggiungere l'offset
+        targetIndex = index + offset
+      }
+      else if(currentRoute == pedestrianRoute.workToFunRoute) {
+        // l'indice va anche aumentato della lunghezza di houseToWorkRoute
+        targetIndex = pedestrianRoute.houseToWorkRoute.length + index + offset
+      }
+      else {
+        // l'indice va aumentato della lunghezza dei due pezzi precedenti
+        targetIndex = pedestrianRoute.houseToWorkRoute.length + pedestrianRoute.workToFunRoute.length + index + offset
+      }
+      // aggiusta l'indice e restituisci lo step corrispondente
+      if(targetIndex < 0) {
+        targetIndex = commonList.length + offset
+      }
+      else {
+        targetIndex = targetIndex % commonList.length
+      }
+      return commonList(targetIndex)
+    }
+    else if(carRoute != null) {
+      // crea una lista unica
+      val commonList = carRoute.houseToWorkRoute ++ carRoute.workToFunRoute ++ carRoute.funToHomeRoute
+      // aggiusta l'indice
+      var targetIndex = 0
+      if(currentRoute == carRoute.houseToWorkRoute) {
+        // l'indice è già giusto, bisogna solo aggiungere l'offset
+        targetIndex = index + offset
+      }
+      else if(currentRoute == carRoute.workToFunRoute) {
+        // l'indice va anche aumentato della lunghezza di houseToWorkRoute
+        targetIndex = carRoute.houseToWorkRoute.length + index + offset
+      }
+      else {
+        // l'indice va aumentato della lunghezza dei due pezzi precedenti
+        targetIndex = carRoute.houseToWorkRoute.length + carRoute.workToFunRoute.length + index + offset
+      }
+      // aggiusta l'indice e restituisci lo step corrispondente
+      if(targetIndex < 0) {
+        targetIndex = commonList.length + offset
+      }
+      else {
+        targetIndex = targetIndex % commonList.length
+      }
+      return commonList(targetIndex)
+    }
+    else if(busRoute != null) {
+      var targetIndex = index + offset
+      if(targetIndex < 0) {
+        targetIndex = busRoute.route.length + offset
+      }
+      else {
+        targetIndex = targetIndex % busRoute.route.length
+      }
+      return busRoute.route(targetIndex)
+    }
+    else {
+      var targetIndex = index + offset
+      if(targetIndex < 0) {
+        targetIndex = tramRoute.route.length + offset
+      }
+      else {
+        targetIndex = targetIndex % tramRoute.route.length
+      }
+      return tramRoute.route(targetIndex)
+    }
+  }
+  
+  /*
+   * Ritorna una lista con:
+   * previosPreviousStep
+   * previousStep
+   * currentStep
+   * nextStep
+   * nextNextStep
+   * nextNextNextStep
+   */
+  def getStepSequence() : List[step] = {
+    var stepSequence = List[step]()
+    for(offset <- -2 to 3) {
+      stepSequence = stepSequence :+ getStepAt(offset)
+    }
+    return stepSequence
   }
   
   def handleRoute(route : route) : Unit = {
@@ -155,6 +271,25 @@ class MovableState {
         currentRoute = inner_route
     }
   }
+  
+  // GESTIONE STEP
+  var beginOfTheStep = true
+  
+  var currentPointsSequence = List[List[point]]()
+  
+  var currentPointIndex = 0
+  
+  // TIME
+  // tempo corrente
+  var currentTime : TimeValue = null
+  
+  // DOMINIO
+  // id del veicolo davanti a noi
+  var nextVehicleId : String = null
+  // id del veicolo dietro a noi
+  var previousVehicleId : String = null
+  // flag se abbiamo già mandato il messaggio predecessorGone o meno
+  var predecessorGoneSent : Boolean = true
   
   // AT-LEAST-ONCE
   // Stato della at-least-once dell'attore

@@ -3,6 +3,7 @@ package modelActors.immovable
 import akka.persistence.AtLeastOnceDelivery.AtLeastOnceDeliverySnapshot
 
 import map.Domain._
+import time.TimeMessages._
 
 /**
  * @author Matteo Pozza
@@ -10,10 +11,46 @@ import map.Domain._
  * Deve essere comprensiva di tutti i dati che potrebbero servire ad un qualunque "sottotipo"
  * Ciascun attore utilizzerà poi solo i dati a lui necessari in base al ruolo
  */
+
 class ImmovableState {
   
   // lista degli identificativi delle entità mobili sotto la propria gestione
   var handledMobileEntities = List[String]()
+  
+  // TIME
+  // tabella dei dormienti
+  var sleepingActors = Map[String, TimeValue]()
+  
+  def addSleepingActor(id : String, wakeupTime : TimeValue) : Unit = {
+    // PRECONDIZIONE: l'entità che ci chiede di dormire deve essere sotto la nostra gestione
+    assert(handledMobileEntities.contains(id))
+    if(sleepingActors.contains(id)) {
+      sleepingActors = sleepingActors.updated(id, wakeupTime)
+    }
+    else {
+      sleepingActors = sleepingActors + (id -> wakeupTime)
+    }
+  }
+  
+  def removeSleepingActor(id : String) : Unit = {
+    if(sleepingActors.contains(id)) {
+      sleepingActors = sleepingActors - (id)
+    }
+  }
+  
+  // ritorna la lista di attori che devono essere svegliati perchè è l'ora esatta o sono in ritardo
+  def actorsToBeWakenUp(currentTime : TimeValue) : List[String] = {
+    var toBeWakenUp = List[String]()
+    for(pair <- sleepingActors) {
+      if(isLate(currentTime, pair._2)) {
+        toBeWakenUp = toBeWakenUp :+ pair._1
+      }
+    }
+    return toBeWakenUp
+  }
+  
+  // STRISCE PEDONALI
+  var vehicleFreeMap = Map[String, Boolean]()
   
   // AT-LEAST-ONCE
   // Stato della at-least-once dell'attore
@@ -53,6 +90,7 @@ class ImmovableState {
   
   
   var id : String = null
+  var kind : String = null
   
   var bus_stopData : bus_stop = null
   var crossroadData : crossroad = null

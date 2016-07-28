@@ -196,5 +196,11 @@ object Domain {
    
    // mappa corrente
    lazy val current_map = readAll("map.json")
+   
+   // UTILITY
+   // Distanza euclidea tra due punti
+   def getDistance(start : point, end : point) : Double = {
+     return Math.sqrt((start.x - end.x)^2 + (start.y - end.y)^2)
+   }
 
 }

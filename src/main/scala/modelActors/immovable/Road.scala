@@ -2,7 +2,7 @@ package modelActors.immovable
 
 import akka.actor.ActorRef
 
-import modelActors.CommonMessages._
+import modelActors.Messages._
 
 /*
  * La strada viene utilizzata solamente dai pedoni in quanto le macchine, gli autobus e i tram
@@ -12,18 +12,40 @@ import modelActors.CommonMessages._
  */
 object Road {
   
-  // commands
+  def fromImmovableHandler(myRef : ImmovableActor, myId : String, senderId : String, command : RealCommand) : Unit = {
+    command match {
+      case FromBusStop(message) =>
+        
+      case FromCrossroad(message) =>
+        
+      case FromLane(message) =>
+        
+      case FromPedestrianCrossroad(message) =>
+        
+      case FromRoad(message) =>
+        
+      case FromTramStop(message) =>
+        
+      case FromZone(message) =>
+        
+    }
+  }
   
-  // messaggio dal pedone alla strada per l'ingresso
-  case class pedestrian_in(actorId : String, deliveryId : Long, ipAddress : String, UrbanElementId : String) extends Command
-  // messaggio dal pedone alla strada per l'uscita
-  case class pedestrian_out(actorId : String, deliveryId : Long, ipAddress : String, UrbanElementId : String) extends Command
+  def fromMovableHandler(myRef : ImmovableActor, myId : String, senderId : String, senderRef : ActorRef, command : RealCommand) : Unit = {
+    command match {
+      case FromPedestrian(message) =>
+        
+      case FromCar(message) =>
+        
+      case FromBus(message) =>
+        
+      case FromTram(message) =>
+        
+    }
+  }
   
-  // events
-  
-  // evento di ingresso di un pedone
-  case class pedestrian_entered(actorRef : ActorRef, actorId : String, deliveryId : Long, ipAddress : String) extends Event
-  // evento di uscita di un pedone
-  case class pedestrian_exited(actorRef : ActorRef, actorId : String, deliveryId : Long, ipAddress : String) extends Event
+  def eventHandler(event : Any, state : ImmovableState) : Unit = {
+    //
+  }
   
 }

@@ -13,14 +13,20 @@ import akka.persistence.SnapshotOffer
 import akka.persistence.RecoveryCompleted
 import akka.contrib.pattern.ClusterSharding
 import akka.persistence.AtLeastOnceDelivery
+import akka.contrib.pattern.DistributedPubSubMediator
+import akka.contrib.pattern.DistributedPubSubExtension
+import DistributedPubSubMediator.Subscribe
+import DistributedPubSubMediator.SubscribeAck
 
 import ShardUtilities._
 import modelActors.movable.MovableActor
-import modelActors.CommonMessages._
-import modelActors.ToPersistentMessages
-import modelActors.ToNonPersistentMessages
+import modelActors.Messages._
+import common.CommonMessages._
+import common.ToPersistentMessages
+import common.ToNonPersistentMessages
 import map.Domain._
 import map.JSONReader
+import time.TimeMessages._
 
 /**
  * @author Matteo Pozza
@@ -88,6 +94,39 @@ class ImmovableActor extends PersistentActor with AtLeastOnceDelivery {
   // Permette di comunicare con altri TestActor utilizzando il loro identificativo invece che il loro indirizzo
   val shardRegion = ClusterSharding(context.system).shardRegion(ImmovableActor.typeOfEntries)
   
+  // TIME
+  // Recupera l'attore che gli permette di ricevere gli eventi temporali e si sottoscrive immediatamente
+  val mediator = DistributedPubSubExtension(context.system).mediator
+  mediator ! Subscribe(timeMessage, self)
+  
+  // DOMINIO
+  // Riferimento non persistente all'ultimo veicolo che è entrato in corsia
+  var lastVehicleEntered : ActorRef = null
+  // Id dell'ultimo veicolo che è entrato in corsia
+  var lastVehicleEnteredId : String = null
+  
+  // FAULT TOLERANCE
+  // mappa con id e actorref degli attori mobili gestiti, mantenuta aggiornata, ma non persistente
+  // PROBLEMA: un actorref non può essere reso persistente perchè al ripristino non ha alcun significato
+  // Quando una lane ricrea dei veicoli, ne salva l'actorref.
+  // I veicoli chiederanno alla lane l'actorref sulla base dell'id
+  // La lane restituirà l'actorref appena creato.
+  var handledMobileEntitiesMap = Map[String, ActorRef]()
+  
+  // VARIABILI PER STRISCE PEDONALI
+  // vehicle_pass => gestisce se si è in attraversamento pedoni o attraversamento veicoli
+  // pedestrianRequest => coda per le richieste dei pedoni
+  // vehicleRequests => key = lane, entry = id Veicolo + actorref
+  // numpedestriancrossing => ci dice se le strisce sono libere o no
+  // vehicleFreeTempMap => obiettivo principale è memorizzare i vehiclefree e i vehiclebusy, ma non appena è
+  // stato concesso l'accesso ad un veicolo, la variabile corrispondente diventa false (invece di aspettare vehiclebusy)
+  // Questo per fault tolerance purposes
+  var vehicle_pass = false
+  var pedestrianRequests = Map[String, ActorRef]()
+  var vehicleRequests = Map[String, (String, ActorRef)]()
+  var numPedestrianCrossing = 0
+  var vehicleFreeTempMap = Map[String, Boolean]()
+  
   // PERSISTENCE
   // Lo stato dell'attore deve essere modellato da un var
   var state = new ImmovableState()
@@ -120,22 +159,24 @@ class ImmovableActor extends PersistentActor with AtLeastOnceDelivery {
                   val reCreatedMobileEntity = context.actorOf(MovableActor.props(current_id))
                   // fai partire ciascuna entità
                   sendToMovable(destinationId, reCreatedMobileEntity, ResumeExecution)
+                  // aggiungi una entry alla tabella 
+                  handledMobileEntitiesMap = handledMobileEntitiesMap + (current_id -> reCreatedMobileEntity)
                 }
               
         	    case ToBusStop(command) =>
         	      BusStop.fromImmovableHandler(this, destinationId, senderId, command)
         	    case ToCrossroad(command) =>
-        	      // crossroad handler
+        	      Crossroad.fromImmovableHandler(this, destinationId, senderId, command)
         	    case ToLane(command) =>
-        	      // lane handler
+        	      Lane.fromImmovableHandler(this, destinationId, senderId, command)
         	    case ToPedestrianCrossroad(command) =>
-        	      // pedestrian crossroad handler
+        	      PedestrianCrossroad.fromImmovableHandler(this, destinationId, senderId, command)
         	    case ToRoad(command) =>
-        	      // road handler
+        	      Road.fromImmovableHandler(this, destinationId, senderId, command)
         	    case ToTramStop(command) =>
-        	      // tram stop handler
+        	      TramStop.fromImmovableHandler(this, destinationId, senderId, command)
         	    case ToZone(command) =>
-        	      // zone handler
+        	      Zone.fromImmovableHandler(this, destinationId, senderId, command)
         	    case _ =>
         	      println("We should not be here!")
         	  }
@@ -169,27 +210,53 @@ class ImmovableActor extends PersistentActor with AtLeastOnceDelivery {
                     state.handledMobileEntities = state.handledMobileEntities :+ id
                   }
                 }
+                // aggiungi o aggiorna
+                if(handledMobileEntitiesMap.contains(id) == true) {
+                  handledMobileEntitiesMap = handledMobileEntitiesMap.updated(id, senderRef)
+                }
+                else {
+                  handledMobileEntitiesMap = handledMobileEntitiesMap + (id -> senderRef)
+                }
               case MobileEntityRemove(id) =>
                 persist(MobileEntityGone(id)) { evt =>
                   if(state.handledMobileEntities.contains(id) == true) {
                     state.handledMobileEntities = state.handledMobileEntities.filter { current_id => current_id != id }
                   }
                 }
+                // rimuovi if any
+                handledMobileEntitiesMap = handledMobileEntitiesMap.filter(pair => pair._1 != id)
+              case PauseExecution(wakeupTime) =>
+                // l'attore mobile chiede di essere messo in stato dormiente
+                persist(MobileEntitySleeping(senderId, wakeupTime)) { evt =>
+                  state.addSleepingActor(evt.id, evt.wakeupTime)
+                }
+              case HandleLastVehicle =>
+                // spedito da un veicolo per avvisarci
+                // qualora lui fosse il nostro lastVehicle corrente, bisogna riportarlo a null
+                if(lastVehicleEnteredId == senderId) {
+                  lastVehicleEnteredId = null
+                  lastVehicleEntered = null
+                }
+              case MovableActorRequest(id) =>
+                // recupera l'actorref dalla tabella, if any
+                val actorRef = handledMobileEntitiesMap.get(id).getOrElse(null)
+                // spedisci indietro
+                sendToMovable(state.id, senderRef, MovableActorResponse(id, actorRef))
                 
         	    case ToBusStop(command) =>
         	      BusStop.fromMovableHandler(this, destinationId, senderId, sender, command)
         	    case ToCrossroad(command) =>
-        	      // crossroad handler
+        	      Crossroad.fromMovableHandler(this, destinationId, senderId, sender, command)
         	    case ToLane(command) =>
-        	      // lane handler
+        	      Lane.fromMovableHandler(this, destinationId, senderId, sender, command)
         	    case ToPedestrianCrossroad(command) =>
-        	      // pedestrian crossroad handler
+        	      PedestrianCrossroad.fromMovableHandler(this, destinationId, senderId, sender, command)
         	    case ToRoad(command) =>
-        	      // road handler
+        	      Road.fromMovableHandler(this, destinationId, senderId, sender, command)
         	    case ToTramStop(command) =>
-        	      // tram stop handler
+        	      TramStop.fromMovableHandler(this, destinationId, senderId, sender, command)
         	    case ToZone(command) =>
-        	      // zone handler
+        	      Zone.fromMovableHandler(this, destinationId, senderId, sender, command)
         	    case _ =>
         	      println("We should not be here!")
         	  }
@@ -207,6 +274,7 @@ class ImmovableActor extends PersistentActor with AtLeastOnceDelivery {
               if(entry.isDefined) {
     	          persist(IdentityArrived(id)) { msg =>
     	            state.id = msg.id
+                  state.kind = "Road"
     	            state.roadData = entry.get
     	          }
               }
@@ -218,6 +286,7 @@ class ImmovableActor extends PersistentActor with AtLeastOnceDelivery {
               if(entry.isDefined) {
           	    persist(IdentityArrived(id)) { msg =>
           	      state.id = msg.id
+                  state.kind = "Lane"
           	      state.laneData = entry.get
           	    }
               }
@@ -229,6 +298,7 @@ class ImmovableActor extends PersistentActor with AtLeastOnceDelivery {
               if(entry.isDefined) {
           	    persist(IdentityArrived(id)) { msg =>
           	      state.id = msg.id
+                  state.kind = "Crossroad"
           	      state.crossroadData = entry.get
           	    }
               }
@@ -240,6 +310,7 @@ class ImmovableActor extends PersistentActor with AtLeastOnceDelivery {
               if(entry.isDefined) {
           	    persist(IdentityArrived(id)) { msg =>
           	      state.id = msg.id
+                  state.kind = "Pedestrian_Crossroad"
           	      state.pedestrian_crossroadData = entry.get
           	    }
               }
@@ -251,6 +322,7 @@ class ImmovableActor extends PersistentActor with AtLeastOnceDelivery {
               if(entry.isDefined) {
           	    persist(IdentityArrived(id)) { msg =>
           	      state.id = msg.id
+                  state.kind = "Bus_Stop"
           	      state.bus_stopData = entry.get
           	    }
               }
@@ -262,6 +334,7 @@ class ImmovableActor extends PersistentActor with AtLeastOnceDelivery {
               if(entry.isDefined) {
           	    persist(IdentityArrived(id)) { msg =>
           	      state.id = msg.id
+                  state.kind = "Tram_Stop"
           	      state.tram_stopData = entry.get
           	    }
               }
@@ -273,6 +346,7 @@ class ImmovableActor extends PersistentActor with AtLeastOnceDelivery {
               if(entry.isDefined) {
           	    persist(IdentityArrived(id)) { msg =>
           	      state.id = msg.id
+                  state.kind = "Zone"
           	      state.zoneData = entry.get
           	    }
               }
@@ -289,6 +363,13 @@ class ImmovableActor extends PersistentActor with AtLeastOnceDelivery {
             }
           }
           val createdMobileEntity = context.actorOf(MovableActor.props(id))
+          // aggiungi o aggiorna
+          if(handledMobileEntitiesMap.contains(id) == true) {
+            handledMobileEntitiesMap = handledMobileEntitiesMap.updated(id, createdMobileEntity)
+          }
+          else {
+            handledMobileEntitiesMap = handledMobileEntitiesMap + (id -> createdMobileEntity)
+          }
           // invia percorso
           sendToMovable(destinationId, createdMobileEntity, Route(route))
           // fai partire esecuzione
@@ -315,6 +396,21 @@ class ImmovableActor extends PersistentActor with AtLeastOnceDelivery {
       println("Failed to store snapshot")
     case DeleteSnapshot(sequenceNr, timestamp) =>
       deleteSnapshot(sequenceNr, timestamp)
+    
+    // TIME
+    case SubscribeAck =>
+      println("Successfully subscribed to time events")
+    case TimeCommand(timeValue) =>
+      val toBeWakenUp = state.actorsToBeWakenUp(timeValue)
+      if(toBeWakenUp.isEmpty == false) {
+        for(id <- toBeWakenUp) {
+          persist(MobileEntityWakingUp(id)) { evt =>
+            state.removeSleepingActor(evt.id)
+          }
+          val wakenUpEntity = context.actorOf(MovableActor.props(id))
+          sendToMovable(state.id, wakenUpEntity, ResumeExecution)
+        }
+      }
       
   }
   
@@ -350,27 +446,38 @@ class ImmovableActor extends PersistentActor with AtLeastOnceDelivery {
         if(state.handledMobileEntities.contains(id) == true) {
           state.handledMobileEntities = state.handledMobileEntities.filter { current_id => current_id != id }
         }
+        
+      // TIME
+      case MobileEntityWakingUp(id) =>
+        state.removeSleepingActor(id)
+      case MobileEntitySleeping(id, wakeupTime) =>
+        state.addSleepingActor(id, wakeupTime)
+        
       case BusStopEvent(event) =>
         BusStop.eventHandler(event, state)
       case CrossroadEvent(event) =>
-        // crossroad handler
+        Crossroad.eventHandler(event, state)
       case LaneEvent(event) =>
-        // lane handler
+        Lane.eventHandler(event, state)
       case PedestrianCrossroadEvent(event) =>
-        // pedestrian crossroad handler
+        PedestrianCrossroad.eventHandler(event, state)
       case RoadEvent(event) =>
-        // road handler
+        Road.eventHandler(event, state)
       case TramStopEvent(event) =>
-        // tram stop handler
+        TramStop.eventHandler(event, state)
       case ZoneEvent(event) =>
-        // zone handler
+        Zone.eventHandler(event, state)
     }
     
     case RecoveryCompleted =>
       // dobbiamo far partire tutti gli attori sotto la nostra gestione
       // non possiamo farlo subito però, potrebbero esservi delle rimozioni di id dalla lista di entità gestite in coda dei messaggi
       sendToImmovable(state.id, state.id, ReCreateMobileEntities)
-    
+      // per le entità nodo, ripristina la tabella dei vehicleFree
+      for(entry <- state.vehicleFreeMap) {
+        vehicleFreeTempMap = vehicleFreeTempMap + (entry._1 -> entry._2)
+      }
+      
     case SnapshotOffer(metadata, offeredSnapshot) =>
       offeredSnapshot match {
         case Some(snapshot : ImmovableState) =>
@@ -378,7 +485,7 @@ class ImmovableActor extends PersistentActor with AtLeastOnceDelivery {
           //setDeliverySnapshot(state.deliveryState)
           println("State recovered from snapshot successfully")
       }
-    
+      
   }
   
   // UTILITY

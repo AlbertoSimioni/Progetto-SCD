@@ -1,16 +1,19 @@
-package modelActors.immovable
+package modelActors.movable
 
 import akka.actor.ActorRef
 
 import modelActors.Messages._
 
-object TramStop {
+/**
+ * @author pocia
+ */
+object Pedestrian {
   
   // commands
   
   // events
-  
-  def fromImmovableHandler(myRef : ImmovableActor, myId : String, senderId : String, command : RealCommand) : Unit = {
+
+  def fromImmovableHandler(myRef : MovableActor, myId : String, senderId : String, command : RealCommand) : Unit = {
     command match {
       case FromBusStop(message) =>
         
@@ -19,7 +22,11 @@ object TramStop {
       case FromLane(message) =>
         
       case FromPedestrianCrossroad(message) =>
-        
+        message match {
+          case Cross_Out =>
+            // possiamo procedere nell'avanzamento
+            myRef.interestedInVelocityTick = true
+        }
       case FromRoad(message) =>
         
       case FromTramStop(message) =>
@@ -29,7 +36,7 @@ object TramStop {
     }
   }
   
-  def fromMovableHandler(myRef : ImmovableActor, myId : String, senderId : String, senderRef : ActorRef, command : RealCommand) : Unit = {
+  def fromMovableHandler(myRef : MovableActor, myId : String, senderId : String, senderRef : ActorRef, command : RealCommand) : Unit = {
     command match {
       case FromPedestrian(message) =>
         
@@ -42,9 +49,8 @@ object TramStop {
     }
   }
   
-  def eventHandler(event : Any, state : ImmovableState) : Unit = {
+  def eventHandler(event : Any, state : MovableState) : Unit = {
     //
   }
-  
   
 }
