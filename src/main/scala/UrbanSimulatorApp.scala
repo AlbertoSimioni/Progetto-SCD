@@ -73,8 +73,7 @@ object UrbanSimulatorApp extends App with ReactiveApi with MainActors with React
 		// recupero il ruolo
 		val role = system.settings.config.getList("akka.cluster.roles").get(0).unwrapped
     if(role == "worker")
-      system.actorOf(Props(classOf[Subscriber], "timeEvent"), "subscriberTime")
-      system.actorOf(Props[TimeCounter], "timeCounter")
+      //system.actorOf(Props[TimeCounter], "timeCounter")
       //codice per l'avvio dell'attore subscriber degli eventi del tempo e dell'attore che tiene il contatore
 		// avvio seed node + controller
 		if(role == "controller") {

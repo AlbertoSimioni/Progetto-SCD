@@ -7,7 +7,6 @@
 import akka.actor.Actor
 import akka.actor.ActorLogging
 import akka.actor.Props
-import pubsub.Messages.CurrentTime
 import pubsub.PublisherInstance
 import scala.util.Random.shuffle
 import scala.concurrent.duration._

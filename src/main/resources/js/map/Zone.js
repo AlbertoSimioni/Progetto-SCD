@@ -30,4 +30,28 @@ Zone.prototype.draw = function(){
     if(this.type == "houseplace") this.path.fillColor = "yellow";
     if(this.type == "workplace") this.path.fillColor = "purple";
     if(this.type == "funplace") this.path.fillColor = "blue";
+    this.path.onMouseDown = this.myOnMouseDown;
+    this.path.showing = false;
+};
+
+Zone.prototype.showInfo = function(cars,pedestrians){
+    this.path.tooltipLabel = new PointText(new Point(this.from.x + 12,this.to.y+3));
+    this.path.tooltipLabel.fillColor = "#cc0000";
+    this.path.tooltipLabel.textColor = "#cc0000";
+    this.path.tooltipLabel.strokeColor = "#cc0000";
+    this.path.tooltipLabel.strokeWidth = 0.6;
+    this.path.tooltipLabel.fontSize = 8;
+     //Name the tooltip so we can retrieve it later
+    this.path.tooltipLabel.content = "Cars: " + parseInt(cars) + "\nPedestrians: "+ parseInt(pedestrians); //cercare questo campo//
+    this.path.showing = true;
+};
+
+Zone.prototype.myOnMouseDown = function(){
+    if(!this.showing){
+        webSocket.send("ZONESTATE-"+this.id)
+    }
+    else{
+        this.tooltipLabel.remove();
+        this.showing = false;
+    }
 };

@@ -29,6 +29,7 @@ Entity.prototype.draw = function() {
     this.shape.onMouseLeave = this.myOnMouseLeave;
     this.shape.onMouseDown = this.myOnMouseDown;
 };
+
 Entity.prototype.myOnMouseEnter = function(event) {
     "use strict";
     //var tooltipRect = new Rectangle(this.position + new Point(40, 40), new Size(100, 100));

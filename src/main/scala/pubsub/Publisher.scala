@@ -35,12 +35,5 @@ object PublisherInstance {
     return publisherModel;
   }
 
-  //Istanza creata nel controller
-  def getPublisherTimeEvents(system: ActorSystem) : ActorRef = {
-    if (publisherTime == null){
-      publisherTime =  system.actorOf(Props(classOf[Publisher], "timeEvent"), "publisherTime")
-        publisherTime
-    }
-    return publisherTime;
-  }
+
 }

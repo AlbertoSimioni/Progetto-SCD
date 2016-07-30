@@ -25,9 +25,6 @@ class Subscriber(contentType : String) extends Actor with ActorLogging {
   def receive = {
     case SubscribeAck(Subscribe("modelEvent", None, `self`)) ⇒
       context become readyModel
-    case SubscribeAck(Subscribe("timeEvent", None, `self`)) ⇒
-      context become readyTime
-
   }
   //Messaggi inviati dai worker per inviare al guihandler gli aggiornamenti nel model
   def readyModel: Actor.Receive = {
@@ -39,12 +36,12 @@ class Subscriber(contentType : String) extends Actor with ActorLogging {
       ActiveConnections.SendMessageToClients(BrowserMessagesFormatter.TramPositionToJson(m))
     case m @ pedestrianPosition(id,lat,long,dir) =>   context.actorSelection("/user/activeConnections") !
       ActiveConnections.SendMessageToClients(BrowserMessagesFormatter.PedestrianPositionToJson(m))
-    case m @ hideCar(id) =>   context.actorSelection("/user/activeConnections") !
-      ActiveConnections.SendMessageToClients(BrowserMessagesFormatter.HideCarToJson(m))
+    case m @ hideCar(id,zoneID) =>   context.actorSelection("/user/activeConnections") !
+      hideCar(id,zoneID)
     case m @ hideBus(id) =>   context.actorSelection("/user/activeConnections") !
       ActiveConnections.SendMessageToClients(BrowserMessagesFormatter.HideBusToJson(m))
-    case m @ hidePedestrian(id) =>   context.actorSelection("/user/activeConnections") !
-      ActiveConnections.SendMessageToClients(BrowserMessagesFormatter.HidePedestrianToJson(m))
+    case m @ hidePedestrian(id,zoneID) =>   context.actorSelection("/user/activeConnections") !
+      hidePedestrian(id,zoneID)
     case m @ hideTram(id) =>   context.actorSelection("/user/activeConnections") !
       ActiveConnections.SendMessageToClients(BrowserMessagesFormatter.HideTramToJson(m))
     case m @ semaphoreState(id,upGreen,rightGreen,downGreen,leftGreen) =>  context.actorSelection("/user/activeConnections") !
@@ -53,12 +50,8 @@ class Subscriber(contentType : String) extends Actor with ActorLogging {
       ActiveConnections.SendMessageToClients(BrowserMessagesFormatter.TimeToJson(time.hours,time.minutes))
     case CreateMobileEntity(id,route) =>  context.actorSelection("/user/activeConnections") !
       ActiveConnections.entityPath(id,BrowserMessagesFormatter.PathToJson(id,route))
-  }
-
-  //Messaggi inviati dal controller ai worker per fare avanzare il tempo
-  def readyTime: Actor.Receive = {
-    case CurrentTime(daysElapsed, minutesElapsed) =>   context.actorSelection("/user/timeCounter") !
-      UpdateTime(daysElapsed, minutesElapsed)
+    case entityAwaked(entityID,zoneID) => context.actorSelection("/user/activeConnections") !
+      entityAwaked(entityID,zoneID)
 
   }
 }

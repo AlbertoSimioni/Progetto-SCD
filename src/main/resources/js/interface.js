@@ -174,6 +174,14 @@ window.onload = function() {
             lastPath = path;
         }
 
+        if(msg.type == "zoneState"){
+            var zoneID = msg.info.id;
+            var pedestrians = msg.info.pedestrians;
+            var cars = msg.info.cars;
+            var zone = mapRegistry.getZone(zoneID);
+            zone.showInfo(cars,pedestrians);
+        }
+
     }
 
     // if errors on websocket
