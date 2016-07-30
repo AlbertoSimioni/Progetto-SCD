@@ -57,6 +57,7 @@ function Car(id, lat,long, direction) {
     this.currentLong = currLong;
     this.shape = new Shape.Rectangle(new Point(this.currentLat, this.currentLong),size);
     this.shape.fillColor = new Color(0.1, 0.85, 0.2);
+    this.shape.myData = this.id;
 };
 //simula un campo statico
 Car.leng = 3;

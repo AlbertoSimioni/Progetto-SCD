@@ -1,5 +1,7 @@
 package controllerActors
 
+import pubsub.PublisherInstance
+
 import scala.concurrent.duration._
 
 import akka.actor.Actor
@@ -21,7 +23,9 @@ class TimePublisher extends Actor {
   
   // recupera il mediator
   val mediator = DistributedPubSubExtension(context.system).mediator
-  
+
+  val publisherGuiHanlder = PublisherInstance.getPublisherModelEvents(context.system)
+
   // ogni secondo rilascia un evento temporale
   val autoTick = context.system.scheduler.schedule(0 millis, 1000 millis, self, Tick)
   
@@ -33,6 +37,7 @@ class TimePublisher extends Actor {
       // un secondo è passato, fai incrementare il contatore e pubblicizza il suo valore
       increaseTimeCounter
       mediator ! Publish(timeMessage, TimeCommand(TimeValue(hours, minutes)))
+      publisherGuiHanlder ! TimeCommand(TimeValue(hours,minutes))
   }
   
   def increaseTimeCounter() : Unit = {

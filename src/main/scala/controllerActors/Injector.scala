@@ -1,5 +1,7 @@
 package controllerActors
 
+import pubsub.PublisherInstance
+
 import scala.collection.immutable.StringOps
 
 import akka.actor.Actor
@@ -27,7 +29,8 @@ class Injector extends Actor {
   // SHARDING
   // Permette di comunicare con altri ImmovableActor utilizzando il loro identificativo invece che il loro indirizzo
   val shardRegion = ClusterSharding(context.system).shardRegion(ImmovableActor.typeOfEntries)
-  
+
+  val publisherGuiHanlder = PublisherInstance.getPublisherModelEvents(context.system)
   // determina l'inizio dell'injection
   sendToNonPersistent(self, self, StartInjection)
   
@@ -76,18 +79,22 @@ class Injector extends Actor {
               val pedestrianRoute = Routes.createPedestrianRoute()._1
               val firstId = Routes.getStepId(pedestrianRoute.houseToWorkRoute(0))
               sendToImmovable(self, firstId, CreateMobileEntity(id, pedestrianRoute))
+              publisherGuiHanlder ! CreateMobileEntity(id, pedestrianRoute)
             case CreateCar(id) =>
               val carRoute = Routes.createCarRoute()
               val firstId = Routes.getStepId(carRoute.houseToWorkRoute(0))
               sendToImmovable(self, firstId, CreateMobileEntity(id, carRoute))
+              publisherGuiHanlder ! CreateMobileEntity(id, carRoute)
             case CreateBus(id, route) =>
               val busRoute = Routes.createBusRoute(route)
               val firstId = Routes.getStepId(busRoute.route(0))
               sendToImmovable(self, firstId, CreateMobileEntity(id, busRoute))
+              publisherGuiHanlder ! CreateMobileEntity(id, busRoute)
             case CreateTram(id, route) =>
               val tramRoute = Routes.createBusRoute(route)
               val firstId = Routes.getStepId(tramRoute.route(0))
               sendToImmovable(self, firstId, CreateMobileEntity(id, tramRoute))
+              publisherGuiHanlder ! CreateMobileEntity(id, tramRoute)
           }
       }
   }

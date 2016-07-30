@@ -24,10 +24,9 @@ function Tram(id, lat,long, direction) {
         }
     this.currentLat = currLat;
     this.currentLong = currLong;
-    console.log(Tram.leng);
-    console.log(size);
     this.shape = new Shape.Rectangle(new Point(this.currentLat, this.currentLong),size);
     this.shape.fillColor = new Color(0.33, 0.33, 0.33);
+    this.shape.myData = this.id;
 };
 
 

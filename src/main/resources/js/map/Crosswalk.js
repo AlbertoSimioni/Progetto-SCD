@@ -13,14 +13,44 @@ function Crosswalk(id, from, isHorizontal, isTripleLane) {
     if(isHorizontal) this.to.y -= bonus;
     else this.to.x +=bonus;
     this.isHorizontal = isHorizontal;
-    this.path = null; //Non c'è un solo path, dovrei fare un array di path, per ora non mi serve
-                      //il riferimento
+    this.whitePaths = [];
+    this.sidewalkPaths = [];
     this.isTripleLane = isTripleLane;
 }
 
 Crosswalk.width = 12;
 Crosswalk.linesWidth = 2;
 
+
+Crosswalk.prototype.changeColorSidewalk = function(color,position){
+    if(position == "down"){
+        sidewalk = this.sidewalkPaths[0];
+    }
+    else if(position == "up"){
+        sidewalk = this.sidewalkPaths[1];
+    }
+    else if(position == "left"){
+        sidewalk = this.sidewalkPaths[0];
+    }
+    else if(position == "right"){
+        sidewalk = this.sidewalkPaths[1];
+    }
+    if(color == "oldColor"){
+        sidewalk.fillColor = Sidewalk.color;
+    }
+    else{
+        sidewalk.fillColor = color;
+    }
+
+}
+Crosswalk.prototype.changeColor = function(color){
+     for(var i = 0 ;i <  this.whitePaths.length;i++){
+        if(color == "oldColor")
+            this.whitePaths[i].fillColor = "white"
+        else
+            this.whitePaths[i].fillColor = color
+     }
+}
 
 Crosswalk.prototype.draw = function(){
     "use strict";
@@ -45,6 +75,7 @@ Crosswalk.prototype.drawHorizontal = function(){
         var path = new Path.Rectangle(new Point(xStart,curY), new Point(xEnd, curY-Crosswalk.linesWidth));
         if(white){
             path.fillColor = "white";
+            this.whitePaths.push(path);
         }
         else path.fillColor = "black";
         white = !white;
@@ -53,11 +84,14 @@ Crosswalk.prototype.drawHorizontal = function(){
     if(!this.isTripleLane){
         var path0 = new Path.Rectangle(new Point(xStart,curY), new Point(xEnd, this.to.y));
         path0.fillColor = "white";
+        this.whitePaths.push(path0);
     }
     var path1 = new Path.Rectangle(new Point(xStart,this.from.y + Sidewalk.width), new Point(xEnd,this.from.y));
     path1.fillColor = Sidewalk.color;
+    this.sidewalkPaths.push(path1);
     var path2 = new Path.Rectangle(new Point(xStart,this.to.y), new Point(xEnd,this.to.y - Sidewalk.width));
     path2.fillColor = Sidewalk.color;
+    this.sidewalkPaths.push(path2);
 };
 
 //disegna le strisce su strade verticali, sia a corsie triple che doppie
@@ -73,6 +107,7 @@ Crosswalk.prototype.drawVertical = function(){
         var path = new Path.Rectangle(new Point(curX,yStart), new Point(curX+Crosswalk.linesWidth, yEnd));
         if(white){
             path.fillColor = "white";
+            this.whitePaths.push(path);
         }
         else path.fillColor = "black";
         white = !white;
@@ -81,9 +116,13 @@ Crosswalk.prototype.drawVertical = function(){
     if(!this.isTripleLane){
         var path0 = new Path.Rectangle(new Point(curX,yStart), new Point(this.to.x, yEnd ));
         path0.fillColor = "white";
+        this.whitePaths.push(path0);
     }
+    //sidewalks
     var path1 = new Path.Rectangle(new Point(this.from.x - Sidewalk.width,yStart), new Point(this.from.x, yEnd));
     path1.fillColor = Sidewalk.color;
+    this.sidewalkPaths.push(path1);
     var path2 = new Path.Rectangle(new Point(this.to.x,yStart), new Point(this.to.x + Sidewalk.width,yEnd));
     path2.fillColor = Sidewalk.color;
+    this.sidewalkPaths.push(path2);
 };

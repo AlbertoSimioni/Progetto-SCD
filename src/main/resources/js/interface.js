@@ -17,7 +17,10 @@ function traslladar(a, b) {
         view.zoom = view.zoom / 1.1;
     }
 
-
+var webSocket = null;
+var lastPath = null;
+var lastEntityID = null;
+var mapRegistry = new MapRegistry();
 
 window.onload = function() {
     // Get a reference to the canvas object
@@ -55,27 +58,27 @@ window.onload = function() {
                 event.deltaY > 0 ? zoomIn() : zoomOut();
             });
     var amount = 2;
-    paper.view.setViewSize(1100, 800)
+    paper.view.setViewSize(1080, 800)
     paper.view.draw();
 
 
     var registry = new EntitiesRegistry()
-    var mapRegistry = new MapRegistry();
 
 
     var WS = window['MozWebSocket'] ? MozWebSocket : WebSocket
-    var mapSocket = new WS("ws" + location.protocol.substring(4) + "//" + window.location.hostname + ":6696/ws")
+    webSocket = new WS("ws" + location.protocol.substring(4) + "//" + window.location.hostname + ":6696/ws")
     $(".alert").alert()
-    mapSocket.onopen = function() {
+    webSocket.onopen = function() {
        // Web Socket is connected, send data using send()
-        mapSocket.send("MAP");
+        webSocket.send("MAP-1");
         };
-    mapSocket.onmessage = function(event) {
+    webSocket.onmessage = function(event) {
         var msg = JSON.parse(event.data);
         //console.log(JSON.stringify(msg))
         if(msg.hasOwnProperty('dimensions')){ //MAP ARRIVED
             mapRegistry.buildMap(msg);
             paper.view.draw();
+            fitMap();
         }
         if (msg.type == "CarPosition") {
             var lat = msg.info.lat
@@ -146,7 +149,30 @@ window.onload = function() {
                 pedestrian.hide();
             }
         }
+        if(msg.type == "SemaphoreState"){
+            var semaphore = mapRegistry.crossroads[msg.info.id];
+            if (semaphore.category == "semaphore"){
+                semaphore.changeLights(msg.info.up,msg.info.right,msg.info.down,msg.info.left)
+            }
+            else{
+                console.log("We shouldn't be here")
+            }
+        }
+        if(msg.type == "time"){
+            var minutes = msg.info.minutes;
+            var hours = msg.info.hours;
+            minutes = checkTime(minutes);
+            hours = checkTime(hours);
+            var text = hours + ":" +  minutes;
+            $( "#timeText" ).text(text);
+        }
 
+        if(msg.type == "path"){
+            var  path = msg.info.steps;
+            colorSteps(lastPath,"oldColor");
+            colorSteps(path,"#00ccff");
+            lastPath = path;
+        }
 
     }
 
@@ -155,6 +181,66 @@ window.onload = function() {
         $(".alert").removeClass("hide")
     }
 
-    mapSocket.onerror = onalert
-    mapSocket.onclose = onalert
+    webSocket.onerror = onalert
+    webSocket.onclose = onalert
+}
+
+function checkTime(i) {
+    if (i < 10) {i = "0" + i};  // add zero in front of numbers < 10
+    return i;
+}
+
+function colorSteps(steps,color){
+   for(var i in steps)
+   {
+     var id = steps[i].id;
+     var type = steps[i].type;
+     if(type == "lane"){
+        var lane = mapRegistry.getLane(id);
+        lane.changeColor(color);
+     }
+     if(type == "road"){
+        var position = steps[i].position;
+        mapRegistry.getStreet(id).changeColor(color,position);
+
+     }
+     if(type == "crossroad"){
+        mapRegistry.getCrossroad(id).changeColor(color);
+     }
+
+     if(type == "zone"){
+        mapRegistry.getZone(id).changeColor(color);
+     }
+
+     if(type == "bus_stop"){
+        var busStop = mapRegistry.getBusStop(id);
+        var position = steps[i].position;
+        var entityType = steps[i].entity;
+        busStop.changeColorBusStop(color,position,entityType)
+     }
+
+     if(type == "tram_stop"){
+        var tramStop = mapRegistry.getTramStop(id);
+        var position = steps[i].position;
+        var entityType = steps[i].entity;
+        busStop.changeColorTramStop(color,position,entityType)
+     }
+
+     if(type = "crosswalk"){
+        var entityType = steps[i].entity;
+        var position = steps[i].position;
+        var positionPrec = steps[i-1].position;
+        if(entityType == "P"){
+            var crosswalk = mapRegistry.getCrosswalk(id);
+            if(position == positionPrec){
+                crosswalk.changeColorSidewalk(color,position);
+            }
+            else{
+                crosswalk.changeColor(color);
+            }
+        }
+     }
+
+
+   }
 }

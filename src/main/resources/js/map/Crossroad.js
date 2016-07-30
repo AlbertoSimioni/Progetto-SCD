@@ -21,6 +21,11 @@ Crossroad.width = 24;
 Crossroad.color = "#C0C1C4";
 Crossroad.circleColor = "#616360";
 
+Crossroad.prototype.changeColor = function(color){
+    if(color == "oldColor") this.path.fillColor = Crossroad.color;
+    else this.path.fillColor = color;
+}
+
 Crossroad.prototype.buildVertexes = function(jsonVertexes) {
     "use strict";
     //cerco
@@ -150,6 +155,25 @@ Crossroad.prototype.drawAngle = function() {
             }
             var myPath = new Path.Rectangle(new Point(curVertex.point.x, curVertex.point.y), centerPoint);
             myPath.fillColor = "white";
+        }
+    }
+};
+
+
+Crossroad.prototype.changeLights = function(up,right,down,left) {
+    for (var i = this.vertexes.length - 1; i >= 0; i--) {
+        var curVertex = this.vertexes[i];
+        if (curVertex.type == "up") {
+            curVertex.path.fillColor = up;
+        }
+        if (curVertex.type == "down") {
+            curVertex.path.fillColor = down;
+        }
+        if (curVertex.type == "right") {
+            curVertex.path.fillColor = right;
+        }
+        if (curVertex.type == "left") {
+            curVertex.path.fillColor = left;
         }
     }
 };

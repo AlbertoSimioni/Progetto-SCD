@@ -15,6 +15,14 @@ function Zone(id, from, type) {
 
 Zone.width = 12;
 
+Zone.prototype.changeColor = function(color){
+    if(color == "oldColor"){
+          if(this.type == "houseplace") this.path.fillColor = "yellow";
+          if(this.type == "workplace") this.path.fillColor = "purple";
+          if(this.type == "funplace") this.path.fillColor = "blue";
+    }
+    else this.path.fillColor = color;
+}
 
 Zone.prototype.draw = function(){
     "use strict";

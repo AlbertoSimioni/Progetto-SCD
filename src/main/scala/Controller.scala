@@ -23,7 +23,7 @@ class Controller extends Actor with ActorLogging {
 
   //Campi per la gestione del tempo. Invio periodico (ogni secondo) di un messaggio a se stesso
   val tick = context.system.scheduler.schedule(0 millis, 1000 millis, self, "tick")
-  var dayElapsed = 0
+  var daysElapsed = 0
   var minutesElapsed = 0
   val maxMinutes = 1440
 
@@ -32,10 +32,12 @@ class Controller extends Actor with ActorLogging {
   def receive : Receive = {
     //messaggio periodico che produce l'invio del tempo corrente a tutti i nodi worker tramite pub sub
     case "tick" =>
-      val publisher = PublisherInstance.getPublisherTimeEvents(context.system)
-      publisher ! CurrentTime(dayElapsed,minutesElapsed)
+      //val publisher = PublisherInstance.getPublisherTimeEvents(context.system)
+      //val publisherGuiHanlder = PublisherInstance.getPublisherModelEvents(context.system)
+      //publisherGuiHanlder ! CurrentTime(daysElapsed,minutesElapsed)
+      //publisher ! CurrentTime(daysElapsed,minutesElapsed)
       if(minutesElapsed == maxMinutes){
-        dayElapsed += 1
+        daysElapsed += 1
         minutesElapsed = 0
       }
       else minutesElapsed += 1

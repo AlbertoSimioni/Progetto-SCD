@@ -38,6 +38,7 @@ class TimeCounter extends Actor with ActorLogging {
           vehicle ! ResponseCurrentTime(CurrentDay,CurrentMinutes)
         waitingVehicles.clear()
       }
+
     case GetTime() =>
       if(!firstMessageArrived) {
         waitingVehicles += sender

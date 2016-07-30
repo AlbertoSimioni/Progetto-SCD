@@ -20,6 +20,17 @@ function Lane(id, from, to, isHorizontal, beginToEnd, tram,stop,drawStop) {
 Lane.width = 6;
 Lane.triangleRadius = 2;
 
+Lane.prototype.changeColor = function(color){
+    if(color == "oldColor"){
+        if (this.tram)
+            this.path.fillColor = "orange";
+        else
+            this.path.fillColor = "black";
+    }
+    else
+        this.path.fillColor = color;
+}
+
 //Disegna la corsia e il corrispondente triangolino per la direzione
 Lane.prototype.draw = function() {
     this.path = new Path.Rectangle(this.from, this.to);
@@ -66,6 +77,7 @@ Lane.prototype.draw = function() {
 
         triangle.fillColor = "white";
     }
+
     if(this.drawStop){
         var text = null;
         if(this.isHorizontal) text = new PointText(new Point(this.from.x - (this.from.x  - this.to.x)/2 + 4, this.from.y));

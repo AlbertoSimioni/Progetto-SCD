@@ -2,13 +2,14 @@ package coreActors
 
 import akka.actor.{Actor, ActorLogging}
 import map.Domain._
+import messagesFormatter.BrowserMessagesFormatter
+import time.TimeCounter
 import websocket.WebSocket
 import org.json4s._
 import org.json4s.DefaultFormats
 import org.json4s.jackson.JsonMethods._
 import java.io._
 import scala.collection.mutable
-
 /**
  * Created by Alberto on 28/07/2015.
  */
@@ -21,6 +22,9 @@ object ActiveConnections {
 
   case class SendMessageToClients(message: String) extends ConnectionMessage
 
+  case class updateSemaphoreState(id: String, state: String) extends ConnectionMessage
+
+  case class entityPath(id: String, path: String) extends ConnectionMessage
 }
 
 /*classe che gestisce l'elenco dei browser connessi tramite WebSocket
@@ -29,10 +33,13 @@ SendMessageToClients con la stringa contenente il messaggio.
 La stringa deve essere già stata formattata in JSON
 */
 class ActiveConnections extends Actor with ActorLogging {
-
   val clients = mutable.ListBuffer[WebSocket]()
+  val semaphoreStates = mutable.HashMap[String,String]()
+  val entityPaths = mutable.HashMap[String,String]()
 
   override def receive = {
+
+
     case WebSocket.Open(ws) =>
       if (null != ws) {
         clients += ws
@@ -51,11 +58,19 @@ class ActiveConnections extends Actor with ActorLogging {
     case WebSocket.Message(ws, msg) =>
       if (null != ws) {
         log.debug("url {} received msg '{}'", ws.path, msg)
-        if (msg == "MAP"){
+        var msgSplit = msg.split('-')
+        msgSplit(0);
+        if (msgSplit(0) == "MAP"){
           val path = getClass.getResource("/map.json").getPath
           val source = scala.io.Source.fromFile(new File(path))
           val environmentString = try source.getLines mkString finally source.close()
           ws.send(environmentString)
+          semaphoreStates.foreach {case(key, value) => ws.send(value)}
+        }
+        if(msgSplit(0) == "PATH"){
+          val entityId = msgSplit(1)
+          val path = entityPaths.get(entityId)
+          ws.send(path.get)
         }
 
       }
@@ -66,6 +81,15 @@ class ActiveConnections extends Actor with ActorLogging {
         clients -= ws
         log.debug("unregister monitor")
       }
+
+
+    case ActiveConnections.updateSemaphoreState(id, state) =>
+      val semaphore = semaphoreStates.get(id)
+      semaphoreStates.put(id,state)
+      self ! ActiveConnections.SendMessageToClients(state)
+
+    case ActiveConnections.entityPath(id,path) =>
+      entityPaths.put(id,path)
 
     case ActiveConnections.SendMessageToClients(message) =>
       for(client <- clients) client.send(message)

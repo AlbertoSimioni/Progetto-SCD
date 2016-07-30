@@ -26,6 +26,7 @@ function Bus(id, lat,long, direction) {
     this.currentLong = currLong;
     this.shape = new Shape.Rectangle(new Point(this.currentLat, this.currentLong),size);
     this.shape.fillColor = new Color(1, 0, 0);
+    this.shape.myData = this.id;
 };
 
 Bus.leng = 5;
@@ -54,6 +55,7 @@ Bus.prototype.move = function(lat,long, direction) {
     this.shape.position = new Point(this.currentLat,this.currentLong);
     if(this.isHorizontal !== isHor){ this.shape.rotate(90);}
     this.isHorizontal = isHor;
+
 };
 
 

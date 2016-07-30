@@ -9,6 +9,8 @@ function MapRegistry() {
     this.crossroads = {};
     this.crosswalks = {};
     this.bus_stops = {};
+    this.tram_stops = {}
+    this.zones = {};
     this.streetsSize = 0;
     this.lanesSize = 0;
     this.dimensions = null;
@@ -24,6 +26,42 @@ MapRegistry.prototype.normalizeYCoordinate = function(yValue) {
     return this.dimensions.y - yValue;
 };
 
+MapRegistry.prototype.getZone = function(id) {
+    return this.zones[id];
+};
+
+MapRegistry.prototype.getCrossroad = function(id) {
+    return this.crossroads[id];
+};
+
+MapRegistry.prototype.getCrosswalk = function(id) {
+    return this.crosswalks[id];
+};
+
+MapRegistry.prototype.getStreet = function(id){
+    return this.streets[id];
+}
+
+MapRegistry.prototype.getTramStop = function(id){
+    return this.tram_stops[id];
+}
+
+MapRegistry.prototype.getBusStop = function(id){
+    return this.bus_stops[id];
+}
+
+
+MapRegistry.prototype.getLane = function(id){
+    var streetId = "R"+id.substring(1,id.length-1) + "0"
+    var street = this.streets[streetId]
+    var lane = null;
+    for(var i = 0 ;i <  street.lanes.length;i++){
+        console.log(street.lanes[i].id)
+        if(street.lanes[i].id == id) lane = street.lanes[i]
+    }
+    if(lane == null) console.log("ERRORE: LANE NON TROVATA")
+    return lane
+}
 
 
 //Funzione di avvio di costruzione della mappa.
@@ -106,10 +144,13 @@ MapRegistry.prototype.buildStops = function(stops,type){
         copy.lanes = [];
         copy.lines = [];
         copy.sidewalks = {};
-        if(type== "bus")
+        if(type== "bus"){
             this.buildStreetLanes(copy, curLanes,true,curStop.position);
+            this.bus_stops[curStopId] = copy;
+            }
         else
             this.buildStreetLanes(copy, curLanes,true,"tram");
+            this.tram_stops[curStopId] = copy;
     }
 
 }
@@ -139,6 +180,7 @@ MapRegistry.prototype.buildZones = function(zones){
         if(curPosition == "down") yZone += offset;
         var from = new Point(xZone,yZone);
         var myZone = new Zone(curZoneId,from,curZone.variety);
+        this.zones[curZoneId] = myZone;
         myZone.draw();
 
     }

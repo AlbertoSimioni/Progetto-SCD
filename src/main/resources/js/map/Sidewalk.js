@@ -13,6 +13,13 @@ function Sidewalk(from, to) {
 Sidewalk.width = 2;
 Sidewalk.color = "#616360";
 
+
+Sidewalk.prototype.changeColor = function(color){
+    if(color == "oldColor") this.path.fillColor = Sidewalk.color;
+    else this.path.fillColor = color;
+}
+
+
 //Disegna la linea
 Sidewalk.prototype.draw = function() {
     this.path = new Path.Rectangle(this.from, this.to);

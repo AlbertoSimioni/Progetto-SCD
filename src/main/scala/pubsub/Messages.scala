@@ -17,6 +17,7 @@ object Messages {
   case class hideCar(id: String) extends PubSubMessages
   case class hideBus(id: String) extends PubSubMessages
   case class hideTram(id: String) extends PubSubMessages
+  case class semaphoreState(id : String ,upGreen: Boolean,rightGreen: Boolean, downGreen: Boolean,leftGreen: Boolean) extends PubSubMessages
  // case class NewCar(id : String ,position: Int) extends PubSubMessages
 }
 

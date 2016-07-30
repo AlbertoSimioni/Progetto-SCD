@@ -33,7 +33,7 @@ EntitiesRegistry.prototype.hide = function() {
 EntitiesRegistry.prototype.addCar = function(id, lat,long, direction) {
     "use strict";
     var curCar = new Car(id, lat,long, direction);
-    //curCar.draw();
+    curCar.draw();
     curCar.show();
     this.cars[id] = curCar;
     return curCar;
@@ -54,7 +54,7 @@ EntitiesRegistry.prototype.addPedestrian = function(id, lat,long, direction)
 {
     "use strict";
     var curPedestrian = new Pedestrian(id, lat,long, direction);
-    //curCar.draw();
+    curPedestrian.draw();
     curPedestrian.show();
     this.pedestrians[id] = curPedestrian;
     return curPedestrian;
@@ -76,7 +76,7 @@ EntitiesRegistry.prototype.addBus = function(id, lat,long, direction)
 {
     "use strict";
     var curBus = new Bus(id, lat,long, direction);
-    //curCar.draw();
+    curBus.draw();
     curBus.show();
     this.buses[id] = curBus;
     return curBus;
@@ -97,7 +97,7 @@ EntitiesRegistry.prototype.addTram = function(id, lat,long, direction)
 {
     "use strict";
     var curTram = new Tram(id, lat,long, direction);
-    //curCar.draw();
+    curTram.draw();
     curTram.show();
     this.trams[id] = curTram;
     return curTram;

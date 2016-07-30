@@ -2,12 +2,14 @@ package pubsub
 
 import coreActors.ActiveConnections
 import messagesFormatter.BrowserMessagesFormatter
+import modelActors.Messages.CreateMobileEntity
 import time.TimeCounter
 import TimeCounter.UpdateTime
 import akka.actor.{ActorLogging, Actor}
 import akka.contrib.pattern.{DistributedPubSubMediator,DistributedPubSubExtension}
 import coreActors.ActiveConnections
 import pubsub.Messages._
+import time.TimeMessages.{TimeValue, TimeCommand}
 
 /**
  * Created by Alberto on 20/07/2015.
@@ -45,6 +47,12 @@ class Subscriber(contentType : String) extends Actor with ActorLogging {
       ActiveConnections.SendMessageToClients(BrowserMessagesFormatter.HidePedestrianToJson(m))
     case m @ hideTram(id) =>   context.actorSelection("/user/activeConnections") !
       ActiveConnections.SendMessageToClients(BrowserMessagesFormatter.HideTramToJson(m))
+    case m @ semaphoreState(id,upGreen,rightGreen,downGreen,leftGreen) =>  context.actorSelection("/user/activeConnections") !
+      ActiveConnections.updateSemaphoreState(id,BrowserMessagesFormatter.SemaphoreStateToJson(m))
+    case TimeCommand(time) =>    context.actorSelection("/user/activeConnections") !
+      ActiveConnections.SendMessageToClients(BrowserMessagesFormatter.TimeToJson(time.hours,time.minutes))
+    case CreateMobileEntity(id,route) =>  context.actorSelection("/user/activeConnections") !
+      ActiveConnections.entityPath(id,BrowserMessagesFormatter.PathToJson(id,route))
   }
 
   //Messaggi inviati dal controller ai worker per fare avanzare il tempo
