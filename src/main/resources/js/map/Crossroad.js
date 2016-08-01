@@ -15,6 +15,7 @@ function Crossroad(id, from, category, jsonVertexes) {
     // così da poter cambiare il colore del semaforo per chi sta passando
     // le coordinate del punto
     this.buildVertexes(jsonVertexes);
+    this.tramPath = null;
 }
 
 Crossroad.width = 24;
@@ -113,21 +114,44 @@ Crossroad.prototype.drawSemaphore = function() {
     "use strict";
     for (var i = this.vertexes.length - 1; i >= 0; i--) {
         var curVertex = this.vertexes[i];
+        var tram = false;
+        var street = mapRegistry.getStreet(curVertex.id)
+        if(street == null){
+            console.log("Problem in getting the street")
+        }
+
         if (curVertex.type == "up") {
             curVertex.path = new Path.Circle(new Point(curVertex.point.x, curVertex.point.y + Crossroad.width / 2 - Crossroad.width / 6), 2);
             curVertex.path.fillColor = "red";
+            if(street.isTripleLane() && street.getTramPosition() == "left"){
+                this.tramPath = new Path.Circle(new Point(curVertex.point.x - Crossroad.width /2 + Crossroad.width / 6, curVertex.point.y + Crossroad.width / 6),2)
+                this.tramPath.fillColor = "red";
+            }
+
         }
         if (curVertex.type == "down") {
             curVertex.path = new Path.Circle(new Point(curVertex.point.x, curVertex.point.y - Crossroad.width / 2 + Crossroad.width / 6), 2);
             curVertex.path.fillColor = "red";
+            if(street.isTripleLane() && street.getTramPosition() == "right"){
+                this.tramPath = new Path.Circle(new Point(curVertex.point.x + Crossroad.width /2 - Crossroad.width / 6, curVertex.point.y - Crossroad.width / 6),2)
+                this.tramPath.fillColor = "red";
+            }
         }
         if (curVertex.type == "right") {
             curVertex.path = new Path.Circle(new Point(curVertex.point.x - Crossroad.width / 2 + Crossroad.width / 6, curVertex.point.y), 2);
             curVertex.path.fillColor = "red";
+            if(street.isTripleLane() && street.getTramPosition() == "up"){
+                this.tramPath = new Path.Circle(new Point(curVertex.point.x - Crossroad.width / 6, curVertex.point.y - Crossroad.width / 2 + Crossroad.width/6),2)
+                this.tramPath.fillColor = "red";
+            }
         }
         if (curVertex.type == "left") {
             curVertex.path = new Path.Circle(new Point(curVertex.point.x + Crossroad.width / 2 - Crossroad.width / 6, curVertex.point.y), 2);
             curVertex.path.fillColor = "red";
+            if(street.isTripleLane() && street.getTramPosition() == "down"){
+                this.tramPath = new Path.Circle(new Point(curVertex.point.x + Crossroad.width / 6, curVertex.point.y + Crossroad.width / 2 - Crossroad.width/6),2)
+                this.tramPath.fillColor = "red";
+            }
         }
     }
 };
@@ -160,7 +184,10 @@ Crossroad.prototype.drawAngle = function() {
 };
 
 
-Crossroad.prototype.changeLights = function(up,right,down,left) {
+Crossroad.prototype.changeLights = function(up,right,down,left,tram) {
+    if(this.tramPath != null){
+        this.tramPath = tram;
+    }
     for (var i = this.vertexes.length - 1; i >= 0; i--) {
         var curVertex = this.vertexes[i];
         if (curVertex.type == "up") {

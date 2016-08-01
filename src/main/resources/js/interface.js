@@ -152,7 +152,7 @@ window.onload = function() {
         if(msg.type == "SemaphoreState"){
             var semaphore = mapRegistry.crossroads[msg.info.id];
             if (semaphore.category == "semaphore"){
-                semaphore.changeLights(msg.info.up,msg.info.right,msg.info.down,msg.info.left)
+                semaphore.changeLights(msg.info.up,msg.info.right,msg.info.down,msg.info.left,msg.info.tram)
             }
             else{
                 console.log("We shouldn't be here")

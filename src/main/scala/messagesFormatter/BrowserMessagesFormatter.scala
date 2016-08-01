@@ -48,12 +48,14 @@ object BrowserMessagesFormatter {
     var right = "red";
     var down = "red";
     var left = "red";
+    var tram = "red";
     if(m.upGreen){up = "green"}
     if(m.downGreen){down = "green"}
     if(m.leftGreen){left = "green"}
     if(m.rightGreen){right = "green"}
+    if(m.tramGreen){tram = "green"}
 
-    s"""{"type": "SemaphoreState", "info":{"id":"${m.id}","up":${up},"right":${right},"down":${down},"left":${left}}}"""
+    s"""{"type": "SemaphoreState", "info":{"id":"${m.id}","up":"${up}","right":"${right}","down":"${down}","left":"${left}","tram":"${tram}"}}"""
   }
 
   def TimeToJson(hours : Int,minutes : Int) : String =  {

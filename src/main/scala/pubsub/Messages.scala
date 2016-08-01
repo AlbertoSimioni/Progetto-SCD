@@ -14,7 +14,7 @@ object Messages {
   case class hideCar(id: String,zoneID: String) extends PubSubMessages
   case class hideBus(id: String) extends PubSubMessages
   case class hideTram(id: String) extends PubSubMessages
-  case class semaphoreState(id : String ,upGreen: Boolean,rightGreen: Boolean, downGreen: Boolean,leftGreen: Boolean) extends PubSubMessages
+  case class semaphoreState(id : String ,upGreen: Boolean,rightGreen: Boolean, downGreen: Boolean,leftGreen: Boolean, tramGreen: Boolean) extends PubSubMessages
   // messaggio che deve essere inviato dopo che una macchina o un pedone si sono svegliati dalla sosta in una zone
   case class entityAwaked(entityID: String, zoneID: String) extends PubSubMessages
 }
