@@ -90,7 +90,7 @@ object ShardingPolicy extends ShardAllocationStrategy with Serializable {
     for(node <- currentShardAllocations) {
       val path = node._1.path.toString
       val rectangle = map(path)
-      if(isShardInRectangle(path, rectangle) == true) {
+      if(isShardInRectangle(shardId, rectangle) == true) {
         target = node._1
       }
     }

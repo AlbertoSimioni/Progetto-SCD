@@ -61,14 +61,19 @@ object ImmovableActor {
   // Permette l'estrazione dell'ID del ImmovableActor da un messaggio a lui diretto
   val idExtractor: ShardRegion.IdExtractor = {
     case envelope : ToImmovable =>
-        (envelope.destinationId, envelope)
+      println("idExtractor invocata!")
+      println("Destinazione: " + envelope.destinationId)
+      (envelope.destinationId, envelope)
   }
   
   // SHARDING
   // Permette di capire lo shard di appartenenza del ImmovableActor da un messaggio a lui diretto
   val shardResolver: ShardRegion.ShardResolver = msg => msg match {
     case envelope : ToImmovable =>
-      decideShard(envelope.destinationId)
+      println("shardResolver invocata!")
+      val shardId = decideShard(envelope.destinationId)
+      println("Shard: " + shardId)
+      shardId
   }
   
   // PERSISTENCE
@@ -304,6 +309,7 @@ class ImmovableActor extends PersistentActor with AtLeastOnceDelivery {
       }
       case ToPersistentMessages.FromNonPersistent(senderRef, command) => command match {
         case Identity(id) =>
+          println("Ricevuta identità: " + id)
           // messaggio dell'injector, per definirsi
           val entity = id.charAt(0) match {
             case 'R' =>

@@ -85,7 +85,7 @@ object UrbanSimulatorApp extends App with ReactiveApi with MainActors with React
       // nulla da fare
     }
 		// avvio seed node + controller
-		if(role == "controller") {
+    else if(role == "controller") {
 			// attiva Controller
 			val controller = system.actorOf(Props[controllerActors.Controller])
 		}

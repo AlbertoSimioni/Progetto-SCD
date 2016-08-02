@@ -17,6 +17,8 @@ import common.CommonMessages._
 import common.ToNonPersistentMessages
 import common.ToPersistentMessages
 import Messages._
+import map.Domain._
+import map.JSONReader
 import map.Routes
 import map.Routes._
 
@@ -44,6 +46,30 @@ class Injector extends Actor {
         case ToNonPersistentMessages.FromNonPersistent(senderRef, command) =>
           command match {
             case StartInjection =>
+              // dal momento che per gli attori del cluster sharding non è possibile utilizzare un parametro nel props
+              // siamo costretti ad inviargli un messaggio di identità iniziale
+              for(bus_stop <- JSONReader.getAllBusStops(current_map)) {
+                sendToImmovable(self, bus_stop.id, Identity(bus_stop.id))
+              }
+              for(crossroad <- JSONReader.getAllCrossroads(current_map)) {
+                sendToImmovable(self, crossroad.id, Identity(crossroad.id))
+              }
+              for(lane <- JSONReader.getAllLanes(current_map)) {
+                sendToImmovable(self, lane.id, Identity(lane.id))
+              }
+              for(pedestrian_crossroad <- JSONReader.getAllPedestrianCrossroads(current_map)) {
+                sendToImmovable(self, pedestrian_crossroad.id, Identity(pedestrian_crossroad.id))
+              }
+              for(road <- JSONReader.getAllRoads(current_map)) {
+                sendToImmovable(self, road.id, Identity(road.id))
+              }
+              for(tram_stop <- JSONReader.getAllTramStops(current_map)) {
+                sendToImmovable(self, tram_stop.id, Identity(tram_stop.id))
+              }
+              for(zone <- JSONReader.getAllZones(current_map)) {
+                sendToImmovable(self, zone.id, Identity(zone.id))
+              }
+              // injection vera e propria
               var id_counter = 1
               // preferibile (ma non necessario) avere bus e tram già in circolazione prima di iniettare pedoni e macchine
               val num_bus_routes = getAllBusRoutes().length
@@ -80,6 +106,7 @@ class Injector extends Actor {
               val firstId = Routes.getStepId(pedestrianRoute.houseToWorkRoute(0))
               sendToImmovable(self, firstId, CreateMobileEntity(id, pedestrianRoute))
               publisherGuiHanlder ! CreateMobileEntity(id, pedestrianRoute)
+              println("pedone creato e messaggio mandato")
             case CreateCar(id) =>
               val carRoute = Routes.createCarRoute()
               val firstId = Routes.getStepId(carRoute.houseToWorkRoute(0))
@@ -90,11 +117,13 @@ class Injector extends Actor {
               val firstId = Routes.getStepId(busRoute.route(0))
               sendToImmovable(self, firstId, CreateMobileEntity(id, busRoute))
               publisherGuiHanlder ! CreateMobileEntity(id, busRoute)
+              println("bus creato e messaggio mandato")
             case CreateTram(id, route) =>
               val tramRoute = Routes.createBusRoute(route)
               val firstId = Routes.getStepId(tramRoute.route(0))
               sendToImmovable(self, firstId, CreateMobileEntity(id, tramRoute))
               publisherGuiHanlder ! CreateMobileEntity(id, tramRoute)
+              println("tram creato e messaggio mandato")
           }
       }
   }
