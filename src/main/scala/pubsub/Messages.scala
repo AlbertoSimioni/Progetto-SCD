@@ -6,6 +6,10 @@ package pubsub
 //Messaggi spediti tra publisher e subscribers
 object Messages {
   sealed trait PubSubMessages
+  // ATTENZIONE: longitudine e latitudine sono invertite rispetto al tradizionale significato
+  // longitudine = y
+  // latitudine = x
+  // passare sempre prima le x e poi le y
   case class carPosition(id : String ,lat: Int,long: Int, direction: String) extends PubSubMessages
   case class busPosition(id : String ,lat: Int,long: Int, direction: String) extends PubSubMessages
   case class tramPosition(id : String ,lat: Int,long: Int, direction: String) extends PubSubMessages

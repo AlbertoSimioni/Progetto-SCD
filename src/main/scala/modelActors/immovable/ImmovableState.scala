@@ -52,6 +52,9 @@ class ImmovableState {
   // STRISCE PEDONALI
   var vehicleFreeMap = Map[String, Boolean]()
   
+  // CROSSROAD
+  var vehicleFree = true
+  
   // AT-LEAST-ONCE
   // Stato della at-least-once dell'attore
   //var deliveryState : AtLeastOnceDeliverySnapshot = null
@@ -86,8 +89,6 @@ class ImmovableState {
       lastMessages = lastMessages + (actorId -> deliveryId)
     }
   }
-  
-  
   
   var id : String = null
   var kind : String = null

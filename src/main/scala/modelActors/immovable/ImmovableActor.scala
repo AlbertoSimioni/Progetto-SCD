@@ -25,8 +25,13 @@ import common.CommonMessages._
 import common.ToPersistentMessages
 import common.ToNonPersistentMessages
 import map.Domain._
+import map.Domain.category._
+import map.Domain.position._
 import map.JSONReader
+import map.Routes._
 import time.TimeMessages._
+import pubsub.PublisherInstance
+import pubsub.Messages._
 
 /**
  * @author Matteo Pozza
@@ -71,6 +76,9 @@ object ImmovableActor {
   case object SaveSnapshot
   case class DeleteSnapshot(sequenceNr : Long, timestamp : Long)
   
+  // CROSSROAD
+  case object SemaphoreSwitch
+  
 }
 
 class ImmovableActor extends PersistentActor with AtLeastOnceDelivery {
@@ -78,6 +86,10 @@ class ImmovableActor extends PersistentActor with AtLeastOnceDelivery {
   import context.dispatcher
   
   import ImmovableActor._
+  
+  // GUI
+  // riferimento per la pubblicazione di eventi grafici
+  val publisherGuiHandler = PublisherInstance.getPublisherModelEvents(context.system)
   
   // PERSISTENCE
   // Serve per attribuire all'attore un ID univoco che serve nella memorizzazione nel DB
@@ -113,6 +125,16 @@ class ImmovableActor extends PersistentActor with AtLeastOnceDelivery {
   // La lane restituirà l'actorref appena creato.
   var handledMobileEntitiesMap = Map[String, ActorRef]()
   
+  // LANE
+  // Mappa con veicoli e posizioni
+  // Serve per permettere l'inserimento di veicoli da zone, invece che dall'inizio della corsia
+  // deve essere mantenuta consistente con la mappa handledMobileEntitiesMap
+  // in particolare, un veicolo aggiunto a handledMobileEntitiesMap non è necessariamente aggiunto anche a positionsMap
+  // mentre un veicolo rimosso deve essere rimosso anche dalla mappa
+  var positionsMap = Map[String, point]()
+  // Richieste pendenti per chi deve entrare a metà della lane
+  var pendingLaneRequests = Map[String, (ActorRef, point, direction)]()
+  
   // VARIABILI PER STRISCE PEDONALI
   // vehicle_pass => gestisce se si è in attraversamento pedoni o attraversamento veicoli
   // pedestrianRequest => coda per le richieste dei pedoni
@@ -126,6 +148,26 @@ class ImmovableActor extends PersistentActor with AtLeastOnceDelivery {
   var vehicleRequests = Map[String, (String, ActorRef)]()
   var numPedestrianCrossing = 0
   var vehicleFreeTempMap = Map[String, Boolean]()
+  
+  // BUS / TRAM STOP
+  // coda non persistente dei pedoni che sono in attesa alla fermata
+  // non persistente perchè in caso di ripristino i pedoni partiranno da capo della bus/tram_stop
+  // key: id pedone
+  // value: bus stop destinazione
+  var travellersQueue = List[(String, String)]()
+  
+  // CROSSROAD
+  // variabile per il vehicle_free (non abbiamo bisogno di una mappa, basta singola variabile)
+  // anche in questo caso, abbiamo la controparte nello stato persistente
+  // questa serve solo per impedire il passaggio appena diopo che è stato concesso il vehicle Out
+  var vehicleFreeTemp = true
+  // configurazione dell'incrocio (utile solo se l'incrocio è classic, semaphore o roundabout)
+  var crossroadConfiguration : Map[String, (Boolean, position, List[String])] = null
+  // corsia correntemente col verde
+  var greenLane : String = null
+  
+  // tick per il cambiamento del semaforo ogni 5 secondi
+  val semaphoreSwitcher = context.system.scheduler.schedule(0 millis, 5000 millis, self, SemaphoreSwitch)
   
   // PERSISTENCE
   // Lo stato dell'attore deve essere modellato da un var
@@ -225,17 +267,12 @@ class ImmovableActor extends PersistentActor with AtLeastOnceDelivery {
                 }
                 // rimuovi if any
                 handledMobileEntitiesMap = handledMobileEntitiesMap.filter(pair => pair._1 != id)
+                // fallo anche sulla tabella delle posizioni
+                positionsMap = positionsMap.filter(pair => pair._1 != id)
               case PauseExecution(wakeupTime) =>
                 // l'attore mobile chiede di essere messo in stato dormiente
                 persist(MobileEntitySleeping(senderId, wakeupTime)) { evt =>
                   state.addSleepingActor(evt.id, evt.wakeupTime)
-                }
-              case HandleLastVehicle =>
-                // spedito da un veicolo per avvisarci
-                // qualora lui fosse il nostro lastVehicle corrente, bisogna riportarlo a null
-                if(lastVehicleEnteredId == senderId) {
-                  lastVehicleEnteredId = null
-                  lastVehicleEntered = null
                 }
               case MovableActorRequest(id) =>
                 // recupera l'actorref dalla tabella, if any
@@ -301,6 +338,13 @@ class ImmovableActor extends PersistentActor with AtLeastOnceDelivery {
                   state.kind = "Crossroad"
           	      state.crossroadData = entry.get
           	    }
+                state.crossroadData.category match {
+                  case `classic` | `semaphore` | `roundabout` =>
+                    crossroadConfiguration = getCrossroadConfiguration(state.crossroadData.id)
+                    greenLane = crossroadConfiguration.keys.head
+                  case _ =>
+                    
+                }
               }
               else {
           	    println("Problems with received crossroad identifier")
@@ -412,6 +456,56 @@ class ImmovableActor extends PersistentActor with AtLeastOnceDelivery {
         }
       }
       
+    // CROSSROAD
+    case SemaphoreSwitch =>
+      if(state.crossroadData != null && state.crossroadData.category == `semaphore`) {
+        // cambia verde
+        greenLane = crossroadConfiguration.get(greenLane).get._3(0)
+        // LANCIA EVENTO LEGATO AL SEMAFORO
+        var upGreen = false
+        var rightGreen = false
+        var downGreen = false
+        var leftGreen = false
+        var tramGreen = false
+        for(entry <- crossroadConfiguration) {
+          if(entry._1 == greenLane) {
+            entry._2._2 match {
+              case `up` =>
+                if(entry._2._1) {
+                  tramGreen = true
+                }
+                else {
+                  upGreen = true
+                }
+              case `down` =>
+                if(entry._2._1) {
+                  tramGreen = true
+                }
+                else {
+                  downGreen = true
+                }
+              case `right` =>
+                if(entry._2._1) {
+                  tramGreen = true
+                }
+                else {
+                  rightGreen = true
+                }
+              case `left` =>
+                if(entry._2._1) {
+                  tramGreen = true
+                }
+                else {
+                  leftGreen = true
+                }
+            }
+          }
+        }
+        publisherGuiHandler ! semaphoreState(state.id, upGreen, rightGreen, downGreen, leftGreen, tramGreen)
+        
+        Crossroad.HandleSemaphoreSwitch(this, state.id)
+      }
+      
   }
   
   // PERSISTENCE
@@ -424,18 +518,25 @@ class ImmovableActor extends PersistentActor with AtLeastOnceDelivery {
         state.id = id
         val entity = id.charAt(0) match {
         case 'R' =>
+          state.kind = "Road"
           state.roadData = JSONReader.getRoad(current_map, id).get
         case 'L' =>
+          state.kind = "Lane"
           state.laneData = JSONReader.getLane(current_map, id).get
         case 'C' =>
+          state.kind = "Crossroad"
           state.crossroadData = JSONReader.getCrossroad(current_map, id).get
         case 'P' =>
+          state.kind = "Pedestrian_Crossroad"
           state.pedestrian_crossroadData = JSONReader.getPedestrianCrossroad(current_map, id).get
         case 'B' =>
+          state.kind = "Bus_Stop"
           state.bus_stopData = JSONReader.getBusStop(current_map, id).get
         case 'T' =>
+          state.kind = "Tram_Stop"
           state.tram_stopData = JSONReader.getTramStop(current_map, id).get
         case 'Z' =>
+          state.kind = "Zone"
           state.zoneData = JSONReader.getZone(current_map, id).get
         }
       case MobileEntityArrived(id) =>
@@ -476,6 +577,16 @@ class ImmovableActor extends PersistentActor with AtLeastOnceDelivery {
       // per le entità nodo, ripristina la tabella dei vehicleFree
       for(entry <- state.vehicleFreeMap) {
         vehicleFreeTempMap = vehicleFreeTempMap + (entry._1 -> entry._2)
+      }
+      // in caso di crossroad, genera la configurazione
+      if(state.crossroadData != null) {
+        state.crossroadData.category match {
+          case `classic` | `semaphore` | `roundabout` =>
+            crossroadConfiguration = getCrossroadConfiguration(state.crossroadData.id)
+            greenLane = crossroadConfiguration.keys.head
+          case _ =>
+            
+        }
       }
       
     case SnapshotOffer(metadata, offeredSnapshot) =>

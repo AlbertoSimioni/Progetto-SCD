@@ -82,14 +82,22 @@ class MovableState {
   }
   
   def getPreviousStepId : String = {
-    return Routes.getStepId(getPreviousStep(index))
+    return Routes.getStepId(getPreviousStep())
+  }
+  
+  def getNextStepId : String = {
+    return Routes.getStepId(getStepAt(1))
+  }
+  
+  def getNextStep() : step = {
+    return getStepAt(1)
   }
   
   def getStepIdAt(offset : Int) : String = {
     return Routes.getStepId(getStepAt(offset))
   }
   
-  def getPreviousStep(index : Int) : step = {
+  def getPreviousStep() : step = {
     if(pedestrianRoute != null) {
       if(currentRoute == pedestrianRoute.houseToWorkRoute) {
         if(index == 0) {
@@ -238,6 +246,60 @@ class MovableState {
     }
   }
   
+  def fromZone() : Boolean = {
+    getPreviousStep() match {
+      case zone_step(_ ,_) =>
+        return true
+      case _ =>
+        return false
+    }
+  }
+  
+  def toZone() : Boolean = {
+    getNextStep() match {
+      case zone_step(_ ,_) =>
+        return true
+      case _ =>
+        return false
+    }
+  }
+  
+  def fromBusStop() : Boolean = {
+    getPreviousStep() match {
+      case bus_stop_step(_ ,_, false) =>
+        return true
+      case _ =>
+        return false
+    }
+  }
+  
+  def fromTramStop() : Boolean = {
+    getPreviousStep() match {
+      case tram_stop_step(_ ,_, false) =>
+        return true
+      case _ =>
+        return false
+    }
+  }
+  
+  def fromCrossroad() : Boolean = {
+    getPreviousStep() match {
+      case crossroad_step(_ ,_) =>
+        return true
+      case _ =>
+        return false
+    }
+  }
+  
+  def toCrossroad() : Boolean = {
+    getNextStep() match {
+      case crossroad_step(_ ,_) =>
+        return true
+      case _ =>
+        return false
+    }
+  }
+  
   /*
    * Ritorna una lista con:
    * previosPreviousStep
@@ -290,6 +352,10 @@ class MovableState {
   var previousVehicleId : String = null
   // flag se abbiamo già mandato il messaggio predecessorGone o meno
   var predecessorGoneSent : Boolean = true
+  
+  // BUS
+  // mappa dei pedoni trasportati, con rispettive destinazioni
+  var travellers = Map[String, String]()
   
   // AT-LEAST-ONCE
   // Stato della at-least-once dell'attore

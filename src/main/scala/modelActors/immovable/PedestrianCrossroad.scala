@@ -59,221 +59,29 @@ object PedestrianCrossroad {
       case FromCar(message) =>
         message match {
           case Vehicle_In(comingFrom) =>
-            if(myRef.vehicle_pass == true && myRef.vehicleFreeTempMap.get(comingFrom).getOrElse(true)) {
-              // poni il corrispondente vehicleFree a false
-              if(myRef.vehicleFreeTempMap.contains(comingFrom)) {
-                myRef.vehicleFreeTempMap = myRef.vehicleFreeTempMap.updated(comingFrom, false)
-              }
-              else {
-                myRef.vehicleFreeTempMap = myRef.vehicleFreeTempMap + (comingFrom -> false)
-              }
-              // fai passare
-              myRef.sendToMovable(myId, senderRef, envelope(myId, senderId, Vehicle_Out))
-            }
-            else {
-              // accodamento
-              // PRECONDIZIONE: non vi possono essere richieste presenti relative alla stessa lane
-              assert(myRef.vehicleRequests.contains(comingFrom) == false)
-              myRef.vehicleRequests = myRef.vehicleRequests + (comingFrom -> (senderId, senderRef))
-            }
+            FromVehicle(myRef, myId, senderId, senderRef, message)
           case VehicleBusy(comingFrom) =>
-            // per sicurezza, metti a false anche la entry nella tabella temporanea
-            if(myRef.vehicleFreeTempMap.contains(comingFrom)) {
-              myRef.vehicleFreeTempMap = myRef.vehicleFreeTempMap.updated(comingFrom, false)
-            }
-            else {
-              myRef.vehicleFreeTempMap = myRef.vehicleFreeTempMap + (comingFrom -> false)
-            }
-            // rendi persistente il cambiamento
-            myRef.persist(PedestrianCrossroadEvent(VehicleBusyArrived(comingFrom))) { evt =>
-              if(myRef.state.vehicleFreeMap.contains(comingFrom)) {
-                myRef.state.vehicleFreeMap = myRef.state.vehicleFreeMap.updated(comingFrom, false)
-              }
-              else {
-                myRef.state.vehicleFreeMap = myRef.state.vehicleFreeMap + (comingFrom -> false)
-              }
-            }
+            FromVehicle(myRef, myId, senderId, senderRef, message)
           case VehicleFree(comingFrom) =>
-            // metti a true la entry nella tabella temporanea
-            if(myRef.vehicleFreeTempMap.contains(comingFrom)) {
-              myRef.vehicleFreeTempMap = myRef.vehicleFreeTempMap.updated(comingFrom, true)
-            }
-            else {
-              myRef.vehicleFreeTempMap = myRef.vehicleFreeTempMap + (comingFrom -> true)
-            }
-            // rendi persistente il cambiamento
-            myRef.persist(PedestrianCrossroadEvent(VehicleFreeArrived(comingFrom))) { evt =>
-              if(myRef.state.vehicleFreeMap.contains(comingFrom)) {
-                myRef.state.vehicleFreeMap = myRef.state.vehicleFreeMap.updated(comingFrom, true)
-              }
-              else {
-                myRef.state.vehicleFreeMap = myRef.state.vehicleFreeMap + (comingFrom -> true)
-              }
-            }
-            // controlla se vi sono richieste di pedoni
-            if(myRef.pedestrianRequests.size > 0) {
-              myRef.vehicle_pass = false
-              for(entry <- myRef.pedestrianRequests) {
-                myRef.numPedestrianCrossing = myRef.numPedestrianCrossing + 1
-                myRef.sendToMovable(myId, entry._2, envelope(myId, entry._1, Cross_Out))
-              }
-              myRef.pedestrianRequests = myRef.pedestrianRequests.empty
-            }
-            else {
-              // controlla se c'è una richiesta relativa alla corsia
-              if(myRef.vehicleRequests.contains(comingFrom)) {
-                myRef.vehicle_pass = true
-                val entry = myRef.vehicleRequests.get(comingFrom).get
-                myRef.sendToMovable(myId, entry._2, envelope(myId, entry._1, Vehicle_Out))
-                myRef.vehicleRequests = myRef.vehicleRequests - comingFrom
-              }
-            }
+            FromVehicle(myRef, myId, senderId, senderRef, message)
         }
       case FromBus(message) =>
         message match {
           case Vehicle_In(comingFrom) =>
-            if(myRef.vehicle_pass == true && myRef.vehicleFreeTempMap.get(comingFrom).getOrElse(true)) {
-              // poni il corrispondente vehicleFree a false
-              if(myRef.vehicleFreeTempMap.contains(comingFrom)) {
-                myRef.vehicleFreeTempMap = myRef.vehicleFreeTempMap.updated(comingFrom, false)
-              }
-              else {
-                myRef.vehicleFreeTempMap = myRef.vehicleFreeTempMap + (comingFrom -> false)
-              }
-              // fai passare
-              myRef.sendToMovable(myId, senderRef, envelope(myId, senderId, Vehicle_Out))
-            }
-            else {
-              // accodamento
-              // PRECONDIZIONE: non vi possono essere richieste presenti relative alla stessa lane
-              assert(myRef.vehicleRequests.contains(comingFrom) == false)
-              myRef.vehicleRequests = myRef.vehicleRequests + (comingFrom -> (senderId, senderRef))
-            }
+            FromVehicle(myRef, myId, senderId, senderRef, message)
           case VehicleBusy(comingFrom) =>
-            // per sicurezza, metti a false anche la entry nella tabella temporanea
-            if(myRef.vehicleFreeTempMap.contains(comingFrom)) {
-              myRef.vehicleFreeTempMap = myRef.vehicleFreeTempMap.updated(comingFrom, false)
-            }
-            else {
-              myRef.vehicleFreeTempMap = myRef.vehicleFreeTempMap + (comingFrom -> false)
-            }
-            // rendi persistente il cambiamento
-            myRef.persist(PedestrianCrossroadEvent(VehicleBusyArrived(comingFrom))) { evt =>
-              if(myRef.state.vehicleFreeMap.contains(comingFrom)) {
-                myRef.state.vehicleFreeMap = myRef.state.vehicleFreeMap.updated(comingFrom, false)
-              }
-              else {
-                myRef.state.vehicleFreeMap = myRef.state.vehicleFreeMap + (comingFrom -> false)
-              }
-            }
+            FromVehicle(myRef, myId, senderId, senderRef, message)
           case VehicleFree(comingFrom) =>
-            // metti a true la entry nella tabella temporanea
-            if(myRef.vehicleFreeTempMap.contains(comingFrom)) {
-              myRef.vehicleFreeTempMap = myRef.vehicleFreeTempMap.updated(comingFrom, true)
-            }
-            else {
-              myRef.vehicleFreeTempMap = myRef.vehicleFreeTempMap + (comingFrom -> true)
-            }
-            // rendi persistente il cambiamento
-            myRef.persist(PedestrianCrossroadEvent(VehicleFreeArrived(comingFrom))) { evt =>
-              if(myRef.state.vehicleFreeMap.contains(comingFrom)) {
-                myRef.state.vehicleFreeMap = myRef.state.vehicleFreeMap.updated(comingFrom, true)
-              }
-              else {
-                myRef.state.vehicleFreeMap = myRef.state.vehicleFreeMap + (comingFrom -> true)
-              }
-            }
-            // controlla se vi sono richieste di pedoni
-            if(myRef.pedestrianRequests.size > 0) {
-              myRef.vehicle_pass = false
-              for(entry <- myRef.pedestrianRequests) {
-                myRef.numPedestrianCrossing = myRef.numPedestrianCrossing + 1
-                myRef.sendToMovable(myId, entry._2, envelope(myId, entry._1, Cross_Out))
-              }
-              myRef.pedestrianRequests = myRef.pedestrianRequests.empty
-            }
-            else {
-              // controlla se c'è una richiesta relativa alla corsia
-              if(myRef.vehicleRequests.contains(comingFrom)) {
-                myRef.vehicle_pass = true
-                val entry = myRef.vehicleRequests.get(comingFrom).get
-                myRef.sendToMovable(myId, entry._2, envelope(myId, entry._1, Vehicle_Out))
-                myRef.vehicleRequests = myRef.vehicleRequests - comingFrom
-              }
-            }
+            FromVehicle(myRef, myId, senderId, senderRef, message)
         }
       case FromTram(message) =>
         message match {
           case Vehicle_In(comingFrom) =>
-            if(myRef.vehicle_pass == true && myRef.vehicleFreeTempMap.get(comingFrom).getOrElse(true)) {
-              // poni il corrispondente vehicleFree a false
-              if(myRef.vehicleFreeTempMap.contains(comingFrom)) {
-                myRef.vehicleFreeTempMap = myRef.vehicleFreeTempMap.updated(comingFrom, false)
-              }
-              else {
-                myRef.vehicleFreeTempMap = myRef.vehicleFreeTempMap + (comingFrom -> false)
-              }
-              // fai passare
-              myRef.sendToMovable(myId, senderRef, envelope(myId, senderId, Vehicle_Out))
-            }
-            else {
-              // accodamento
-              // PRECONDIZIONE: non vi possono essere richieste presenti relative alla stessa lane
-              assert(myRef.vehicleRequests.contains(comingFrom) == false)
-              myRef.vehicleRequests = myRef.vehicleRequests + (comingFrom -> (senderId, senderRef))
-            }
+            FromVehicle(myRef, myId, senderId, senderRef, message)
           case VehicleBusy(comingFrom) =>
-            // per sicurezza, metti a false anche la entry nella tabella temporanea
-            if(myRef.vehicleFreeTempMap.contains(comingFrom)) {
-              myRef.vehicleFreeTempMap = myRef.vehicleFreeTempMap.updated(comingFrom, false)
-            }
-            else {
-              myRef.vehicleFreeTempMap = myRef.vehicleFreeTempMap + (comingFrom -> false)
-            }
-            // rendi persistente il cambiamento
-            myRef.persist(PedestrianCrossroadEvent(VehicleBusyArrived(comingFrom))) { evt =>
-              if(myRef.state.vehicleFreeMap.contains(comingFrom)) {
-                myRef.state.vehicleFreeMap = myRef.state.vehicleFreeMap.updated(comingFrom, false)
-              }
-              else {
-                myRef.state.vehicleFreeMap = myRef.state.vehicleFreeMap + (comingFrom -> false)
-              }
-            }
+            FromVehicle(myRef, myId, senderId, senderRef, message)
           case VehicleFree(comingFrom) =>
-            // metti a true la entry nella tabella temporanea
-            if(myRef.vehicleFreeTempMap.contains(comingFrom)) {
-              myRef.vehicleFreeTempMap = myRef.vehicleFreeTempMap.updated(comingFrom, true)
-            }
-            else {
-              myRef.vehicleFreeTempMap = myRef.vehicleFreeTempMap + (comingFrom -> true)
-            }
-            // rendi persistente il cambiamento
-            myRef.persist(PedestrianCrossroadEvent(VehicleFreeArrived(comingFrom))) { evt =>
-              if(myRef.state.vehicleFreeMap.contains(comingFrom)) {
-                myRef.state.vehicleFreeMap = myRef.state.vehicleFreeMap.updated(comingFrom, true)
-              }
-              else {
-                myRef.state.vehicleFreeMap = myRef.state.vehicleFreeMap + (comingFrom -> true)
-              }
-            }
-            // controlla se vi sono richieste di pedoni
-            if(myRef.pedestrianRequests.size > 0) {
-              myRef.vehicle_pass = false
-              for(entry <- myRef.pedestrianRequests) {
-                myRef.numPedestrianCrossing = myRef.numPedestrianCrossing + 1
-                myRef.sendToMovable(myId, entry._2, envelope(myId, entry._1, Cross_Out))
-              }
-              myRef.pedestrianRequests = myRef.pedestrianRequests.empty
-            }
-            else {
-              // controlla se c'è una richiesta relativa alla corsia
-              if(myRef.vehicleRequests.contains(comingFrom)) {
-                myRef.vehicle_pass = true
-                val entry = myRef.vehicleRequests.get(comingFrom).get
-                myRef.sendToMovable(myId, entry._2, envelope(myId, entry._1, Vehicle_Out))
-                myRef.vehicleRequests = myRef.vehicleRequests - comingFrom
-              }
-            }
+            FromVehicle(myRef, myId, senderId, senderRef, message)
         }
     }
   }
@@ -293,6 +101,84 @@ object PedestrianCrossroad {
         }
         else {
           state.vehicleFreeMap = state.vehicleFreeMap + (comingFrom -> true)
+        }
+    }
+  }
+  
+  // UTILITY
+  // modella la risposta ad un generico veicolo
+  def FromVehicle(myRef : ImmovableActor, myId : String, senderId : String, senderRef : ActorRef, message : Any) : Unit = {
+    message match {
+      case Vehicle_In(comingFrom) =>
+        if(myRef.vehicle_pass == true && myRef.vehicleFreeTempMap.get(comingFrom).getOrElse(true)) {
+          // poni il corrispondente vehicleFree a false
+          if(myRef.vehicleFreeTempMap.contains(comingFrom)) {
+            myRef.vehicleFreeTempMap = myRef.vehicleFreeTempMap.updated(comingFrom, false)
+          }
+          else {
+            myRef.vehicleFreeTempMap = myRef.vehicleFreeTempMap + (comingFrom -> false)
+          }
+          // fai passare
+          myRef.sendToMovable(myId, senderRef, envelope(myId, senderId, Vehicle_Out))
+        }
+        else {
+          // accodamento
+          // PRECONDIZIONE: non vi possono essere richieste presenti relative alla stessa lane
+          assert(myRef.vehicleRequests.contains(comingFrom) == false)
+          val tuple = (senderId, senderRef)
+          myRef.vehicleRequests = myRef.vehicleRequests + (comingFrom -> tuple)
+        }
+      case VehicleBusy(comingFrom) =>
+        // per sicurezza, metti a false anche la entry nella tabella temporanea
+        if(myRef.vehicleFreeTempMap.contains(comingFrom)) {
+          myRef.vehicleFreeTempMap = myRef.vehicleFreeTempMap.updated(comingFrom, false)
+        }
+        else {
+          myRef.vehicleFreeTempMap = myRef.vehicleFreeTempMap + (comingFrom -> false)
+        }
+        // rendi persistente il cambiamento
+        myRef.persist(PedestrianCrossroadEvent(VehicleBusyArrived(comingFrom))) { evt =>
+          if(myRef.state.vehicleFreeMap.contains(comingFrom)) {
+            myRef.state.vehicleFreeMap = myRef.state.vehicleFreeMap.updated(comingFrom, false)
+          }
+          else {
+            myRef.state.vehicleFreeMap = myRef.state.vehicleFreeMap + (comingFrom -> false)
+          }
+        }
+      case VehicleFree(comingFrom) =>
+        // metti a true la entry nella tabella temporanea
+        if(myRef.vehicleFreeTempMap.contains(comingFrom)) {
+          myRef.vehicleFreeTempMap = myRef.vehicleFreeTempMap.updated(comingFrom, true)
+        }
+        else {
+          myRef.vehicleFreeTempMap = myRef.vehicleFreeTempMap + (comingFrom -> true)
+        }
+        // rendi persistente il cambiamento
+        myRef.persist(PedestrianCrossroadEvent(VehicleFreeArrived(comingFrom))) { evt =>
+          if(myRef.state.vehicleFreeMap.contains(comingFrom)) {
+            myRef.state.vehicleFreeMap = myRef.state.vehicleFreeMap.updated(comingFrom, true)
+          }
+          else {
+            myRef.state.vehicleFreeMap = myRef.state.vehicleFreeMap + (comingFrom -> true)
+          }
+        }
+        // controlla se vi sono richieste di pedoni
+        if(myRef.pedestrianRequests.size > 0) {
+          myRef.vehicle_pass = false
+          for(entry <- myRef.pedestrianRequests) {
+            myRef.numPedestrianCrossing = myRef.numPedestrianCrossing + 1
+            myRef.sendToMovable(myId, entry._2, envelope(myId, entry._1, Cross_Out))
+          }
+          myRef.pedestrianRequests = myRef.pedestrianRequests.empty
+        }
+        else {
+          // controlla se c'è una richiesta relativa alla corsia
+          if(myRef.vehicleRequests.contains(comingFrom)) {
+            myRef.vehicle_pass = true
+            val entry = myRef.vehicleRequests.get(comingFrom).get
+            myRef.sendToMovable(myId, entry._2, envelope(myId, entry._1, Vehicle_Out))
+            myRef.vehicleRequests = myRef.vehicleRequests - comingFrom
+          }
         }
     }
   }

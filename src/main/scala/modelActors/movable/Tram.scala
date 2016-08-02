@@ -12,6 +12,9 @@ import common.CommonMessages._
  */
 object Tram {
   
+  // capacità di trasporto di un tram
+  val capacity = 40
+  
   // commands
   
   // events
@@ -19,39 +22,21 @@ object Tram {
   def fromImmovableHandler(myRef : MovableActor, myId : String, senderId : String, command : RealCommand) : Unit = {
     command match {
       case FromBusStop(message) =>
-        
+        message match {
+          case Vehicle_Out =>
+            // possiamo procedere nell'avanzamento
+            myRef.interestedInVelocityTick = true
+        }
       case FromCrossroad(message) =>
-        
+        message match {
+          case Vehicle_Out =>
+            // possiamo procedere nell'avanzamento
+            myRef.interestedInVelocityTick = true
+        }
       case FromLane(message) =>
         message match {
           case NextVehicleResponse(id, ref) =>
-            // è arrivato il riferimento al prossimo veicolo
-            myRef.nextVehicle = ref
-            // per prima cosa, salva l'id del next Vehicle
-            myRef.persist(CarEvent(NextVehicleIdArrived(id))) { evt => 
-              myRef.state.nextVehicleId = id
-            }
-            // ora è possibile recuperare il percorso, qualora non fosse già stato fatto
-            val stepSequence = myRef.state.getStepSequence()
-            if(myRef.state.beginOfTheStep) {
-              // recupera la sequenza di punti da percorrere
-              val currentPointsSequence = getPointsSequence(id, stepSequence)
-              myRef.persist(BeginOfTheStep(currentPointsSequence)) { evt =>
-                myRef.state.currentPointsSequence = evt.pointsSequence
-                myRef.state.currentPointIndex = 0
-                myRef.state.beginOfTheStep = false
-              }
-            }
-            // se il riferimento era nullo, allora possiamo procedere
-            // altrimenti aspettiamo il primo Advanced
-            if(ref == null) {
-              // attiva l'interessamento agli eventi di avanzamento
-              myRef.interestedInVelocityTick = true
-            }
-            else {
-              // attiva l'aggiornamento della posizione dal veicolo successivo
-              myRef.sendToMovable(myId, myRef.self, ref, envelope(myId, id, SuccessorArrived))
-            }
+            Vehicle.FromLane(myRef, myId, senderId, message)
         }
       case FromPedestrianCrossroad(message) =>
         message match {
@@ -62,7 +47,22 @@ object Tram {
       case FromRoad(message) =>
         
       case FromTramStop(message) =>
-        
+        message match {
+          case Vehicle_Out =>
+            // possiamo procedere nell'avanzamento
+            myRef.interestedInVelocityTick = true
+          case GetIn(goingOn) =>
+            // per prima cosa, rendi persistente l'arrivo dei passeggeri
+            myRef.persist(TramEvent(TravellersGoneOn(goingOn))) { evt =>
+              for(tuple <- goingOn) {
+                myRef.state.travellers = myRef.state.travellers + (tuple._1 -> tuple._2)
+              }
+            }
+            // procedi con la seconda parte del percorso
+            myRef.pathPhase = myRef.pathPhase + 1
+            myRef.currentNonPersistentPointIndex = 0
+            myRef.interestedInVelocityTick = true
+        }
       case FromZone(message) =>
         
     }
@@ -75,78 +75,37 @@ object Tram {
       case FromCar(message) =>
         message match {
           case SuccessorArrived =>
-            myRef.persist(PredecessorArrived(senderId)) { evt =>
-              myRef.state.previousVehicleId = senderId
-            }
-            // ogni volta che effettuo uno spostamento, devo notificarlo al predecessore
-            myRef.previousVehicle = senderRef
+            Vehicle.FromVehicle(myRef, myId, senderId, senderRef, message)
+          case PredecessorArrived =>
+            Vehicle.FromVehicle(myRef, myId, senderId, senderRef, message)
           case Advanced(lastPosition) =>
-            // aggiorna la posizione del veicolo davanti
-            myRef.nextVehicleLastPosition = lastPosition
-            // aggiorna anche il riferimento all'attore, per sicurezza
-            myRef.nextVehicle = senderRef
-            // se è la prima volta che ricevi questo messaggio, attiva l'interruttore di interessamento ai velocity tick
-            if(myRef.interestedInVelocityTick == false) {
-              myRef.interestedInVelocityTick = true
-            }
+            Vehicle.FromVehicle(myRef, myId, senderId, senderRef, message)
           case PredecessorGone =>
-            // smetti di seguire gli update del prossimo veicolo
-            myRef.persist(TramEvent(NextVehicleGone)) { evt =>
-              myRef.state.nextVehicleId = null
-            }
-            myRef.nextVehicle = null
-            myRef.nextVehicleLastPosition = null
+            Vehicle.FromVehicle(myRef, myId, senderId, senderRef, message)
         }
       case FromBus(message) =>
         message match {
           case SuccessorArrived =>
-            myRef.persist(PredecessorArrived(senderId)) { evt =>
-              myRef.state.previousVehicleId = senderId
-            }
-            // ogni volta che effettuo uno spostamento, devo notificarlo al predecessore
-            myRef.previousVehicle = senderRef
+            Vehicle.FromVehicle(myRef, myId, senderId, senderRef, message)
+          case PredecessorArrived =>
+            Vehicle.FromVehicle(myRef, myId, senderId, senderRef, message)
           case Advanced(lastPosition) =>
-            // aggiorna la posizione del veicolo davanti
-            myRef.nextVehicleLastPosition = lastPosition
-            // aggiorna anche il riferimento all'attore, per sicurezza
-            myRef.nextVehicle = senderRef
-            // se è la prima volta che ricevi questo messaggio, attiva l'interruttore di interessamento ai velocity tick
-            if(myRef.interestedInVelocityTick == false) {
-              myRef.interestedInVelocityTick = true
-            }
+            Vehicle.FromVehicle(myRef, myId, senderId, senderRef, message)
           case PredecessorGone =>
-            // smetti di seguire gli update del prossimo veicolo
-            myRef.persist(TramEvent(NextVehicleGone)) { evt =>
-              myRef.state.nextVehicleId = null
-            }
-            myRef.nextVehicle = null
-            myRef.nextVehicleLastPosition = null
+            Vehicle.FromVehicle(myRef, myId, senderId, senderRef, message)
         }
       case FromTram(message) =>
         message match {
           case SuccessorArrived =>
-            myRef.persist(PredecessorArrived(senderId)) { evt =>
-              myRef.state.previousVehicleId = senderId
-            }
-            // ogni volta che effettuo uno spostamento, devo notificarlo al predecessore
-            myRef.previousVehicle = senderRef
+            Vehicle.FromVehicle(myRef, myId, senderId, senderRef, message)
+          case PredecessorArrived =>
+            Vehicle.FromVehicle(myRef, myId, senderId, senderRef, message)
           case Advanced(lastPosition) =>
-            // aggiorna la posizione del veicolo davanti
-            myRef.nextVehicleLastPosition = lastPosition
-            // aggiorna anche il riferimento all'attore, per sicurezza
-            myRef.nextVehicle = senderRef
-            // se è la prima volta che ricevi questo messaggio, attiva l'interruttore di interessamento ai velocity tick
-            if(myRef.interestedInVelocityTick == false) {
-              myRef.interestedInVelocityTick = true
-            }
+            Vehicle.FromVehicle(myRef, myId, senderId, senderRef, message)
           case PredecessorGone =>
-            // smetti di seguire gli update del prossimo veicolo
-            myRef.persist(TramEvent(NextVehicleGone)) { evt =>
-              myRef.state.nextVehicleId = null
-            }
-            myRef.nextVehicle = null
-            myRef.nextVehicleLastPosition = null
+            Vehicle.FromVehicle(myRef, myId, senderId, senderRef, message)
         }
+        
     }
   }
   
@@ -156,6 +115,14 @@ object Tram {
         state.nextVehicleId = id
       case NextVehicleGone =>
         state.nextVehicleId = null
+      case TravellersGoneOff(goingOff) =>
+        for(traveller <- goingOff) {
+          state.travellers = state.travellers - traveller
+        }
+      case TravellersGoneOn(goingOn) =>
+        for(tuple <- goingOn) {
+          state.travellers = state.travellers + (tuple._1 -> tuple._2)
+        }
     }
   }
   

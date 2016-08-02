@@ -27,10 +27,15 @@ import common.ToPersistentMessages
 import common.ToNonPersistentMessages
 import time.TimeCostraints._
 import time.TimeMessages._
+import map.JSONReader
 import map.PointsSequence._
 import map.Domain._
+import map.Domain.category._
 import map.Routes._
 import MovableState._
+import pubsub.PublisherInstance
+import pubsub.Messages._
+import pubsub.Utility._
 
 /**
  * @author Matteo Pozza
@@ -57,6 +62,10 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
   import context.dispatcher
   
   import MovableActor._
+  
+  // GUI
+  // riferimento per la pubblicazione di eventi grafici
+  val publisherGuiHandler = PublisherInstance.getPublisherModelEvents(context.system)
   
   // PERSISTENCE
   override def persistenceId: String = "MovableActor-" + id
@@ -89,12 +98,17 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
   var nextVehicleLastPosition = point(-1, -1)
   // Riferimento al veicolo precedente
   var previousVehicle : ActorRef = null
+  
   //Id della lane precedente
   var previousLaneId : String = null
   
-  // pedestrian crossroad
-  // variabile per il pedone, modella dove siamo arrivati nel percorso
-  var pedestrianCrossroadPhase = 0
+  // variabile che modella dove siamo arrivati nel percorso
+  var pathPhase = 0
+  
+  // NON-PERSISTENT DATA
+  // lista di punti e indice di avanzamento per gli step che non sono da rendere persistenti
+  var currentNonPersistentPointsSequence : List[List[point]] = null
+  var currentNonPersistentPointIndex : Int = 0
   
   // PERSISTENCE
   // Lo stato dell'attore deve essere modellato da un var
@@ -201,66 +215,127 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
                     interestedInVelocityTick = true
                   case lane_step(lane, direction) =>
                     // sto approciando una lane
-                    // potrmmo essere nel caso in cui non siamo riusciti a mandare PredecessorGone prima del crash del nodo in cui siamo
-                    // la situazione è segnalata dal flag booleano predecessorGoneSent
-                    // in questo caso, bisogna recuperare il riferimento al veicolo precedente prima di procedere
-                    if(previousVehicle == null && state.predecessorGoneSent == false) {
-                      // l'unico caso in cui possiamo essere è che non siamo riusciti ad inviare PredecessorGone prima di morire
-                      // recupera id della lane precedente
-                      val laneId = state.getStepIdAt(-2)
-                      // manda un messaggio di richiesta del veicolo in questione
-                      sendToImmovable(id, self, laneId, MovableActorRequest(state.previousVehicleId))
+                    // potrei prtire da una zona e non aver cominciato il percorso
+                    if(state.fromZone() == true && state.beginOfTheStep == true) {
+                      // in tal caso, fai la richiesta alla lane
+                      val firstPoint = getPointsSequence(id, stepSequence)(0)(0)
+                      sendToImmovable(id, self, lane.id, envelope(id, lane.id, LaneAccessRequest(firstPoint, direction)))
                     }
                     else {
-                      // per prima cosa, qualora vi fosse un veicolo predecessore, informalo che non deve più seguirci
-                      if(previousVehicle != null) {
-                        sendToMovable(id, self, previousVehicle, envelope(id, state.previousVehicleId, PredecessorGone))
-                        persist(PredecessorGoneSent) { evt =>
-                          state.previousVehicleId = null
-                          state.predecessorGoneSent = true
+                      // potremmo essere nel caso in cui non siamo riusciti a mandare PredecessorGone prima del crash del nodo in cui siamo
+                      // la situazione è segnalata dal flag booleano predecessorGoneSent
+                      // in questo caso, bisogna recuperare il riferimento al veicolo precedente prima di procedere
+                      if(previousVehicle == null && state.predecessorGoneSent == false) {
+                        // l'unico caso in cui possiamo essere è che non siamo riusciti ad inviare PredecessorGone prima di morire
+                        // recupera id della lane precedente
+                        var previousLaneId : String = null
+                        if(JSONReader.getLane(current_map, state.getStepIdAt(-2)).isEmpty == false) {
+                          previousLaneId = state.getStepIdAt(-2)
                         }
-                        previousVehicle = null
-                      }
-                      // se c'è una qualche previousLane, avvisala di modificare i campi lastVehicle (qualora fossimo stati l'unico veicolo)
-                      if(previousLaneId != null) {
-                        sendToImmovable(id, self, previousLaneId, HandleLastVehicle)
-                        previousLaneId = null
-                      }
-                      // a prescindere da primo approccio allo step o ripristino, l'unico dato di cui dispongo
-                      // è l'eventuale id del next vehicle
-                      if(state.nextVehicleId == null) {
-                        // dobbiamo ancora iniziare
-                        // avvisa l'entità precedente (incrocio/ strisce pedonali, etc.) che sei ufficialmente sulla nuova lane
-                        // in questo modo, l'entità in questione rende persistente l'occupazione della lane considerata.
-                        val previousId = state.getPreviousStepId
-                        // recupera anche l'id della lane da cui provenivi
-                        val previousLaneId = state.getStepIdAt(-2)
-                        sendToImmovable(id, self, previousId, envelope(id, previousId, VehicleBusy(previousLaneId)))
-                        // manda un messaggio alla lane per ricevere il ref
-                        sendToImmovable(id, self, lane.id, envelope(id, lane.id, NextVehicleFirstRequest))
+                        else {
+                          // avevamo due incroci prima
+                          previousLaneId = state.getStepIdAt(-3)
+                        }
+                        // manda un messaggio di richiesta del veicolo in questione
+                        sendToImmovable(id, self, previousLaneId, MovableActorRequest(state.previousVehicleId))
                       }
                       else {
-                        // sicuramente siamo in ripristino
-                        // recuperiamo il ref
-                        // controlliamo se sono l'ultimo della lane o no
-                        var flag = false
-                        if(state.previousVehicleId == null || state.predecessorGoneSent == false) {
-                          flag = true
+                        // per prima cosa, qualora vi fosse un veicolo predecessore, informalo che non deve più seguirci
+                        if(previousVehicle != null) {
+                          sendToMovable(id, self, previousVehicle, envelope(id, state.previousVehicleId, PredecessorGone))
+                          persist(PredecessorGoneSent) { evt =>
+                            state.previousVehicleId = null
+                            state.predecessorGoneSent = true
+                          }
+                          previousVehicle = null
                         }
-                        sendToImmovable(id, self, lane.id, envelope(id, lane.id, NextVehicleRequest(state.nextVehicleId, flag)))
+                        // se c'è una qualche previousLane, avvisala di modificare i campi lastVehicle (qualora fossimo stati l'unico veicolo)
+                        if(previousLaneId != null) {
+                          sendToImmovable(id, self, previousLaneId, envelope(id, previousLaneId, HandleLastVehicle))
+                          previousLaneId = null
+                        }
+                        // a prescindere da primo approccio allo step o ripristino, l'unico dato di cui dispongo
+                        // è l'eventuale id del next vehicle
+                        if(state.nextVehicleId == null) {
+                          // dobbiamo ancora iniziare
+                          // avvisa l'entità precedente (incrocio/ strisce pedonali, etc.) che sei ufficialmente sulla nuova lane
+                          // in questo modo, l'entità in questione rende persistente l'occupazione della lane considerata.
+                          val previousId = state.getPreviousStepId
+                          // recupera anche l'id della lane da cui provenivi
+                          var previousLaneId : String = null
+                          if(JSONReader.getLane(current_map, state.getStepIdAt(-2)).isEmpty == false) {
+                            previousLaneId = state.getStepIdAt(-2)
+                          }
+                          else {
+                            // avevamo due incroci prima
+                            previousLaneId = state.getStepIdAt(-3)
+                          }
+                          sendToImmovable(id, self, previousId, envelope(id, previousId, VehicleBusy(previousLaneId)))
+                          // manda un messaggio alla lane corrente per ricevere il ref
+                          sendToImmovable(id, self, lane.id, envelope(id, lane.id, NextVehicleFirstRequest))
+                        }
+                        else {
+                          // sicuramente siamo in ripristino
+                          // recuperiamo il ref
+                          // controlliamo se sono l'ultimo della lane o no
+                          var flag = false
+                          if(state.previousVehicleId == null || state.predecessorGoneSent == false) {
+                            flag = true
+                          }
+                          sendToImmovable(id, self, lane.id, envelope(id, lane.id, NextVehicleRequest(state.nextVehicleId, flag)))
+                        }
                       }
                     }
                     
                   case crossroad_step(crossroad, direction) =>
-                    //
+                    if(state.fromCrossroad() && getMyLength() != pedestrian_length) {
+                      // siamo un veicolo e siamo appena stati su un altro incrocio
+                      // fai solo persist and next step
+                      sendToMovable(id, self, self, PersistAndNextStep)
+                    }
+                    else {
+                      // se siamo ad un incrocio, vi sono due possibilità:
+                      // - sono un pedone -> carico il percorso e procedo senza indugio
+                      // - sono un veicolo -> faccio vehicle_in, quando ricevo vehicle_out procedo senza indugio
+                      pathPhase = 0
+                      currentNonPersistentPointsSequence = getPointsSequence(id, stepSequence)
+                      currentNonPersistentPointIndex = 0
+                      if(getMyLength() == pedestrian_length) {
+                        interestedInVelocityTick = true
+                      }
+                      else {
+                        if(state.toCrossroad()) {
+                          // siamo un veicolo e stiamo affrontando un incrocio doppio
+                          // vogli fare la richiesta all'incrocio classic
+                          val target = getClassicCrossroad(crossroad)
+                          // recupera l'id della lane precedente
+                          val previousId = state.getPreviousStepId
+                          // richiesta all'incrocio
+                          sendToImmovable(id, self, target.id, envelope(id, target.id, Vehicle_In(previousId)))
+                        }
+                        else {
+                          if(crossroad.category == `nil` || crossroad.category == `angle`) {
+                            interestedInVelocityTick = true
+                          }
+                          else {
+                            // recupera l'id della lane precedente
+                            val previousId = state.getPreviousStepId
+                            // richiesta all'incrocio
+                            sendToImmovable(id, self, crossroad.id, envelope(id, crossroad.id, Vehicle_In(previousId)))
+                          }
+                        }
+                      }
+                    }
+                    
                   case pedestrian_crossroad_step(pedestrian_crossroad, direction) =>
-                    pedestrianCrossroadPhase = 0
+                    pathPhase = 0
                     // vi sono due possibilità: sono un pedone, o sono un veicolo
-                    // se sono un pedone, vi sono due possibilità: o le ignoro (ho un solo percorso), o le affronto (ho 2 percorsi)
+                    // se sono un pedone, vi sono due possibilità: o le ignoro (ho un solo percorso), o le affronto (ho 3 percorsi)
                     // se sono un veicolo, ho un solo percorso e le devo affrontare
                     // ricordiamoci che non dobbiamo salvare nulla
-                    val currentPointsSequence = getPointsSequence(id, stepSequence)
-                    if(currentPointsSequence.length > 1) {
+                    currentNonPersistentPointsSequence = getPointsSequence(id, stepSequence)
+                    currentNonPersistentPointIndex = 0
+                    if(currentNonPersistentPointsSequence.length > 1) {
                       // siamo sicuramente un pedone che deve affrontare le strisce
                       // possiamo avanzare liberamente fino alla fine della prima sequenza di punti
                       interestedInVelocityTick = true
@@ -280,13 +355,52 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
                       }
                     }
                   case bus_stop_step(bus_stop, direction, ignore) =>
-                    //
+                    pathPhase = 0
+                    // sto affontando una fermata del bus
+                    // se sono un pedone, a prescindere se le ignoro o meno, posso procedere fino alla fine del percorso
+                    // se sono un veicolo, a prescindere se le ignoro o meno, devo fare la richiesta vehicle_in
+                    currentNonPersistentPointsSequence = getPointsSequence(id, stepSequence)
+                    currentNonPersistentPointIndex = 0
+                    // test balordo per capire se siamo un pedone o no
+                    if(getMyLength() == pedestrian_length) {
+                      interestedInVelocityTick = true
+                    }
+                    else {
+                      // recupera l'id della lane precedente
+                      val previousId = state.getPreviousStepId
+                      // richiesta alle fermata del bus
+                      sendToImmovable(id, self, bus_stop.id, envelope(id, bus_stop.id, Vehicle_In(previousId)))
+                    }
                   case tram_stop_step(tram_stop, direction, ignore) =>
-                    //
+                    pathPhase = 0
+                    // sto affontando una fermata del tram
+                    // se sono un pedone, a prescindere se le ignoro o meno, posso procedere fino alla fine del percorso
+                    // se sono un veicolo, a prescindere se le ignoro o meno, devo fare la richiesta vehicle_in
+                    currentNonPersistentPointsSequence = getPointsSequence(id, stepSequence)
+                    currentNonPersistentPointIndex = 0
+                    // test balordo per capire se siamo un pedone o no
+                    if(getMyLength() == pedestrian_length) {
+                      interestedInVelocityTick = true
+                    }
+                    else {
+                      // recupera l'id della lane precedente
+                      val previousId = state.getPreviousStepId
+                      // richiesta alle fermata del bus
+                      sendToImmovable(id, self, tram_stop.id, envelope(id, tram_stop.id, Vehicle_In(previousId)))
+                    }
                   case zone_step(zone, direction) =>
                     // PRECONDIZIONE: solo un pedone o un veicolo possono avere uno zone_step nel loro percorso
                     // siamo dunque autorizzati ad attuare la logica di dormi/veglia
                     //
+                    // per quanto riguarda l'interfaccia grafica, noi siamo scomparsi, a prescindere se siamo in ritardo o in anticipo
+                    // lancia evento per l'interfaccia grafica
+                    if(getMyLength() == pedestrian_length) {
+                      publisherGuiHandler ! hidePedestrian(id, zone.id, false)
+                    }
+                    else {
+                      assert(getMyLength() == car_length)
+                      publisherGuiHandler ! hideCar(id, zone.id)
+                    }
                     // prima cosa: capisci di che zona si tratta
                     var comparedTime : TimeValue = null
                     zone.variety match {
@@ -316,6 +430,8 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
                     if(isLate(state.currentTime, comparedTime)) {
                       // se in ritardo, vai al prossimo step
                       sendToMovable(id, self, self, PersistAndNextStep)
+                      // evento grafico associato
+                      publisherGuiHandler ! entityAwaked(id, zone.id)
                     }
                     else {
                       // se in anticipo, vai a dormire
@@ -392,6 +508,8 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
         state.currentRoute(state.index) match {
           case road_step(road, direction) =>
             // LANCIA EVENTO LEGATO AL PUNTO CORRENTE
+            val currentPoint = state.currentPointsSequence(0)(state.currentPointIndex)
+            publisherGuiHandler ! pedestrianPosition(id, currentPoint.x, currentPoint.y, getGuiDirection(direction))
             
             // esamina dove siamo nella sequenza di punti
             if(state.currentPointIndex == state.currentPointsSequence(0).length-1) {
@@ -407,20 +525,40 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
             }
           case lane_step(lane, direction) =>
             // LANCIA EVENTO LEGATO AL PUNTO CORRENTE
+            val currentPoint = state.currentPointsSequence(0)(state.currentPointIndex)
+            if(getMyLength() == car_length) {
+              publisherGuiHandler ! carPosition(id, currentPoint.x, currentPoint.y, getGuiDirection(direction))
+            }
+            else if(getMyLength() == bus_length) {
+              publisherGuiHandler ! busPosition(id, currentPoint.x, currentPoint.y, getGuiDirection(direction))
+            }
+            else {
+              // tram
+              publisherGuiHandler ! tramPosition(id, currentPoint.x, currentPoint.y, getGuiDirection(direction))
+            }
             
+            // manda l'update della posizione alla lane
+            sendToImmovable(id, self, lane.id, envelope(id, lane.id, Advanced(currentPoint)))
             // c'è un veicolo dietro?
             if(previousVehicle != null) {
               // c'è qualcuno, manda update della posizione
-              val currentPoint = state.currentPointsSequence(0)(state.currentPointIndex)
               sendToMovable(id, self, previousVehicle, envelope(id, state.previousVehicleId, Advanced(currentPoint)))
             }
             // qualora sia stata raggiunta la vehicle length + 1, manda all'entità precedente un messaggio vehicle free
             // per approccio conservativo, utilizziamo la bus_length
             // non utilizziamo la tram_length perchè si assume che per una tratta del tram giri un solo tram, che quindi non deve competere con nessun altro tram
-            if(state.currentPointIndex == bus_length + 1) {
+            // attenzione: se partivamo da una zona, NON dobbiamo mandare la vehicle free
+            if(state.fromZone() == false && state.currentPointIndex == bus_length + 1) {
               val previousStepId = state.getPreviousStepId
               // recupera anche l'id della lane da cui provenivamo
-              val previousLaneId = state.getStepIdAt(-2)
+              var previousLaneId : String = null
+              if(JSONReader.getLane(current_map, state.getStepIdAt(-2)).isEmpty == false) {
+                previousLaneId = state.getStepIdAt(-2)
+              }
+              else {
+                // avevamo due incroci prima
+                previousLaneId = state.getStepIdAt(-3)
+              }
               sendToImmovable(id, self, previousStepId, envelope(id, previousStepId, VehicleFree(previousLaneId)))
             }
             // GESTIONE PUNTO SUCCESSIVO
@@ -458,13 +596,32 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
             if(go == true) {
               if(state.currentPointIndex == state.currentPointsSequence(0).length-1) {
                 // abbiamo finito la lane
-                persist(PredecessorGoneNotSentYet) { evt =>
-                  state.predecessorGoneSent = false
+                if(state.toZone() == false) {
+                  persist(PredecessorGoneNotSentYet) { evt =>
+                    state.predecessorGoneSent = false
+                  }
+                  // la lane corrente diventa la nostra previousLane
+                  previousLaneId = lane.id
+                }
+                else {
+                  // potremmo essere nel caso in cui la zone è attaccata all'incrocio e non abbiamo avuto spazio sufficiente per lanciare la vehicle_free
+                  // in tal caso, prima di passare allo step successivo, devo mandarla
+                  if(state.currentPointIndex < bus_length + 1) {
+                    val previousStepId = state.getPreviousStepId
+                    // recupera anche l'id della lane da cui provenivamo
+                    var previousLaneId : String = null
+                    if(JSONReader.getLane(current_map, state.getStepIdAt(-2)).isEmpty == false) {
+                      previousLaneId = state.getStepIdAt(-2)
+                    }
+                    else {
+                      // avevamo due incroci prima
+                      previousLaneId = state.getStepIdAt(-3)
+                    }
+                    sendToImmovable(id, self, previousStepId, envelope(id, previousStepId, VehicleFree(previousLaneId)))
+                  }
                 }
                 // procedi al prossimo step
                 sendToMovable(id, self, self, PersistAndNextStep)
-                // la lane corrente diventa la nostra previousLane
-                previousLaneId = lane.id
                 // fine del componente che stiamo percorrendo, spegni l'interruttore
                 interestedInVelocityTick = false
               }
@@ -475,17 +632,70 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
               }
             }
           case crossroad_step(crossroad, direction) =>
-            //
+            // il comportamento è molto semplice: vai avanti fino a che non hai esaurito tutti i pezzi di percorso
+            // LANCIA EVENTO LEGATO AL PUNTO CORRENTE
+            // dal momento che vi è una direzione diversa per ogni pezzo di percorso, la calcoliamo a partire dai primi due punti del percorso in questione
+            // questo implicitamente assume che un pezzo di percorso sia composto almeno da due punti
+            val firstPoint = currentNonPersistentPointsSequence(pathPhase)(0)
+            val secondPoint = currentNonPersistentPointsSequence(pathPhase)(1)
+            val currentPoint = state.currentPointsSequence(pathPhase)(state.currentPointIndex)
+            if(getMyLength() == pedestrian_length) {
+              publisherGuiHandler ! pedestrianPosition(id, currentPoint.x, currentPoint.y, getGuiDirection(firstPoint, secondPoint))
+            }
+            else if(getMyLength() == car_length) {
+              publisherGuiHandler ! carPosition(id, currentPoint.x, currentPoint.y, getGuiDirection(firstPoint, secondPoint))
+            }
+            else if(getMyLength() == bus_length) {
+              publisherGuiHandler ! busPosition(id, currentPoint.x, currentPoint.y, getGuiDirection(firstPoint, secondPoint))
+            }
+            else {
+              // tram
+              publisherGuiHandler ! tramPosition(id, currentPoint.x, currentPoint.y, getGuiDirection(firstPoint, secondPoint))
+            }
+            
+            if(currentNonPersistentPointIndex == currentNonPersistentPointsSequence(pathPhase).length - 1) {
+              if(pathPhase == currentNonPersistentPointsSequence.length - 1) {
+                // siamo alla fine
+                sendToMovable(id, self, self, PersistAndNextStep)
+                // fine del componente che stiamo percorrendo, spegni l'interruttore
+                interestedInVelocityTick = false
+              }
+              else {
+                // abbiamo ancora dei pezzi di percorso
+                pathPhase = pathPhase + 1
+                currentNonPersistentPointIndex = 0
+              }
+            }
+            else {
+              currentNonPersistentPointIndex = currentNonPersistentPointIndex + 1
+            }
+            
           case pedestrian_crossroad_step(pedestrian_crossroad, direction) =>
             // possiamo essere un pedone o un veicolo
             // in ogni caso, possiamo procedere senza problemi fino alla fine della (prima) sequenza di punti
             // LANCIA EVENTO LEGATO AL PUNTO CORRENTE
+            val firstPoint = currentNonPersistentPointsSequence(pathPhase)(0)
+            val secondPoint = currentNonPersistentPointsSequence(pathPhase)(1)
+            val currentPoint = state.currentPointsSequence(pathPhase)(state.currentPointIndex)
+            if(getMyLength() == pedestrian_length) {
+              publisherGuiHandler ! pedestrianPosition(id, currentPoint.x, currentPoint.y, getGuiDirection(firstPoint, secondPoint))
+            }
+            else if(getMyLength() == car_length) {
+              publisherGuiHandler ! carPosition(id, currentPoint.x, currentPoint.y, getGuiDirection(firstPoint, secondPoint))
+            }
+            else if(getMyLength() == bus_length) {
+              publisherGuiHandler ! busPosition(id, currentPoint.x, currentPoint.y, getGuiDirection(firstPoint, secondPoint))
+            }
+            else {
+              // tram
+              publisherGuiHandler ! tramPosition(id, currentPoint.x, currentPoint.y, getGuiDirection(firstPoint, secondPoint))
+            }
             
             // esamina dove siamo nella sequenza di punti
-            if(state.currentPointIndex == state.currentPointsSequence(pedestrianCrossroadPhase).length-1) {
-              if(pedestrianCrossroadPhase == 0) {
+            if(currentNonPersistentPointIndex == currentNonPersistentPointsSequence(pathPhase).length-1) {
+              if(pathPhase == 0) {
                 // controlliamo il numero di sequenze che abbiamo
-                if(state.currentPointsSequence.length == 1) {
+                if(currentNonPersistentPointsSequence.length == 1) {
                   // veicolo o pedone che ignora le strisce
                   // procedi al prossimo step
                   sendToMovable(id, self, self, PersistAndNextStep)
@@ -495,22 +705,22 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
                 else {
                   // siamo un pedone che è arrivato a dover attraversare effettiavmente le strisce
                   // avanza di fase
-                  pedestrianCrossroadPhase = pedestrianCrossroadPhase + 1
+                  pathPhase = pathPhase + 1
                   // azzera l'indice
-                  state.currentPointIndex = 0
+                  currentNonPersistentPointIndex = 0
                   // disabilita l'interessamento ai velocity tick
                   interestedInVelocityTick = false
                   // manifesta la volontà di attraversare
                   sendToImmovable(id, self, pedestrian_crossroad.id, envelope(id, pedestrian_crossroad.id, Cross_In))
                 }
               }
-              else if(pedestrianCrossroadPhase == 1) {
+              else if(pathPhase == 1) {
                 // siamo arrivati alla fine dell'attraversamento vero e proprio
                 // mantieni l'interessamento agli eventi di avanzamento
                 // avanza di fase
-                pedestrianCrossroadPhase = pedestrianCrossroadPhase + 1
+                pathPhase = pathPhase + 1
                 // azzera l'indice
-                state.currentPointIndex = 0
+                currentNonPersistentPointIndex = 0
                 // informa le strisce
                 sendToImmovable(id, self, pedestrian_crossroad.id, envelope(id, pedestrian_crossroad.id, CrossFree))
               }
@@ -522,13 +732,183 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
               }
             }
             else {
-              state.currentPointIndex = state.currentPointIndex + 1
+              currentNonPersistentPointIndex = currentNonPersistentPointIndex + 1
             }
             
           case bus_stop_step(bus_stop, direction, ignore) =>
-            //
+            // a prescindere dall'entità che sono, devo procedere fino alla fine del percorso
+            // LANCIA EVENTO LEGATO AL PUNTO CORRENTE
+            val firstPoint = currentNonPersistentPointsSequence(pathPhase)(0)
+            val secondPoint = currentNonPersistentPointsSequence(pathPhase)(1)
+            val currentPoint = state.currentPointsSequence(pathPhase)(state.currentPointIndex)
+            if(getMyLength() == pedestrian_length) {
+              publisherGuiHandler ! pedestrianPosition(id, currentPoint.x, currentPoint.y, getGuiDirection(firstPoint, secondPoint))
+            }
+            else if(getMyLength() == car_length) {
+              publisherGuiHandler ! carPosition(id, currentPoint.x, currentPoint.y, getGuiDirection(firstPoint, secondPoint))
+            }
+            else if(getMyLength() == bus_length) {
+              publisherGuiHandler ! busPosition(id, currentPoint.x, currentPoint.y, getGuiDirection(firstPoint, secondPoint))
+            }
+            else {
+              // tram
+              publisherGuiHandler ! tramPosition(id, currentPoint.x, currentPoint.y, getGuiDirection(firstPoint, secondPoint))
+            }
+            
+            if(currentNonPersistentPointIndex == currentNonPersistentPointsSequence(pathPhase).length-1) {
+              // a prescindere da chi siamo, spegni l'interruttore
+              interestedInVelocityTick = false
+              if(ignore == true) {
+                // siamo arrivati alla fine del percorso
+                // procedi al prossimo step
+                sendToMovable(id, self, self, PersistAndNextStep)
+              }
+              else {
+                if(getMyLength() == pedestrian_length) {
+                  // siamo un pedone che vuole prendere il bus, oppure che ha finito la seconda bus stop
+                  if(state.fromBusStop() == true) {
+                    // procedi al prossimo step
+                    sendToMovable(id, self, self, PersistAndNextStep)
+                  }
+                  else {
+                    // recupera l'id della fermata del bus a cui vuole scendere
+                    val nextStop = state.getNextStepId
+                    assert(nextStop.charAt(0) == 'B')
+                    // passa al prossimo step senza IpRequest
+                    persist(NextStepEvent) { evt =>
+                      state.index = state.index + 1
+                      if(state.index >= state.currentRoute.length) {
+                        state.handleIndexOverrun
+                      }
+                      // preoccupati anche del flag di inizio step
+                      state.beginOfTheStep = true
+                    }
+                    // ora accodati
+                    sendToImmovable(id, self, bus_stop.id, envelope(id, bus_stop.id, WaitForPublicTransport(nextStop)))
+                    // ammazzati
+                    shutdown()
+                  }
+                }
+                else {
+                  // siamo un bus che deve far salire e scendere i pedoni, oppure che ha terminato il suo percorso
+                  if(pathPhase == 0) {
+                    // seleziona chi deve scendere
+                    var goingOff = List[String]()
+                    for(entry <- state.travellers) {
+                      if(entry._2 == bus_stop.id) {
+                        goingOff = goingOff :+ entry._1
+                      }
+                    }
+                    // rendi persistente la rimozione
+                    persist(BusEvent(TravellersGoneOff(goingOff))) { evt =>
+                      for(traveller <- goingOff) {
+                        state.travellers = state.travellers - traveller
+                      }
+                    }
+                    // invia i viaggiatori scesi e il numero corrente di passeggeri alla bus stop
+                    // ATTENZIONE: fault tolerance non garantita
+                    // in caso di crash, gli identificativi potrebbero essere ora irrimediabilmente persi
+                    sendToImmovable(id, self, bus_stop.id, envelope(id, bus_stop.id, GetOut(goingOff, state.travellers.size)))
+                  }
+                  else {
+                    // abbiamo terminato il percorso
+                    // procedi al prossimo step
+                    sendToMovable(id, self, self, PersistAndNextStep)
+                  }
+                  
+                }
+              }
+            }
+            else {
+              currentNonPersistentPointIndex = currentNonPersistentPointIndex + 1
+            }
           case tram_stop_step(tram_stop, direction, ignore) =>
-            //
+            // a prescindere dall'entità che sono, devo procedere fino alla fine del percorso
+            // LANCIA EVENTO LEGATO AL PUNTO CORRENTE
+            val firstPoint = currentNonPersistentPointsSequence(pathPhase)(0)
+            val secondPoint = currentNonPersistentPointsSequence(pathPhase)(1)
+            val currentPoint = state.currentPointsSequence(pathPhase)(state.currentPointIndex)
+            if(getMyLength() == pedestrian_length) {
+              publisherGuiHandler ! pedestrianPosition(id, currentPoint.x, currentPoint.y, getGuiDirection(firstPoint, secondPoint))
+            }
+            else if(getMyLength() == car_length) {
+              publisherGuiHandler ! carPosition(id, currentPoint.x, currentPoint.y, getGuiDirection(firstPoint, secondPoint))
+            }
+            else if(getMyLength() == bus_length) {
+              publisherGuiHandler ! busPosition(id, currentPoint.x, currentPoint.y, getGuiDirection(firstPoint, secondPoint))
+            }
+            else {
+              // tram
+              publisherGuiHandler ! tramPosition(id, currentPoint.x, currentPoint.y, getGuiDirection(firstPoint, secondPoint))
+            }
+            
+            if(currentNonPersistentPointIndex == currentNonPersistentPointsSequence(pathPhase).length-1) {
+              // a prescindere da chi siamo, spegni l'interruttore
+              interestedInVelocityTick = false
+              if(ignore == true) {
+                // siamo arrivati alla fine del percorso
+                // procedi al prossimo step
+                sendToMovable(id, self, self, PersistAndNextStep)
+              }
+              else {
+                if(getMyLength() == pedestrian_length) {
+                  // siamo un pedone che vuole prendere il tram, oppure che ha finito la seconda tram stop
+                  if(state.fromTramStop() == true) {
+                    // procedi al prossimo step
+                    sendToMovable(id, self, self, PersistAndNextStep)
+                  }
+                  else {
+                    // recupera l'id della fermata del tram a cui vuole scendere
+                    val nextStop = state.getNextStepId
+                    assert(nextStop.charAt(0) == 'T')
+                    // passa al prossimo step senza IpRequest
+                    persist(NextStepEvent) { evt =>
+                      state.index = state.index + 1
+                      if(state.index >= state.currentRoute.length) {
+                        state.handleIndexOverrun
+                      }
+                      // preoccupati anche del flag di inizio step
+                      state.beginOfTheStep = true
+                    }
+                    // ora accodati
+                    sendToImmovable(id, self, tram_stop.id, envelope(id, tram_stop.id, WaitForPublicTransport(nextStop)))
+                    // ammazzati
+                    shutdown()
+                  }
+                }
+                else {
+                  // siamo un tram che deve far salire e scendere i pedoni, oppure che ha terminato il suo percorso
+                  if(pathPhase == 0) {
+                    // seleziona chi deve scendere
+                    var goingOff = List[String]()
+                    for(entry <- state.travellers) {
+                      if(entry._2 == tram_stop.id) {
+                        goingOff = goingOff :+ entry._1
+                      }
+                    }
+                    // rendi persistente la rimozione
+                    persist(TramEvent(TravellersGoneOff(goingOff))) { evt =>
+                      for(traveller <- goingOff) {
+                        state.travellers = state.travellers - traveller
+                      }
+                    }
+                    // invia i viaggiatori scesi e il numero corrente di passeggeri alla tram stop
+                    // ATTENZIONE: fault tolerance non garantita
+                    // in caso di crash, gli identificativi potrebbero essere ora irrimediabilmente persi
+                    sendToImmovable(id, self, tram_stop.id, envelope(id, tram_stop.id, GetOut(goingOff, state.travellers.size)))
+                  }
+                  else {
+                    // abbiamo terminato il percorso
+                    // procedi al prossimo step
+                    sendToMovable(id, self, self, PersistAndNextStep)
+                  }
+                  
+                }
+              }
+            }
+            else {
+              currentNonPersistentPointIndex = currentNonPersistentPointIndex + 1
+            }
           case zone_step(zone, direction) =>
             println("We should not be here!")
         }
@@ -630,16 +1010,7 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
   // UTILITY
   // Recupera la lunghezza dell'entità rappresentata
   def getMyLength() : Int = {
-    id.substring(0, 3) match {
-      case "PED" =>
-        return pedestrian_length
-      case "CAR" =>
-        return car_length
-      case "BUS" =>
-        return bus_length
-      case "TRA" =>
-        return tram_length
-    }
+    getLengthFromId(id)
   }
   
 }

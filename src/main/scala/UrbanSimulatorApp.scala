@@ -28,6 +28,7 @@ import spray.can.server.UHttp
 
 import pubsub.Subscriber
 import time.TimeCounter
+import modelActors.immovable.ImmovableActor
 
 object UrbanSimulatorApp extends App with ReactiveApi with MainActors with ReactiveSecurityConfig {
 
@@ -62,24 +63,31 @@ object UrbanSimulatorApp extends App with ReactiveApi with MainActors with React
 	 *   rebalancing logic
 	 * @return the actor ref of the [[ShardRegion]] that is to be responsible for the shard
 	 */
-	val shardRegionActor = ClusterSharding(system).start(
+	
+  /*val shardRegionActor = ClusterSharding(system).start(
 	  typeName = UrbanElement.typeOfEntries,
 		entryProps = Some(UrbanElement.props()),
 		idExtractor = UrbanElement.idExtractor,
 		shardResolver = UrbanElement.shardResolver,
-		allocationStrategy = ShardingPolicy)
+		allocationStrategy = ShardingPolicy)*/
+  
+  val shardRegionActor = ClusterSharding(system).start(
+    typeName = ImmovableActor.typeOfEntries,
+    entryProps = Some(ImmovableActor.props()),
+    idExtractor = ImmovableActor.idExtractor,
+    shardResolver = ImmovableActor.shardResolver,
+    allocationStrategy = ShardingPolicy)
   
 	Cluster(system) registerOnMemberUp {
 		// recupero il ruolo
 		val role = system.settings.config.getList("akka.cluster.roles").get(0).unwrapped
-    if(role == "worker")
-      //system.actorOf(Props[TimeCounter], "timeCounter")
-      //codice per l'avvio dell'attore subscriber degli eventi del tempo e dell'attore che tiene il contatore
+    if(role == "worker") {
+      // nulla da fare
+    }
 		// avvio seed node + controller
 		if(role == "controller") {
 			// attiva Controller
-			val controller = system.actorOf(Props[Controller])
-			controller ! StartInjection
+			val controller = system.actorOf(Props[controllerActors.Controller])
 		}
 		// avvio server http
     else if(role == "guihandler") {

@@ -2314,4 +2314,19 @@ object PointsSequence {
     return pointsList
   }
   
+  // UTILITY
+  // dato un id, restituisce la lunghezza dell'entità
+  def getLengthFromId(id : String) : Int = {
+    id.substring(0, 3) match {
+      case "PED" =>
+        return pedestrian_length
+      case "CAR" =>
+        return car_length
+      case "BUS" =>
+        return bus_length
+      case "TRA" =>
+        return tram_length
+    }
+  }
+  
 }

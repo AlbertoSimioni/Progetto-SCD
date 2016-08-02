@@ -68,8 +68,6 @@ object Messages {
   case class PauseExecution(wakeupTime : TimeValue) extends Command
   // comando inviato dall'entità immobile alle entità mobili create per far riprendere a loro l'esecuzione dei loro step
   case object ResumeExecution extends Command
-  // messaggio per gestire il campo lastVehicle della lane
-  case object HandleLastVehicle extends Command
   // messaggio per richiedere l'actorref dato un id
   case class MovableActorRequest(id : String) extends Command
   // messaggio di risposta associato
@@ -82,10 +80,21 @@ object Messages {
   case class NextVehicleRequest(id : String, last : Boolean)
   // inviato dalla lane ad un veicolo per fornire l'actorref di chi sta davanti
   case class NextVehicleResponse(id : String, ref : ActorRef)
+  // messaggio per gestire il campo lastVehicle della lane
+  case object HandleLastVehicle
+  // messaggio per dichiararsi come ultimo della lane
+  case object LastOfTheLane
+  // inviato da un veicolo per chiedere di entrare nella lane a partire da una zona
+  case class LaneAccessRequest(startPosition : point, direction : direction)
+  // inviato dalla lane per concedere l'accesso ad un veicolo che voleva entrare da una zona
+  case class LaneAccessGranted(predecessorId : String, predecessorRef : ActorRef, successorId : String, successorRef : ActorRef)
   
   // inviato da un veicolo ad un altro veicolo per chiedere la ricezione della posizione
   case object SuccessorArrived
+  // inviato da un veicolo per notificare ad un altro che da ora in poi dovrà regolarsi sull'avanzamento
+  case object PredecessorArrived
   // inviato da un veicolo ad un altro veicolo per fornire l'ultima posizione in push
+  // viene inviato anche alla lane per gestire le posizioni
   case class Advanced(lastPosition : point)
   // inviato da un veicolo ad un altro per segnalare di non dover più porre attenzione alla posizione (corsia libera)
   case object PredecessorGone
@@ -106,6 +115,13 @@ object Messages {
   case object Vehicle_Out
   // inviato dalle strisce per garantire il passaggio ad un pedone
   case object Cross_Out
+  
+  // messaggio inviato da un pedone per attendere alla fermata del bus
+  case class WaitForPublicTransport(destination : String)
+  // messaggio inviato da un bus ad una bus stop per passargli chi sta scendendo e quanti passeggeri sono ancora a bordo
+  case class GetOut(travellers : List[String], numTravellers : Int)
+  // messaggio inviato dalla bus stop al bus per passargli chi sta salendo
+  case class GetIn(travellers : List[(String, String)])
   
   
   
@@ -149,6 +165,9 @@ object Messages {
   
   case class VehicleFreeArrived(id : String)
   case class VehicleBusyArrived(id : String)
+  
+  case class TravellersGoneOff(travellers : List[String])
+  case class TravellersGoneOn(travellers : List[(String, String)])
   
   // effettua l'imbustamento giusto rispetto alle entità coinvolte
   def envelope(senderId : String, destinationId : String, message : Any) : Command = {
