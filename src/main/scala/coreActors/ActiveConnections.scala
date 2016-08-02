@@ -57,19 +57,21 @@ class ActiveConnections extends Actor with ActorLogging {
       zoneStates.put(zoneID,pedestrians.toString() + "-" + cars.toString());
       self ! ActiveConnections.SendMessageToClients(BrowserMessagesFormatter.HideCarToJson(m))
 
-    case m @ hidePedestrian(id,zoneID) =>
-      var zoneState = zoneStates.get(zoneID)
-      var cars = 0;
-      var pedestrians = 0;
-      if(!zoneState.isEmpty) {
-        var state = zoneState.get
-        val carsString = state.split("-")(1)
-        val pedestriansString = state.split("-")(0)
-        cars = carsString.toInt
-        pedestrians = pedestriansString.toInt
+    case m @ hidePedestrian(id,zoneID,inVehicle) =>
+      if(!inVehicle) {
+        var zoneState = zoneStates.get(zoneID)
+        var cars = 0;
+        var pedestrians = 0;
+        if (!zoneState.isEmpty) {
+          var state = zoneState.get
+          val carsString = state.split("-")(1)
+          val pedestriansString = state.split("-")(0)
+          cars = carsString.toInt
+          pedestrians = pedestriansString.toInt
+        }
+        pedestrians += 1
+        zoneStates.put(zoneID, pedestrians.toString() + "-" + cars.toString());
       }
-      pedestrians += 1
-      zoneStates.put(zoneID,pedestrians.toString() + "-" + cars.toString());
       self ! ActiveConnections.SendMessageToClients(BrowserMessagesFormatter.HidePedestrianToJson(m))
 
     case pubsub.Messages.entityAwaked(entityID,zoneID) =>

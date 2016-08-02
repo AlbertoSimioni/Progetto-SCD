@@ -10,7 +10,8 @@ object Messages {
   case class busPosition(id : String ,lat: Int,long: Int, direction: String) extends PubSubMessages
   case class tramPosition(id : String ,lat: Int,long: Int, direction: String) extends PubSubMessages
   case class pedestrianPosition(id : String ,lat: Int,long: Int, direction: String) extends PubSubMessages
-  case class hidePedestrian(id: String, zoneID: String) extends PubSubMessages
+  //se entra in tram o bus, inVehicle = true e zoneID stringa qualsiasi altrimenti inVehicle = false
+  case class hidePedestrian(id: String, zoneID: String, inVehicle: Boolean) extends PubSubMessages
   case class hideCar(id: String,zoneID: String) extends PubSubMessages
   case class hideBus(id: String) extends PubSubMessages
   case class hideTram(id: String) extends PubSubMessages

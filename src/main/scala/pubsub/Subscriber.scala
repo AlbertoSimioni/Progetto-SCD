@@ -40,8 +40,8 @@ class Subscriber(contentType : String) extends Actor with ActorLogging {
       hideCar(id,zoneID)
     case m @ hideBus(id) =>   context.actorSelection("/user/activeConnections") !
       ActiveConnections.SendMessageToClients(BrowserMessagesFormatter.HideBusToJson(m))
-    case m @ hidePedestrian(id,zoneID) =>   context.actorSelection("/user/activeConnections") !
-      hidePedestrian(id,zoneID)
+    case m @ hidePedestrian(id,zoneID,inVehicle) =>   context.actorSelection("/user/activeConnections") !
+      hidePedestrian(id,zoneID,inVehicle)
     case m @ hideTram(id) =>   context.actorSelection("/user/activeConnections") !
       ActiveConnections.SendMessageToClients(BrowserMessagesFormatter.HideTramToJson(m))
     case m @ semaphoreState(id,upGreen,rightGreen,downGreen,leftGreen,tramGreen) =>  context.actorSelection("/user/activeConnections") !
