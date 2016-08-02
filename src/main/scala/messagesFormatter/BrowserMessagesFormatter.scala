@@ -92,15 +92,15 @@ object BrowserMessagesFormatter {
           case lane_step(lane,direction) =>
             stepString = s"""{"type" :"lane","id": "${lane.id}", "beginToEnd":  ${direction.beginToEnd}, "position": "${direction.position}"}"""
           case crossroad_step(crossroad,direction) =>
-            stepString = s"""{"type" :"crossroad","id": "${crossroad.id}"}"""
-          case pedestrian_crossroad_step(pedestrian_crossroad,direction) =>
-            stepString = s"""{"entity":"${entityType}","type" :"crosswalk",id": "${pedestrian_crossroad.id}"}"""
+            stepString = s"""{"type" :"crossroad","position": "${direction.position}","id": "${crossroad.id}"}"""
+          case pedestrian_crossroad_step(pedestrian_crossroad,direction ) =>
+            stepString = s"""{"entity":"${entityType}","type" :"crosswalk","position": "${direction.position}","id": "${pedestrian_crossroad.id}"}"""
           case bus_stop_step(bus_stop,direction,ignore) =>
             stepString = s"""{"entity":"${entityType}","type" :"bus_stop","id": "${bus_stop.id}", "beginToEnd":  ${direction.beginToEnd}, "position": "${direction.position}", "ignore" : ${ignore}}"""
           case tram_stop_step(tram_stop,direction,ignore) =>
             stepString = s"""{"entity":"${entityType}","type" :"tram_stop","id": "${tram_stop.id}", "beginToEnd":  ${direction.beginToEnd}, "position": "${direction.position}", "ignore" : ${ignore}}"""
           case zone_step(zone, direction) =>
-            stepString = s"""{"type" :"zone","id": "${zone.id}"}"""
+            stepString = s"""{"type" :"zone","position": "${direction.position}","id": "${zone.id}"}"""
       }
       stringSteps ++= stepString
     }

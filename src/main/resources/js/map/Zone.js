@@ -32,6 +32,7 @@ Zone.prototype.draw = function(){
     if(this.type == "funplace") this.path.fillColor = "blue";
     this.path.onMouseDown = this.myOnMouseDown;
     this.path.showing = false;
+    this.path.myData = this.id;
 };
 
 Zone.prototype.showInfo = function(cars,pedestrians){
@@ -48,7 +49,8 @@ Zone.prototype.showInfo = function(cars,pedestrians){
 
 Zone.prototype.myOnMouseDown = function(){
     if(!this.showing){
-        webSocket.send("ZONESTATE-"+this.id)
+        webSocket.send("ZONESTATE-"+this.myData)
+        //webSocket.send("PATH-TRA0000004")
     }
     else{
         this.tooltipLabel.remove();

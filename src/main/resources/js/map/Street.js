@@ -29,7 +29,8 @@ Street.prototype.changeColor = function(color,position){
 };
 
 Street.prototype.changeColorBusStop = function(color,position,entityType){
-    if(this.isTripleLane()){
+    var triple = this.isTripleLane();
+    if(triple){
         this.changeColorTramStop(color,position,entityType)
     }
     else{

@@ -168,7 +168,7 @@ window.onload = function() {
         }
 
         if(msg.type == "path"){
-            var  path = msg.info.steps;
+            var  path = msg.steps;
             colorSteps(lastPath,"oldColor");
             colorSteps(path,"#00ccff");
             lastPath = path;
@@ -231,17 +231,17 @@ function colorSteps(steps,color){
         var tramStop = mapRegistry.getTramStop(id);
         var position = steps[i].position;
         var entityType = steps[i].entity;
-        busStop.changeColorTramStop(color,position,entityType)
+        tramStop.changeColorTramStop(color,position,entityType)
      }
 
-     if(type = "crosswalk"){
+     if(type == "crosswalk"){
         var entityType = steps[i].entity;
         var position = steps[i].position;
         var positionPrec = steps[i-1].position;
         if(entityType == "P"){
             var crosswalk = mapRegistry.getCrosswalk(id);
-            if(position == positionPrec){
-                crosswalk.changeColorSidewalk(color,position);
+            if(position === positionPrec){
+                crosswalk.changeColorSidewalk(color,positionPrec);
             }
             else{
                 crosswalk.changeColor(color);

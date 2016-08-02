@@ -144,13 +144,15 @@ MapRegistry.prototype.buildStops = function(stops,type){
         copy.lanes = [];
         copy.lines = [];
         copy.sidewalks = {};
+        copy.id = curStopId;
         if(type== "bus"){
             this.buildStreetLanes(copy, curLanes,true,curStop.position);
             this.bus_stops[curStopId] = copy;
             }
-        else
+        else{
             this.buildStreetLanes(copy, curLanes,true,"tram");
             this.tram_stops[curStopId] = copy;
+        }
     }
 
 }
