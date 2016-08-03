@@ -68,7 +68,7 @@ object ShardingPolicy extends ShardAllocationStrategy with Serializable {
   // The number of ongoing rebalancing processes is limited to this number.
   // max-simultaneous-rebalance = 3
   //
-  // val defaultStrategy = new LeastShardAllocationStrategy(2, 3)
+  //val defaultStrategy = new LeastShardAllocationStrategy(2, 3)
 
   override def allocateShard(requester: ActorRef, shardId: ShardId, currentShardAllocations: Map[ActorRef, immutable.IndexedSeq[ShardId]]): ActorRef = {
     /*
@@ -83,7 +83,15 @@ object ShardingPolicy extends ShardAllocationStrategy with Serializable {
     // 1) calcola rettangoli, in base al numero di ActorRef nella currentShardAllocations
     // 2) sulla base delle liste di shard, associa liste di shard e rettangoli
     // 3) decreta in quale nodo deve andare lo shard in input
-     
+    
+    println("ALLOCATESHARD!")
+    println("currentShardAllocations:")
+    for(node <- currentShardAllocations) {
+      println(node._1.path.toString() + " ha i seguenti shard:")
+      for(shard <- node._2) {
+        println(shard)
+      }
+    }
     val rectangles = computeRectangles(currentShardAllocations.size, current_map_x, current_map_y)
     val map = associateRectanglesNodes(rectangles, currentShardAllocations)
     var target : ActorRef = null
@@ -94,6 +102,8 @@ object ShardingPolicy extends ShardAllocationStrategy with Serializable {
         target = node._1
       }
     }
+    assert(target != null)
+    println("Lo shard " + shardId + "è stato ora assegnato al nodo" + target.path.toString())
     return target
     // FINE CUSTOM ALLOCATESHARD
     
@@ -124,6 +134,7 @@ object ShardingPolicy extends ShardAllocationStrategy with Serializable {
     // 2) sulla base delle liste di shard, associa liste di shard e rettangoli
     // 3) segnala come "da riallocare" gli shard che non appartengono alle rispettive liste e che non sono già in spostamento
     
+    println("REBALANCE!")
     val rectangles = computeRectangles(currentShardAllocations.size, current_map_x, current_map_y)
     val map = associateRectanglesNodes(rectangles, currentShardAllocations)
     var toBeReallocated = Set[ShardId]()
@@ -138,7 +149,11 @@ object ShardingPolicy extends ShardAllocationStrategy with Serializable {
       val outside = findShardsNotInRectangle(association._2, shardList)
       toBeReallocated = toBeReallocated ++ outside
     }
-    return toBeReallocated.diff(rebalanceInProgress)
+    val finalSet = toBeReallocated.diff(rebalanceInProgress)
+    for(shard <- finalSet) {
+      println(shard + " è da riallocare")
+    }
+    return finalSet
     
     // FINE CUSTOM REBALANCE
     

@@ -28,11 +28,11 @@ object PublisherInstance {
 
   //istanza creata nei worker (una per ogni nodo)
   def getPublisherModelEvents(system: ActorSystem) : ActorRef = {
-    if (publisherModel == null){
-      publisherModel =  system.actorOf(Props(classOf[Publisher], "modelEvent"), "publisherModel")
-      publisherModel
+    if(publisherModel == null){
+      //publisherModel = system.actorOf(Props(classOf[Publisher], "modelEvent"), "publisherModel")
+      publisherModel = system.actorOf(Props(classOf[Publisher], "modelEvent"))
     }
-    return publisherModel;
+    return publisherModel
   }
 
 

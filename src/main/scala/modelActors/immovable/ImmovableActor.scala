@@ -17,6 +17,7 @@ import akka.contrib.pattern.DistributedPubSubMediator
 import akka.contrib.pattern.DistributedPubSubExtension
 import DistributedPubSubMediator.Subscribe
 import DistributedPubSubMediator.SubscribeAck
+import akka.actor.ActorLogging
 
 import ShardUtilities._
 import modelActors.movable.MovableActor
@@ -86,7 +87,7 @@ object ImmovableActor {
   
 }
 
-class ImmovableActor extends PersistentActor with AtLeastOnceDelivery {
+class ImmovableActor extends PersistentActor with AtLeastOnceDelivery with ActorLogging {
   
   import context.dispatcher
   

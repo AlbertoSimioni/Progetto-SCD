@@ -199,6 +199,7 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
             // handling vero e proprio del messaggio
             command match {
               case ExecuteCurrentStep =>
+                println(id + ": Executing step!")
                 val stepSequence = state.getStepSequence()
                 state.currentRoute(state.index) match {
                   case road_step(road, direction) =>
