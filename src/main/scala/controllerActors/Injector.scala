@@ -119,7 +119,7 @@ class Injector extends Actor {
               publisherGuiHanlder ! CreateMobileEntity(id, busRoute)
               println("bus creato e messaggio mandato")
             case CreateTram(id, route) =>
-              val tramRoute = Routes.createBusRoute(route)
+              val tramRoute = Routes.createTramRoute(route)
               val firstId = Routes.getStepId(tramRoute.route(0))
               sendToImmovable(self, firstId, CreateMobileEntity(id, tramRoute))
               publisherGuiHanlder ! CreateMobileEntity(id, tramRoute)
