@@ -186,7 +186,7 @@ Crossroad.prototype.drawAngle = function() {
 
 Crossroad.prototype.changeLights = function(up,right,down,left,tram) {
     if(this.tramPath != null){
-        this.tramPath = tram;
+        this.tramPath.fillColor = tram;
     }
     for (var i = this.vertexes.length - 1; i >= 0; i--) {
         var curVertex = this.vertexes[i];

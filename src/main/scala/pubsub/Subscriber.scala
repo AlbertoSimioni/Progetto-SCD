@@ -29,21 +29,29 @@ class Subscriber(contentType : String) extends Actor with ActorLogging {
   //Messaggi inviati dai worker per inviare al guihandler gli aggiornamenti nel model
   def readyModel: Actor.Receive = {
     case m @ carPosition(id,lat,long,dir) =>   context.actorSelection("/user/activeConnections") !
+      println("carPosition")
       ActiveConnections.SendMessageToClients(BrowserMessagesFormatter.CarPositionToJson(m))
     case m @ busPosition(id,lat,long,dir) =>   context.actorSelection("/user/activeConnections") !
+      println("busPosition")
       ActiveConnections.SendMessageToClients(BrowserMessagesFormatter.BusPositionToJson(m))
     case m @ tramPosition(id,lat,long,dir) =>   context.actorSelection("/user/activeConnections") !
+      println("tramPosition")
       ActiveConnections.SendMessageToClients(BrowserMessagesFormatter.TramPositionToJson(m))
     case m @ pedestrianPosition(id,lat,long,dir) =>   context.actorSelection("/user/activeConnections") !
+      println("PedestrianPosition")
       ActiveConnections.SendMessageToClients(BrowserMessagesFormatter.PedestrianPositionToJson(m))
     case m @ hideCar(id,zoneID) =>   context.actorSelection("/user/activeConnections") !
       hideCar(id,zoneID)
+      println("hideCar")
     case m @ hideBus(id) =>   context.actorSelection("/user/activeConnections") !
       ActiveConnections.SendMessageToClients(BrowserMessagesFormatter.HideBusToJson(m))
+      println("hideBus")
     case m @ hidePedestrian(id,zoneID,inVehicle) =>   context.actorSelection("/user/activeConnections") !
       hidePedestrian(id,zoneID,inVehicle)
+      println("hidePedestrian")
     case m @ hideTram(id) =>   context.actorSelection("/user/activeConnections") !
       ActiveConnections.SendMessageToClients(BrowserMessagesFormatter.HideTramToJson(m))
+      println("hideTram");
     case m @ semaphoreState(id,upGreen,rightGreen,downGreen,leftGreen,tramGreen) =>  context.actorSelection("/user/activeConnections") !
       ActiveConnections.updateSemaphoreState(id,BrowserMessagesFormatter.SemaphoreStateToJson(m))
     case TimeCommand(time) =>    context.actorSelection("/user/activeConnections") !
