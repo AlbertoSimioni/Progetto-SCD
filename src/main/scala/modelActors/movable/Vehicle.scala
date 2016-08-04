@@ -19,9 +19,10 @@ object Vehicle {
   def FromVehicle(myRef : MovableActor, myId : String, senderId : String, senderRef : ActorRef, message : Any) : Unit = {
     message match {
       case SuccessorArrived =>
-        myRef.persist(PredecessorArrived(senderId)) { evt =>
-          myRef.state.previousVehicleId = senderId
-        }
+        myRef.persist(PredecessorArrived(senderId)) { evt => }
+        // persist body begin
+        myRef.state.previousVehicleId = senderId
+        // persist body end
         // ogni volta che effettuo uno spostamento, devo notificarlo al predecessore
         myRef.previousVehicle = senderRef
       case PredecessorArrived =>
@@ -36,9 +37,10 @@ object Vehicle {
           // tram
           event = TramEvent(NextVehicleIdArrived(senderId))
         }
-        myRef.persist(event) { evt => 
-          myRef.state.nextVehicleId = senderId
-        }
+        myRef.persist(event) { evt => }
+        // persist body begin
+        myRef.state.nextVehicleId = senderId
+        // persist body end
         myRef.nextVehicle = senderRef
         myRef.nextVehicleLastPosition = point(-1, -1)
       case Advanced(lastPosition) =>
@@ -66,9 +68,10 @@ object Vehicle {
             // tram
             event = TramEvent(NextVehicleGone)
           }
-          myRef.persist(event) { evt =>
-            myRef.state.nextVehicleId = null
-          }
+          myRef.persist(event) { evt => }
+          // persist body begin
+          myRef.state.nextVehicleId = null
+          // persist body end
           myRef.nextVehicle = null
           myRef.nextVehicleLastPosition = null
         }
@@ -93,19 +96,21 @@ object Vehicle {
           // tram
           event = TramEvent(NextVehicleIdArrived(id))
         }
-        myRef.persist(event) { evt => 
-          myRef.state.nextVehicleId = id
-        }
+        myRef.persist(event) { evt =>  }
+        // persist body begin
+        myRef.state.nextVehicleId = id
+        // persist body end
         // ora è possibile recuperare il percorso, qualora non fosse già memorizzato
         val stepSequence = myRef.state.getStepSequence()
         if(myRef.state.beginOfTheStep) {
           // recupera la sequenza di punti da percorrere
           val currentPointsSequence = getPointsSequence(myId, stepSequence)
-          myRef.persist(BeginOfTheStep(currentPointsSequence)) { evt =>
-            myRef.state.currentPointsSequence = evt.pointsSequence
-            myRef.state.currentPointIndex = 0
-            myRef.state.beginOfTheStep = false
-          }
+          myRef.persist(BeginOfTheStep(currentPointsSequence)) { evt => }
+          // persist body begin
+          myRef.state.currentPointsSequence = currentPointsSequence
+          myRef.state.currentPointIndex = 0
+          myRef.state.beginOfTheStep = false
+          // persist body end
         }
         // se il riferimento era nullo, allora possiamo procedere
         // altrimenti aspettiamo il primo Advanced

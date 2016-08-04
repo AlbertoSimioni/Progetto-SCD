@@ -14,7 +14,7 @@ resolvers += "Typesafe repository releases" at "http://repo.typesafe.com/typesaf
 resolvers += "Scalaz Bintray Repo" at "http://dl.bintray.com/scalaz/releases"
 
 libraryDependencies ++= {
-	val akkaV  = "2.3.8"
+	val akkaV  = "2.3.12"
   	val sprayV = "1.3.3"
   	Seq(
 	"com.typesafe.akka"					%% "akka-actor" 					% akkaV 				withSources() withJavadoc,

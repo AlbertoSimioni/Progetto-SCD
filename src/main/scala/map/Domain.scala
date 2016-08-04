@@ -190,12 +190,12 @@ object Domain {
                               
    val path = getClass.getResource("/map.json").getPath
    
+   // mappa corrente
+   val current_map = readAll("map.json")
+   
    // dati della mappa corrente
    val current_map_x = getDimensionsX(current_map)
    val current_map_y = getDimensionsY(current_map)
-   
-   // mappa corrente
-   lazy val current_map = readAll("map.json")
    
    // UTILITY
    // Distanza euclidea tra due punti
@@ -262,7 +262,7 @@ object Domain {
            val tuple = (lane._2, `right`, List[String]())
            finalMap = finalMap + (lane._1 -> tuple)
          }
-         val upLanes = getEnteringLanes(downVertex, `up`)
+         val upLanes = getEnteringLanes(upVertex, `up`)
          for(lane <- upLanes) {
            val tuple = (lane._2, `up`, priority)
            finalMap = finalMap + (lane._1 -> tuple)

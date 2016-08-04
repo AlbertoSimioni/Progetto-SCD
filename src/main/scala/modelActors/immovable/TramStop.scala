@@ -61,11 +61,12 @@ object TramStop {
             FromVehicle(myRef, myId, senderId, senderRef, message)
           case GetOut(travellers, numTravellers) =>
             // rendi subito persistente l'arrivo dei viaggiatori
-            myRef.persist(TramStopEvent(TravellersGoneOff(travellers))) { evt =>
-              for(traveller <- travellers) {
-                myRef.state.handledMobileEntities = myRef.state.handledMobileEntities :+ traveller
-              }
+            myRef.persist(TramStopEvent(TravellersGoneOff(travellers))) { evt => }
+            // persist body begin
+            for(traveller <- travellers) {
+              myRef.state.handledMobileEntities = myRef.state.handledMobileEntities :+ traveller
             }
+            // persist body end
             // fai ripartire gli attori
             for(traveller <- travellers) {
               val travellerRef = myRef.context.actorOf(MovableActor.props(traveller))
@@ -88,11 +89,12 @@ object TramStop {
               myRef.travellersQueue = myRef.travellersQueue.slice(placesAvailable, myRef.travellersQueue.length)
             }
             // rendi persistente la rimozione
-            myRef.persist(TramStopEvent(TravellersGoneOn(goingOn))) { evt =>
-              for(traveller <- goingOn) {
-                myRef.state.handledMobileEntities = myRef.state.handledMobileEntities.filter { current => current != traveller._1 }
-              }
+            myRef.persist(TramStopEvent(TravellersGoneOn(goingOn))) { evt => }
+            // persist body begin
+            for(traveller <- goingOn) {
+              myRef.state.handledMobileEntities = myRef.state.handledMobileEntities.filter { current => current != traveller._1 }
             }
+            // persist body end
             for(traveller <- goingOn) {
               myRef.handledMobileEntitiesMap = myRef.handledMobileEntitiesMap - traveller._1
               // genera gli eventi hide
@@ -171,14 +173,15 @@ object TramStop {
           myRef.vehicleFreeTempMap = myRef.vehicleFreeTempMap + (comingFrom -> false)
         }
         // rendi persistente il cambiamento
-        myRef.persist(TramStopEvent(VehicleBusyArrived(comingFrom))) { evt =>
-          if(myRef.state.vehicleFreeMap.contains(comingFrom)) {
-            myRef.state.vehicleFreeMap = myRef.state.vehicleFreeMap.updated(comingFrom, false)
-          }
-          else {
-            myRef.state.vehicleFreeMap = myRef.state.vehicleFreeMap + (comingFrom -> false)
-          }
+        myRef.persist(TramStopEvent(VehicleBusyArrived(comingFrom))) { evt => }
+        // persist body begin
+        if(myRef.state.vehicleFreeMap.contains(comingFrom)) {
+          myRef.state.vehicleFreeMap = myRef.state.vehicleFreeMap.updated(comingFrom, false)
         }
+        else {
+          myRef.state.vehicleFreeMap = myRef.state.vehicleFreeMap + (comingFrom -> false)
+        }
+        // persist body end
       case VehicleFree(comingFrom) =>
         // metti a true la entry nella tabella temporanea
         if(myRef.vehicleFreeTempMap.contains(comingFrom)) {
@@ -188,14 +191,15 @@ object TramStop {
           myRef.vehicleFreeTempMap = myRef.vehicleFreeTempMap + (comingFrom -> true)
         }
         // rendi persistente il cambiamento
-        myRef.persist(TramStopEvent(VehicleFreeArrived(comingFrom))) { evt =>
-          if(myRef.state.vehicleFreeMap.contains(comingFrom)) {
-            myRef.state.vehicleFreeMap = myRef.state.vehicleFreeMap.updated(comingFrom, true)
-          }
-          else {
-            myRef.state.vehicleFreeMap = myRef.state.vehicleFreeMap + (comingFrom -> true)
-          }
+        myRef.persist(TramStopEvent(VehicleFreeArrived(comingFrom))) { evt => }
+        // persist body begin
+        if(myRef.state.vehicleFreeMap.contains(comingFrom)) {
+          myRef.state.vehicleFreeMap = myRef.state.vehicleFreeMap.updated(comingFrom, true)
         }
+        else {
+          myRef.state.vehicleFreeMap = myRef.state.vehicleFreeMap + (comingFrom -> true)
+        }
+        // persist body end
         // controlla se ci sono richieste pendenti dalla corsia
         if(myRef.vehicleRequests.contains(comingFrom)) {
           val entry = myRef.vehicleRequests.get(comingFrom).get

@@ -10,7 +10,9 @@ import akka.persistence.PersistentActor
 import akka.persistence.SaveSnapshotSuccess
 import akka.persistence.SaveSnapshotFailure
 import akka.persistence.SnapshotOffer
+import akka.persistence.RecoveryFailure
 import akka.persistence.RecoveryCompleted
+import akka.persistence.PersistenceFailure
 import akka.contrib.pattern.ClusterSharding
 import akka.persistence.AtLeastOnceDelivery
 import akka.contrib.pattern.DistributedPubSubMediator
@@ -131,10 +133,12 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
           // controlla che il messaggio non sia duplicato
           if(state.isNewMessage(senderId, deliveryId) == true) {
             // messaggio nuovo
-            persist(NoDuplicate(senderId, deliveryId)) { msg =>
-              state.updateFilter(msg.senderId, msg.deliveryId)
-            }
+            persist(NoDuplicate(senderId, deliveryId)) { msg => }
+            // persist body begin
+            state.updateFilter(senderId, deliveryId)
+            // persist body end
             // gestione vera e propria del messaggio
+            println(id + ": ricevuto messaggio da entità immobile " + senderId)
             command match {
               case IpResponse(ipAddress) =>
                 if(isLocal(ipAddress)) {
@@ -157,9 +161,10 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
                 }
               case Route(route) =>
                 // è arrivato il percorso
-                persist(RouteArrived(route)) { evt =>
-                  state.handleRoute(route)
-                }
+                persist(RouteArrived(route)) { evt => }
+                // persist body begin
+                state.handleRoute(route)
+                // persist body end
               case ResumeExecution =>
                 // comincia (o riprendi) l'esecuzione
                 sendToImmovable(id, self, state.getCurrentStepId, IpRequest)
@@ -193,10 +198,12 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
           // controlla che il messaggio non sia duplicato
           if(state.isNewMessage(senderId, deliveryId) == true) {
             // messaggio nuovo
-            persist(NoDuplicate(senderId, deliveryId)) { msg =>
-              state.updateFilter(msg.senderId, msg.deliveryId)
-            }
+            persist(NoDuplicate(senderId, deliveryId)) { msg => }
+            // persist body begin
+            state.updateFilter(senderId, deliveryId)
+            // persist body end
             // handling vero e proprio del messaggio
+            println(id + ": ricevuto messaggio da entità mobile " + senderId)
             command match {
               case ExecuteCurrentStep =>
                 println(id + ": Executing step!")
@@ -206,11 +213,12 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
                     // solo un pedone può avere road_step
                     if(state.beginOfTheStep) {
                       val currentPointsSequence = getPointsSequence(id, stepSequence)
-                      persist(BeginOfTheStep(currentPointsSequence)) { evt =>
-                        state.currentPointsSequence = evt.pointsSequence
-                        state.currentPointIndex = 0
-                        state.beginOfTheStep = false
-                      }
+                      persist(BeginOfTheStep(currentPointsSequence)) { evt => }
+                      // persist body begin
+                      state.currentPointsSequence = currentPointsSequence
+                      state.currentPointIndex = 0
+                      state.beginOfTheStep = false
+                      // persist body end
                     }
                     // attiva l'interessamento agli eventi di avanzamento
                     interestedInVelocityTick = true
@@ -244,10 +252,11 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
                         // per prima cosa, qualora vi fosse un veicolo predecessore, informalo che non deve più seguirci
                         if(previousVehicle != null) {
                           sendToMovable(id, self, previousVehicle, envelope(id, state.previousVehicleId, PredecessorGone))
-                          persist(PredecessorGoneSent) { evt =>
-                            state.previousVehicleId = null
-                            state.predecessorGoneSent = true
-                          }
+                          persist(PredecessorGoneSent) { evt => }
+                          // persist body begin
+                          state.previousVehicleId = null
+                          state.predecessorGoneSent = true
+                          // persist body end
                           previousVehicle = null
                         }
                         // se c'è una qualche previousLane, avvisala di modificare i campi lastVehicle (qualora fossimo stati l'unico veicolo)
@@ -444,14 +453,15 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
                 }
               case PersistAndNextStep =>
                 // memorizza
-                persist(NextStepEvent) { evt =>
-                  state.index = state.index + 1
-                  if(state.index >= state.currentRoute.length) {
-                    state.handleIndexOverrun
-                  }
-                  // preoccupati anche del flag di inizio step
-                  state.beginOfTheStep = true
+                persist(NextStepEvent) { evt => }
+                // persist body begin
+                state.index = state.index + 1
+                if(state.index >= state.currentRoute.length) {
+                  state.handleIndexOverrun
                 }
+                // preoccupati anche del flag di inizio step
+                state.beginOfTheStep = true
+                // persist body end
                 // avanti col prossimo step
                 sendToImmovable(id, self, state.getCurrentStepId, IpRequest)
               
@@ -478,7 +488,7 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
     // PERSISTENCE
     case SaveSnapshot =>
       //state.deliveryState = getDeliverySnapshot
-      saveSnapshot(state)
+      //saveSnapshot(state)
     case SaveSnapshotSuccess(metadata) =>
       println("Snapshot stored successfully")
       val prevS = previousSequenceNr
@@ -491,7 +501,10 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
     case SaveSnapshotFailure(metadata, reason) =>
       println("Failed to store snapshot")
     case DeleteSnapshot(sequenceNr, timestamp) =>
-      deleteSnapshot(sequenceNr, timestamp)
+      //deleteSnapshot(sequenceNr, timestamp)
+      
+    case PersistenceFailure(payload, sequenceNr, cause) =>
+      println("Failed to persist an event!")
       
     // TIME
     case SubscribeAck =>
@@ -499,13 +512,15 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
     case UnsubscribeAck =>
       println("Successfully unsubscribed from time events")
     case TimeCommand(timeValue) =>
-      persist(TimeEvent(timeValue)) { evt =>
-        state.currentTime = evt.timeValue
-      }
+      persist(TimeEvent(timeValue)) { evt => }
+      // persist body begin
+      state.currentTime = timeValue
+      // persist body end
       
     // VELOCITY
     case VelocityTick =>
       if(interestedInVelocityTick) {
+        println(id + ": dentro velocityTick!")
         state.currentRoute(state.index) match {
           case road_step(road, direction) =>
             // LANCIA EVENTO LEGATO AL PUNTO CORRENTE
@@ -520,9 +535,10 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
               interestedInVelocityTick = false
             }
             else {
-              persist(IncrementPointIndex) {evt =>
-               state.currentPointIndex = state.currentPointIndex + 1 
-              }
+              persist(IncrementPointIndex) {evt => }
+              // persist body begin
+              state.currentPointIndex = state.currentPointIndex + 1 
+              // persist body end
             }
           case lane_step(lane, direction) =>
             // LANCIA EVENTO LEGATO AL PUNTO CORRENTE
@@ -598,9 +614,10 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
               if(state.currentPointIndex == state.currentPointsSequence(0).length-1) {
                 // abbiamo finito la lane
                 if(state.toZone() == false) {
-                  persist(PredecessorGoneNotSentYet) { evt =>
-                    state.predecessorGoneSent = false
-                  }
+                  persist(PredecessorGoneNotSentYet) { evt => }
+                  // persist body begin
+                  state.predecessorGoneSent = false
+                  // persist body end
                   // la lane corrente diventa la nostra previousLane
                   previousLaneId = lane.id
                 }
@@ -627,9 +644,10 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
                 interestedInVelocityTick = false
               }
               else {
-                persist(IncrementPointIndex) {evt =>
-                 state.currentPointIndex = state.currentPointIndex + 1 
-                }
+                persist(IncrementPointIndex) {evt => }
+                // persist body begin
+                state.currentPointIndex = state.currentPointIndex + 1
+                // persist body end
               }
             }
           case crossroad_step(crossroad, direction) =>
@@ -637,6 +655,13 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
             // LANCIA EVENTO LEGATO AL PUNTO CORRENTE
             // dal momento che vi è una direzione diversa per ogni pezzo di percorso, la calcoliamo a partire dai primi due punti del percorso in questione
             // questo implicitamente assume che un pezzo di percorso sia composto almeno da due punti
+            if(currentNonPersistentPointsSequence(pathPhase).length < 2) {
+              println("Entità mobile " + id)
+              println("pathphase: " + pathPhase)
+              for(point <- currentNonPersistentPointsSequence(pathPhase)) {
+                println("point: " + point.x + point.y)
+              }
+            }
             val firstPoint = currentNonPersistentPointsSequence(pathPhase)(0)
             val secondPoint = currentNonPersistentPointsSequence(pathPhase)(1)
             val currentPoint = state.currentPointsSequence(pathPhase)(state.currentPointIndex)
@@ -675,6 +700,13 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
             // possiamo essere un pedone o un veicolo
             // in ogni caso, possiamo procedere senza problemi fino alla fine della (prima) sequenza di punti
             // LANCIA EVENTO LEGATO AL PUNTO CORRENTE
+            if(currentNonPersistentPointsSequence(pathPhase).length < 2) {
+              println("Entità mobile " + id)
+              println("pathphase: " + pathPhase)
+              for(point <- currentNonPersistentPointsSequence(pathPhase)) {
+                println("point: " + point.x + point.y)
+              }
+            }
             val firstPoint = currentNonPersistentPointsSequence(pathPhase)(0)
             val secondPoint = currentNonPersistentPointsSequence(pathPhase)(1)
             val currentPoint = state.currentPointsSequence(pathPhase)(state.currentPointIndex)
@@ -739,6 +771,13 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
           case bus_stop_step(bus_stop, direction, ignore) =>
             // a prescindere dall'entità che sono, devo procedere fino alla fine del percorso
             // LANCIA EVENTO LEGATO AL PUNTO CORRENTE
+            if(currentNonPersistentPointsSequence(pathPhase).length < 2) {
+              println("Entità mobile " + id)
+              println("pathphase: " + pathPhase)
+              for(point <- currentNonPersistentPointsSequence(pathPhase)) {
+                println("point: " + point.x + point.y)
+              }
+            }
             val firstPoint = currentNonPersistentPointsSequence(pathPhase)(0)
             val secondPoint = currentNonPersistentPointsSequence(pathPhase)(1)
             val currentPoint = state.currentPointsSequence(pathPhase)(state.currentPointIndex)
@@ -776,14 +815,15 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
                     val nextStop = state.getNextStepId
                     assert(nextStop.charAt(0) == 'B')
                     // passa al prossimo step senza IpRequest
-                    persist(NextStepEvent) { evt =>
-                      state.index = state.index + 1
-                      if(state.index >= state.currentRoute.length) {
-                        state.handleIndexOverrun
-                      }
-                      // preoccupati anche del flag di inizio step
-                      state.beginOfTheStep = true
+                    persist(NextStepEvent) { evt => }
+                    // persist body begin
+                    state.index = state.index + 1
+                    if(state.index >= state.currentRoute.length) {
+                      state.handleIndexOverrun
                     }
+                    // preoccupati anche del flag di inizio step
+                    state.beginOfTheStep = true
+                    // persist body end
                     // ora accodati
                     sendToImmovable(id, self, bus_stop.id, envelope(id, bus_stop.id, WaitForPublicTransport(nextStop)))
                     // ammazzati
@@ -801,11 +841,12 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
                       }
                     }
                     // rendi persistente la rimozione
-                    persist(BusEvent(TravellersGoneOff(goingOff))) { evt =>
-                      for(traveller <- goingOff) {
-                        state.travellers = state.travellers - traveller
-                      }
+                    persist(BusEvent(TravellersGoneOff(goingOff))) { evt => }
+                    // persist body begin
+                    for(traveller <- goingOff) {
+                      state.travellers = state.travellers - traveller
                     }
+                    // persist body end
                     // invia i viaggiatori scesi e il numero corrente di passeggeri alla bus stop
                     // ATTENZIONE: fault tolerance non garantita
                     // in caso di crash, gli identificativi potrebbero essere ora irrimediabilmente persi
@@ -826,6 +867,13 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
           case tram_stop_step(tram_stop, direction, ignore) =>
             // a prescindere dall'entità che sono, devo procedere fino alla fine del percorso
             // LANCIA EVENTO LEGATO AL PUNTO CORRENTE
+            if(currentNonPersistentPointsSequence(pathPhase).length < 2) {
+              println("Entità mobile " + id)
+              println("pathphase: " + pathPhase)
+              for(point <- currentNonPersistentPointsSequence(pathPhase)) {
+                println("point: " + point.x + point.y)
+              }
+            }
             val firstPoint = currentNonPersistentPointsSequence(pathPhase)(0)
             val secondPoint = currentNonPersistentPointsSequence(pathPhase)(1)
             val currentPoint = state.currentPointsSequence(pathPhase)(state.currentPointIndex)
@@ -863,14 +911,15 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
                     val nextStop = state.getNextStepId
                     assert(nextStop.charAt(0) == 'T')
                     // passa al prossimo step senza IpRequest
-                    persist(NextStepEvent) { evt =>
-                      state.index = state.index + 1
-                      if(state.index >= state.currentRoute.length) {
-                        state.handleIndexOverrun
-                      }
-                      // preoccupati anche del flag di inizio step
-                      state.beginOfTheStep = true
+                    persist(NextStepEvent) { evt => }
+                    // persist body begin
+                    state.index = state.index + 1
+                    if(state.index >= state.currentRoute.length) {
+                      state.handleIndexOverrun
                     }
+                    // preoccupati anche del flag di inizio step
+                    state.beginOfTheStep = true
+                    // persist body end
                     // ora accodati
                     sendToImmovable(id, self, tram_stop.id, envelope(id, tram_stop.id, WaitForPublicTransport(nextStop)))
                     // ammazzati
@@ -888,11 +937,12 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
                       }
                     }
                     // rendi persistente la rimozione
-                    persist(TramEvent(TravellersGoneOff(goingOff))) { evt =>
-                      for(traveller <- goingOff) {
-                        state.travellers = state.travellers - traveller
-                      }
+                    persist(TramEvent(TravellersGoneOff(goingOff))) { evt => }
+                    // persist body begin
+                    for(traveller <- goingOff) {
+                      state.travellers = state.travellers - traveller
                     }
+                    // persist body end
                     // invia i viaggiatori scesi e il numero corrente di passeggeri alla tram stop
                     // ATTENZIONE: fault tolerance non garantita
                     // in caso di crash, gli identificativi potrebbero essere ora irrimediabilmente persi
@@ -955,6 +1005,9 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
       case TramEvent(event) =>
         Tram.eventHandler(event, state)
     }
+    
+    case RecoveryFailure(cause) =>
+      println("Recovery fallita!")
     
     case SnapshotOffer(metadata, offeredSnapshot) =>
       offeredSnapshot match {

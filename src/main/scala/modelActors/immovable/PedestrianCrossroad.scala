@@ -137,14 +137,15 @@ object PedestrianCrossroad {
           myRef.vehicleFreeTempMap = myRef.vehicleFreeTempMap + (comingFrom -> false)
         }
         // rendi persistente il cambiamento
-        myRef.persist(PedestrianCrossroadEvent(VehicleBusyArrived(comingFrom))) { evt =>
-          if(myRef.state.vehicleFreeMap.contains(comingFrom)) {
-            myRef.state.vehicleFreeMap = myRef.state.vehicleFreeMap.updated(comingFrom, false)
-          }
-          else {
-            myRef.state.vehicleFreeMap = myRef.state.vehicleFreeMap + (comingFrom -> false)
-          }
+        myRef.persist(PedestrianCrossroadEvent(VehicleBusyArrived(comingFrom))) { evt => }
+        // persist body begin
+        if(myRef.state.vehicleFreeMap.contains(comingFrom)) {
+          myRef.state.vehicleFreeMap = myRef.state.vehicleFreeMap.updated(comingFrom, false)
         }
+        else {
+          myRef.state.vehicleFreeMap = myRef.state.vehicleFreeMap + (comingFrom -> false)
+        }
+        // persist body end
       case VehicleFree(comingFrom) =>
         // metti a true la entry nella tabella temporanea
         if(myRef.vehicleFreeTempMap.contains(comingFrom)) {
@@ -154,14 +155,15 @@ object PedestrianCrossroad {
           myRef.vehicleFreeTempMap = myRef.vehicleFreeTempMap + (comingFrom -> true)
         }
         // rendi persistente il cambiamento
-        myRef.persist(PedestrianCrossroadEvent(VehicleFreeArrived(comingFrom))) { evt =>
-          if(myRef.state.vehicleFreeMap.contains(comingFrom)) {
-            myRef.state.vehicleFreeMap = myRef.state.vehicleFreeMap.updated(comingFrom, true)
-          }
-          else {
-            myRef.state.vehicleFreeMap = myRef.state.vehicleFreeMap + (comingFrom -> true)
-          }
+        myRef.persist(PedestrianCrossroadEvent(VehicleFreeArrived(comingFrom))) { evt => }
+        // persist body begin
+        if(myRef.state.vehicleFreeMap.contains(comingFrom)) {
+          myRef.state.vehicleFreeMap = myRef.state.vehicleFreeMap.updated(comingFrom, true)
         }
+        else {
+          myRef.state.vehicleFreeMap = myRef.state.vehicleFreeMap + (comingFrom -> true)
+        }
+        // persist body end
         // controlla se vi sono richieste di pedoni
         if(myRef.pedestrianRequests.size > 0) {
           myRef.vehicle_pass = false

@@ -18,9 +18,14 @@ object ShardUtilities {
    */
   def getDimensionsOfShard(numNodes : Int, map_x : Int, map_y : Int) : (Int,Int) = {
     val numShards = 10 * numNodes
-    val floatY = sqrt((map_y.toFloat / map_x.toFloat) * numShards).toFloat
-    val floatX = numShards.toFloat / floatY
-    return (round(floatX), round(floatY))
+    // dobbiamo dividere la mappa in numShards parti il più possibili simili tra loro
+    // da ricordare che non ci interessa assolutamente avere esatta precisione: ci va bene che uno shard sia più piccolo di un altro
+    // l'unica cosa da mantenere è che il punto più in alto a sinistra dello shard sia dentro la mappa
+    // val floatY = sqrt((map_y.toFloat / map_x.toFloat) * numShards).toFloat
+    // val floatX = numShards.toFloat / floatY
+    val floatX = map_x.toDouble / sqrt(numShards)
+    val floatY = map_y.toDouble / sqrt(numShards)
+    return (ceil(floatX).toInt, ceil(floatY).toInt)
   }
   
   /*
@@ -41,7 +46,7 @@ object ShardUtilities {
       // azzera y
       current_y = 0
       // aumenta x
-      current_x = current_x + 1
+      current_x = current_x + shard_x
     }
     return shardIDs
   }
@@ -77,6 +82,7 @@ object ShardUtilities {
     // ottieni i dati dall'ID in input
     val (entity, x, y, _) = splitId(id)
     // decidi il comportamento in base al tipo di entità
+    var result : String = null
     entity match {
       case "lane" =>
         // deve essere gestita dallo shard di appartenenza dell'entità stradale di destinazione
@@ -86,13 +92,13 @@ object ShardUtilities {
           // va preso lo shard di appartenenza della destinazione della strada
           val neighborId = JSONReader.getRoadEndNeighbor(current_map, road)
           val (_, neighbor_x, neighbor_y, _) = splitId(neighborId)
-          return getShardMembership(neighbor_x, neighbor_y, shard_x, shard_y)
+          result = getShardMembership(neighbor_x, neighbor_y, shard_x, shard_y)
         }
         else {
           // va preso lo shard di appartenenza della sorgente della strada
           val neighborId = JSONReader.getRoadBeginNeighbor(current_map, road)
           val (_, neighbor_x, neighbor_y, _) = splitId(neighborId)
-          return getShardMembership(neighbor_x, neighbor_y, shard_x, shard_y)
+          result = getShardMembership(neighbor_x, neighbor_y, shard_x, shard_y)
         }
       case "zone" =>
         // trova la lane di appartenenza
@@ -110,11 +116,12 @@ object ShardUtilities {
             }
             lane = lanes.head
         }
-        return decideShard(lane)
+        result = decideShard(lane)
       case _ =>
         // restituisci lo shard di appartenenza in base alle coordinate ottenute
-        return getShardMembership(x, y, shard_x, shard_y)
+        result = getShardMembership(x, y, shard_x, shard_y)
     }
+    return result
   }
 	
 }

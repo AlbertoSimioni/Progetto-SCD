@@ -53,11 +53,12 @@ object Tram {
             myRef.interestedInVelocityTick = true
           case GetIn(goingOn) =>
             // per prima cosa, rendi persistente l'arrivo dei passeggeri
-            myRef.persist(TramEvent(TravellersGoneOn(goingOn))) { evt =>
-              for(tuple <- goingOn) {
-                myRef.state.travellers = myRef.state.travellers + (tuple._1 -> tuple._2)
-              }
+            myRef.persist(TramEvent(TravellersGoneOn(goingOn))) { evt => }
+            // persist body begin
+            for(tuple <- goingOn) {
+              myRef.state.travellers = myRef.state.travellers + (tuple._1 -> tuple._2)
             }
+            // persist body end
             // procedi con la seconda parte del percorso
             myRef.pathPhase = myRef.pathPhase + 1
             myRef.currentNonPersistentPointIndex = 0

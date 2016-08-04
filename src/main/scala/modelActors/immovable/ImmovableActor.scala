@@ -11,6 +11,8 @@ import akka.persistence.SaveSnapshotSuccess
 import akka.persistence.SaveSnapshotFailure
 import akka.persistence.SnapshotOffer
 import akka.persistence.RecoveryCompleted
+import akka.persistence.RecoveryFailure
+import akka.persistence.PersistenceFailure
 import akka.contrib.pattern.ClusterSharding
 import akka.persistence.AtLeastOnceDelivery
 import akka.contrib.pattern.DistributedPubSubMediator
@@ -62,8 +64,6 @@ object ImmovableActor {
   // Permette l'estrazione dell'ID del ImmovableActor da un messaggio a lui diretto
   val idExtractor: ShardRegion.IdExtractor = {
     case envelope : ToImmovable =>
-      println("idExtractor invocata!")
-      println("Destinazione: " + envelope.destinationId)
       (envelope.destinationId, envelope)
   }
   
@@ -71,9 +71,46 @@ object ImmovableActor {
   // Permette di capire lo shard di appartenenza del ImmovableActor da un messaggio a lui diretto
   val shardResolver: ShardRegion.ShardResolver = msg => msg match {
     case envelope : ToImmovable =>
-      println("shardResolver invocata!")
+      /*
+      if(envelope.destinationId == null) {
+        envelope.toImmovableMessage match {
+          case ToPersistentMessages.FromImmovable(senderId, payload) =>
+            println("From Immovable, Mittente: " + senderId)
+            payload match {
+              case Request(deliveryId, command) =>
+                println("Request")
+                command match {
+                  case ReCreateMobileEntities =>
+                    println("Recreatemobileentities")
+                  case ToBusStop(command) =>
+                    println("tobusstop")
+                  case ToCrossroad(command) =>
+                    println("tocrossroad")
+                  case ToLane(command) =>
+                    println("tolane")
+                  case ToPedestrianCrossroad(command) =>
+                    println("topedestriancrossroad")
+                  case ToRoad(command) =>
+                    println("toroad")
+                  case ToTramStop(command) =>
+                    println("totramstop")
+                  case ToZone(command) =>
+                    println("tozone")
+                  case _ =>
+                    println("Altro e We should not be here!")  
+                }
+              case Ack(deliveryId) =>
+                println("Acknowledgement")
+            }
+          case ToPersistentMessages.FromMovable(senderId, senderRef, payload) =>
+            println("From Movable, Mittente: " + senderId)
+          case ToPersistentMessages.FromNonPersistent(senderRef, command) =>
+            println("From Non Persistent, Mittente: " + senderRef.path)
+        }
+        assert(false)
+      }
+      */
       val shardId = decideShard(envelope.destinationId)
-      println("Shard: " + shardId)
       shardId
   }
   
@@ -196,9 +233,10 @@ class ImmovableActor extends PersistentActor with AtLeastOnceDelivery with Actor
           // controlla che il messaggio non sia duplicato
           if(state.isNewMessage(senderId, deliveryId) == true) {
         	  // messaggio nuovo
-        	  persist(NoDuplicate(senderId, deliveryId)) { msg =>
-        	    state.updateFilter(msg.senderId, msg.deliveryId)
-        	  }
+        	  persist(NoDuplicate(senderId, deliveryId)) { msg => }
+            // persist body begin
+            state.updateFilter(senderId, deliveryId)
+            // persist body end
         	  // gestione vera e propria del messaggio
         	  command match {
               case ReCreateMobileEntities =>
@@ -240,9 +278,10 @@ class ImmovableActor extends PersistentActor with AtLeastOnceDelivery with Actor
           // controlla che il messaggio non sia duplicato
           if(state.isNewMessage(senderId, deliveryId) == true) {
         	  // messaggio nuovo
-        	  persist(NoDuplicate(senderId, deliveryId)) { msg =>
-        	    state.updateFilter(msg.senderId, msg.deliveryId)
-        	  }
+        	  persist(NoDuplicate(senderId, deliveryId)) { msg => }
+            // persist body begin
+            state.updateFilter(senderId, deliveryId)
+            // persist body end
         	  // handling vero e proprio del messaggio
         	  command match {
               case IpRequest =>
@@ -253,11 +292,12 @@ class ImmovableActor extends PersistentActor with AtLeastOnceDelivery with Actor
                 // fai riprendere la sua esecuzione
                 sendToMovable(destinationId, reCreatedMobileEntity, ResumeExecution)
               case MobileEntityAdd(id) =>
-                persist(MobileEntityArrived(id)) { evt =>
-                  if(state.handledMobileEntities.contains(id) == false) {
-                    state.handledMobileEntities = state.handledMobileEntities :+ id
-                  }
+                persist(MobileEntityArrived(id)) { evt => }
+                // persist body begin
+                if(state.handledMobileEntities.contains(id) == false) {
+                  state.handledMobileEntities = state.handledMobileEntities :+ id
                 }
+                // persist body end
                 // aggiungi o aggiorna
                 if(handledMobileEntitiesMap.contains(id) == true) {
                   handledMobileEntitiesMap = handledMobileEntitiesMap.updated(id, senderRef)
@@ -266,20 +306,22 @@ class ImmovableActor extends PersistentActor with AtLeastOnceDelivery with Actor
                   handledMobileEntitiesMap = handledMobileEntitiesMap + (id -> senderRef)
                 }
               case MobileEntityRemove(id) =>
-                persist(MobileEntityGone(id)) { evt =>
-                  if(state.handledMobileEntities.contains(id) == true) {
-                    state.handledMobileEntities = state.handledMobileEntities.filter { current_id => current_id != id }
-                  }
+                persist(MobileEntityGone(id)) { evt => }
+                // persist body begin
+                if(state.handledMobileEntities.contains(id) == true) {
+                  state.handledMobileEntities = state.handledMobileEntities.filter { current_id => current_id != id }
                 }
+                // persist body end
                 // rimuovi if any
                 handledMobileEntitiesMap = handledMobileEntitiesMap.filter(pair => pair._1 != id)
                 // fallo anche sulla tabella delle posizioni
                 positionsMap = positionsMap.filter(pair => pair._1 != id)
               case PauseExecution(wakeupTime) =>
                 // l'attore mobile chiede di essere messo in stato dormiente
-                persist(MobileEntitySleeping(senderId, wakeupTime)) { evt =>
-                  state.addSleepingActor(evt.id, evt.wakeupTime)
-                }
+                persist(MobileEntitySleeping(senderId, wakeupTime)) { evt => }
+                // persist body begin
+                state.addSleepingActor(senderId, wakeupTime)
+                // persist body end
               case MovableActorRequest(id) =>
                 // recupera l'actorref dalla tabella, if any
                 val actorRef = handledMobileEntitiesMap.get(id).getOrElse(null)
@@ -316,11 +358,12 @@ class ImmovableActor extends PersistentActor with AtLeastOnceDelivery with Actor
             case 'R' =>
               val entry = JSONReader.getRoad(current_map, id)
               if(entry.isDefined) {
-    	          persist(IdentityArrived(id)) { msg =>
-    	            state.id = msg.id
-                  state.kind = "Road"
-    	            state.roadData = entry.get
-    	          }
+    	          persist(IdentityArrived(id)) { msg => }
+                // persist body begin
+                state.id = id
+                state.kind = "Road"
+                state.roadData = entry.get
+                // persist body end
               }
               else {
     	          println("Problems with received road identifier")
@@ -328,11 +371,12 @@ class ImmovableActor extends PersistentActor with AtLeastOnceDelivery with Actor
             case 'L' =>
               val entry = JSONReader.getLane(current_map, id)
               if(entry.isDefined) {
-          	    persist(IdentityArrived(id)) { msg =>
-          	      state.id = msg.id
-                  state.kind = "Lane"
-          	      state.laneData = entry.get
-          	    }
+          	    persist(IdentityArrived(id)) { msg => }
+                // persist body begin
+                state.id = id
+                state.kind = "Lane"
+                state.laneData = entry.get
+                // persist body end
               }
               else {
           	    println("Problems with received lane identifier")
@@ -340,11 +384,12 @@ class ImmovableActor extends PersistentActor with AtLeastOnceDelivery with Actor
             case 'C' =>
               val entry = JSONReader.getCrossroad(current_map, id)
               if(entry.isDefined) {
-          	    persist(IdentityArrived(id)) { msg =>
-          	      state.id = msg.id
-                  state.kind = "Crossroad"
-          	      state.crossroadData = entry.get
-          	    }
+          	    persist(IdentityArrived(id)) { msg => }
+                // persist body begin
+                state.id = id
+                state.kind = "Crossroad"
+                state.crossroadData = entry.get
+                // persist body end
                 state.crossroadData.category match {
                   case `classic` | `semaphore` | `roundabout` =>
                     crossroadConfiguration = getCrossroadConfiguration(state.crossroadData.id)
@@ -359,11 +404,12 @@ class ImmovableActor extends PersistentActor with AtLeastOnceDelivery with Actor
             case 'P' =>
               val entry = JSONReader.getPedestrianCrossroad(current_map, id)
               if(entry.isDefined) {
-          	    persist(IdentityArrived(id)) { msg =>
-          	      state.id = msg.id
-                  state.kind = "Pedestrian_Crossroad"
-          	      state.pedestrian_crossroadData = entry.get
-          	    }
+          	    persist(IdentityArrived(id)) { msg => }
+                // persist body begin
+                state.id = id
+                state.kind = "Pedestrian_Crossroad"
+                state.pedestrian_crossroadData = entry.get
+                // persist body end
               }
               else {
           	    println("Problems with received pedestrian crossroad identifier")
@@ -383,11 +429,12 @@ class ImmovableActor extends PersistentActor with AtLeastOnceDelivery with Actor
             case 'T' =>
               val entry = JSONReader.getTramStop(current_map, id)
               if(entry.isDefined) {
-          	    persist(IdentityArrived(id)) { msg =>
-          	      state.id = msg.id
-                  state.kind = "Tram_Stop"
-          	      state.tram_stopData = entry.get
-          	    }
+          	    persist(IdentityArrived(id)) { msg => }
+                // persist body begin
+                state.id = id
+                state.kind = "Tram_Stop"
+                state.tram_stopData = entry.get
+                // persist body end
               }
               else {
           	    println("Problems with received tram stop identifier")
@@ -395,11 +442,12 @@ class ImmovableActor extends PersistentActor with AtLeastOnceDelivery with Actor
             case 'Z' =>
               val entry = JSONReader.getZone(current_map, id)
               if(entry.isDefined) {
-          	    persist(IdentityArrived(id)) { msg =>
-          	      state.id = msg.id
-                  state.kind = "Zone"
-          	      state.zoneData = entry.get
-          	    }
+          	    persist(IdentityArrived(id)) { msg => }
+                // persist body begin
+                state.id = id
+                state.kind = "Zone"
+                state.zoneData = entry.get
+                // persist body end
               }
               else {
           	    println("Problems with received zone identifier")
@@ -408,11 +456,12 @@ class ImmovableActor extends PersistentActor with AtLeastOnceDelivery with Actor
           
         case CreateMobileEntity(id, route) =>
           // creazione di una entità mobile
-          persist(MobileEntityArrived(id)) {evt =>
-            if(state.handledMobileEntities.contains(evt.id) == false) {
-              state.handledMobileEntities = state.handledMobileEntities :+ evt.id
-            }
+          persist(MobileEntityArrived(id)) {evt => }
+          // persist body begin
+          if(state.handledMobileEntities.contains(id) == false) {
+            state.handledMobileEntities = state.handledMobileEntities :+ id
           }
+          // persist body end
           val createdMobileEntity = context.actorOf(MovableActor.props(id))
           // aggiungi o aggiorna
           if(handledMobileEntitiesMap.contains(id) == true) {
@@ -433,7 +482,7 @@ class ImmovableActor extends PersistentActor with AtLeastOnceDelivery with Actor
     // PERSISTENCE
     case SaveSnapshot =>
       //state.deliveryState = getDeliverySnapshot
-      saveSnapshot(state)
+      //saveSnapshot(state)
     case SaveSnapshotSuccess(metadata) =>
       println("Snapshot stored successfully")
       val prevS = previousSequenceNr
@@ -444,9 +493,12 @@ class ImmovableActor extends PersistentActor with AtLeastOnceDelivery with Actor
         self ! DeleteSnapshot(prevS, prevT)
       }
     case SaveSnapshotFailure(metadata, reason) =>
-      println("Failed to store snapshot")
+      println("Failed to store snapshot: " + reason)
     case DeleteSnapshot(sequenceNr, timestamp) =>
-      deleteSnapshot(sequenceNr, timestamp)
+      //deleteSnapshot(sequenceNr, timestamp)
+      
+    case PersistenceFailure(payload, sequenceNr, cause) =>
+      println("Failed to persist an event!")
     
     // TIME
     case SubscribeAck =>
@@ -455,9 +507,10 @@ class ImmovableActor extends PersistentActor with AtLeastOnceDelivery with Actor
       val toBeWakenUp = state.actorsToBeWakenUp(timeValue)
       if(toBeWakenUp.isEmpty == false) {
         for(id <- toBeWakenUp) {
-          persist(MobileEntityWakingUp(id)) { evt =>
-            state.removeSleepingActor(evt.id)
-          }
+          persist(MobileEntityWakingUp(id)) { evt => }
+          // persist body begin
+          state.removeSleepingActor(id)
+          // persist body end
           val wakenUpEntity = context.actorOf(MovableActor.props(id))
           sendToMovable(state.id, wakenUpEntity, ResumeExecution)
         }
@@ -578,23 +631,31 @@ class ImmovableActor extends PersistentActor with AtLeastOnceDelivery with Actor
     }
     
     case RecoveryCompleted =>
-      // dobbiamo far partire tutti gli attori sotto la nostra gestione
-      // non possiamo farlo subito però, potrebbero esservi delle rimozioni di id dalla lista di entità gestite in coda dei messaggi
-      sendToImmovable(state.id, state.id, ReCreateMobileEntities)
-      // per le entità nodo, ripristina la tabella dei vehicleFree
-      for(entry <- state.vehicleFreeMap) {
-        vehicleFreeTempMap = vehicleFreeTempMap + (entry._1 -> entry._2)
-      }
-      // in caso di crossroad, genera la configurazione
-      if(state.crossroadData != null) {
-        state.crossroadData.category match {
-          case `classic` | `semaphore` | `roundabout` =>
-            crossroadConfiguration = getCrossroadConfiguration(state.crossroadData.id)
-            greenLane = crossroadConfiguration.keys.head
-          case _ =>
-            
+      // la recoverycompleted è eseguita sia all'avvio dell'attore sia al ripristino
+      // dobbiamo distinguere quando siamo ad un avvio da quando siamo ad un ripristino
+      // se siamo ad un rispristino, sicuramente state.id != null
+      if(state.id != null) {
+        // dobbiamo far partire tutti gli attori sotto la nostra gestione
+        // non possiamo farlo subito però, potrebbero esservi delle rimozioni di id dalla lista di entità gestite in coda dei messaggi
+        sendToImmovable(state.id, state.id, ReCreateMobileEntities)
+        // per le entità nodo, ripristina la tabella dei vehicleFree
+        for(entry <- state.vehicleFreeMap) {
+          vehicleFreeTempMap = vehicleFreeTempMap + (entry._1 -> entry._2)
+        }
+        // in caso di crossroad, genera la configurazione
+        if(state.crossroadData != null) {
+          state.crossroadData.category match {
+            case `classic` | `semaphore` | `roundabout` =>
+              crossroadConfiguration = getCrossroadConfiguration(state.crossroadData.id)
+              greenLane = crossroadConfiguration.keys.head
+            case _ =>
+              
+          }
         }
       }
+      
+    case RecoveryFailure(cause) =>
+      println("Recovery fallita!")
       
     case SnapshotOffer(metadata, offeredSnapshot) =>
       offeredSnapshot match {

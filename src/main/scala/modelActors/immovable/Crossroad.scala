@@ -101,16 +101,18 @@ object Crossroad {
         // per sicurezza, metti a false anche la entry nella tabella temporanea
         myRef.vehicleFreeTemp = false
         // rendi persistente il cambiamento
-        myRef.persist(CrossroadEvent(VehicleBusyArrived(comingFrom))) { evt =>
-          myRef.state.vehicleFree = false
-        }
+        myRef.persist(CrossroadEvent(VehicleBusyArrived(comingFrom))) { evt => }
+         // persist body begin
+        myRef.state.vehicleFree = false
+        // persist body end
       case VehicleFree(comingFrom) =>
         // metti a true la entry nella tabella temporanea
         myRef.vehicleFreeTemp = true
         // rendi persistente il cambiamento
-        myRef.persist(CrossroadEvent(VehicleFreeArrived(comingFrom))) { evt =>
-          myRef.state.vehicleFree = true
-        }
+        myRef.persist(CrossroadEvent(VehicleFreeArrived(comingFrom))) { evt => }
+        // persist body begin
+        myRef.state.vehicleFree = true
+        // persist body end
         // logica dell'incrocio per decidere chi deve passare
         val toBeSatisfied = crossroadLogic(myRef)
         if(toBeSatisfied._1 != null && toBeSatisfied._2 != null) {

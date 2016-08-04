@@ -40,9 +40,10 @@ object Car {
             // potrebbe avvenire che beginOfTheStep sia reso persistente, ma per qualche motivo uno od entrambi dei messaggi
             // inviati al predecessore e al successore vengano persi prima di un crash
             // in questo caso, potrebbe essere che, al ripristino, il predecessor e successor si comportino ignorando il veicolo in mezzo
-            myRef.persist(CarEvent(NextVehicleIdArrived(successorId))) { evt =>
-              myRef.state.nextVehicleId = successorId
-            }
+            myRef.persist(CarEvent(NextVehicleIdArrived(successorId))) { evt => }
+            // persist body begin
+            myRef.state.nextVehicleId = successorId
+            // persist body end
             myRef.nextVehicle = successorRef
             if(successorId != null) {
               myRef.nextVehicleLastPosition = point(-1, -1)
@@ -50,9 +51,10 @@ object Car {
             else {
               myRef.nextVehicleLastPosition = null
             }
-            myRef.persist(PredecessorArrived(predecessorId)) { evt =>
-              myRef.state.previousVehicleId = predecessorId
-            }
+            myRef.persist(PredecessorArrived(predecessorId)) { evt => }
+            // persist body begin
+            myRef.state.previousVehicleId = predecessorId
+            // persist body end
             myRef.previousVehicle = predecessorRef
             // manda gli aggiornamenti a loro, qualora fossero non nulli
             if(predecessorId != null && predecessorRef != null) {
@@ -70,11 +72,12 @@ object Car {
             if(myRef.state.beginOfTheStep) {
               // recupera la sequenza di punti da percorrere
               val currentPointsSequence = getPointsSequence(myId, stepSequence)
-              myRef.persist(BeginOfTheStep(currentPointsSequence)) { evt =>
-                myRef.state.currentPointsSequence = evt.pointsSequence
-                myRef.state.currentPointIndex = 0
-                myRef.state.beginOfTheStep = false
-              }
+              myRef.persist(BeginOfTheStep(currentPointsSequence)) { evt => }
+              // persist body begin
+              myRef.state.currentPointsSequence = currentPointsSequence
+              myRef.state.currentPointIndex = 0
+              myRef.state.beginOfTheStep = false
+              // persist body end
             }
             // dal momento che hai tutti i riferimenti, attiva l'interessamento agli eventi di avanzamento
             myRef.interestedInVelocityTick = true
