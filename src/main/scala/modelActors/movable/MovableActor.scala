@@ -565,7 +565,15 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
             // per approccio conservativo, utilizziamo la bus_length
             // non utilizziamo la tram_length perchè si assume che per una tratta del tram giri un solo tram, che quindi non deve competere con nessun altro tram
             // attenzione: se partivamo da una zona, NON dobbiamo mandare la vehicle free
-            if(state.fromZone() == false && state.currentPointIndex == bus_length + 1) {
+            // attenzione: se siamo usciti da un incrocio nil o angle, NON dobbiamo mandare la vehicle free
+            var nilOrAngleCrossroad = false
+            if(state.fromCrossroad()) {
+              val crossroad = JSONReader.getCrossroad(current_map, state.getPreviousStepId).get
+              if(crossroad.category == `nil` || crossroad.category == `angle`) {
+                nilOrAngleCrossroad = true
+              }
+            }
+            if(state.fromZone() == false && nilOrAngleCrossroad == false && state.currentPointIndex == bus_length + 1) {
               val previousStepId = state.getPreviousStepId
               // recupera anche l'id della lane da cui provenivamo
               var previousLaneId : String = null

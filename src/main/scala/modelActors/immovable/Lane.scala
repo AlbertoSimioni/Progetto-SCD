@@ -52,6 +52,10 @@ object Lane {
             FromVehicle(myRef, myId, senderId, senderRef, message)
           case Advanced(lastPosition) =>
             FromVehicle(myRef, myId, senderId, senderRef, message)
+          case HandleLastVehicle =>
+            FromVehicle(myRef, myId, senderId, senderRef, message)  
+          case LastOfTheLane =>
+            FromVehicle(myRef, myId, senderId, senderRef, message)  
           case LaneAccessRequest(startPosition, direction) =>
             FromVehicle(myRef, myId, senderId, senderRef, message)
         }
@@ -63,6 +67,10 @@ object Lane {
             FromVehicle(myRef, myId, senderId, senderRef, message)
           case Advanced(lastPosition) =>
             FromVehicle(myRef, myId, senderId, senderRef, message)
+          case HandleLastVehicle =>
+            FromVehicle(myRef, myId, senderId, senderRef, message)  
+          case LastOfTheLane =>
+            FromVehicle(myRef, myId, senderId, senderRef, message)
           case LaneAccessRequest(startPosition, direction) =>
             FromVehicle(myRef, myId, senderId, senderRef, message)
         }
@@ -73,6 +81,10 @@ object Lane {
           case NextVehicleRequest(id, last) =>
             FromVehicle(myRef, myId, senderId, senderRef, message)
           case Advanced(lastPosition) =>
+            FromVehicle(myRef, myId, senderId, senderRef, message)
+          case HandleLastVehicle =>
+            FromVehicle(myRef, myId, senderId, senderRef, message)  
+          case LastOfTheLane =>
             FromVehicle(myRef, myId, senderId, senderRef, message)
           case LaneAccessRequest(startPosition, direction) =>
             FromVehicle(myRef, myId, senderId, senderRef, message)
