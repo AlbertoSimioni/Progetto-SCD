@@ -158,6 +158,8 @@ object BusStop {
           myRef.sendToMovable(myId, senderRef, envelope(myId, senderId, Vehicle_Out))
         }
         else {
+          var text = myId + ": sto facendo aspettare " + senderId + " nonostante abbia appena fatto richiesta a causa di vehiclefree"
+          println(text)
           // accodamento
           // PRECONDIZIONE: non vi possono essere richieste presenti relative alla stessa lane
           assert(myRef.vehicleRequests.contains(comingFrom) == false)
@@ -203,8 +205,15 @@ object BusStop {
         // controlla se ci sono richieste pendenti dalla corsia
         if(myRef.vehicleRequests.contains(comingFrom)) {
           val entry = myRef.vehicleRequests.get(comingFrom).get
-          myRef.sendToMovable(myId, entry._2, envelope(myId, entry._1, Vehicle_Out))
           myRef.vehicleRequests = myRef.vehicleRequests - comingFrom
+          // poni il corrispondente vehicleFree a false
+          if(myRef.vehicleFreeTempMap.contains(comingFrom)) {
+            myRef.vehicleFreeTempMap = myRef.vehicleFreeTempMap.updated(comingFrom, false)
+          }
+          else {
+            myRef.vehicleFreeTempMap = myRef.vehicleFreeTempMap + (comingFrom -> false)
+          }
+          myRef.sendToMovable(myId, entry._2, envelope(myId, entry._1, Vehicle_Out))
         }
     }
   }

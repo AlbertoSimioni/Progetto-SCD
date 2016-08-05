@@ -81,21 +81,29 @@ object Crossroad {
   def FromVehicle(myRef : ImmovableActor, myId : String, senderId : String, senderRef : ActorRef, message : Any) : Unit = {
     message match {
       case Vehicle_In(comingFrom) =>
+        // a prescindere dall'esito, mettila in vehicle requests
+        // PRECONDIZIONE: non vi possono essere richieste presenti relative alla stessa lane
+        assert(myRef.vehicleRequests.contains(comingFrom) == false)
+        val tuple = (senderId, senderRef)
+        myRef.vehicleRequests = myRef.vehicleRequests + (comingFrom -> tuple)
         if(myRef.state.vehicleFree == true && myRef.vehicleFreeTemp == true) {
-          // poni il corrispondente vehicleFree a false
-          myRef.vehicleFreeTemp = false
           // logica dell'incrocio per decidere chi deve passare
           val toBeSatisfied = crossroadLogic(myRef)
           if(toBeSatisfied._1 != null && toBeSatisfied._2 != null) {
+            // poni il corrispondente vehicleFree a false
+            myRef.vehicleFreeTemp = false
             myRef.sendToMovable(myId, toBeSatisfied._2, envelope(myId, toBeSatisfied._1, Vehicle_Out))
           }
-        }
-        else {
-          // accodamento
-          // PRECONDIZIONE: non vi possono essere richieste presenti relative alla stessa lane
-          assert(myRef.vehicleRequests.contains(comingFrom) == false)
-          val tuple = (senderId, senderRef)
-          myRef.vehicleRequests = myRef.vehicleRequests + (comingFrom -> tuple)
+          else {
+           var text = myId + ": sto facendo aspettare " + senderId + " nonostante abbia appena fatto richiesta"
+           if(myRef.state.crossroadData.category == `semaphore` && myRef.greenLane != comingFrom) {
+             text = text + " perchè è rosso"
+           }
+           else {
+             text = text + "... ?"
+           }
+           println(text)
+          }
         }
       case VehicleBusy(comingFrom) =>
         // per sicurezza, metti a false anche la entry nella tabella temporanea
@@ -116,6 +124,7 @@ object Crossroad {
         // logica dell'incrocio per decidere chi deve passare
         val toBeSatisfied = crossroadLogic(myRef)
         if(toBeSatisfied._1 != null && toBeSatisfied._2 != null) {
+          myRef.vehicleFreeTemp = false
           myRef.sendToMovable(myId, toBeSatisfied._2, envelope(myId, toBeSatisfied._1, Vehicle_Out))
         }
     }
@@ -124,10 +133,13 @@ object Crossroad {
   // UTILITY
   // Regola cosa fare al cambio semaforo
   def HandleSemaphoreSwitch(myRef : ImmovableActor, myId : String) : Unit = {
-    // logica dell'incrocio per decidere chi deve passare
-    val toBeSatisfied = crossroadLogic(myRef)
-    if(toBeSatisfied._1 != null && toBeSatisfied._2 != null) {
-      myRef.sendToMovable(myId, toBeSatisfied._2, envelope(myId, toBeSatisfied._1, Vehicle_Out))
+    if(myRef.state.vehicleFree == true && myRef.vehicleFreeTemp == true) {
+      // logica dell'incrocio per decidere chi deve passare
+      val toBeSatisfied = crossroadLogic(myRef)
+      if(toBeSatisfied._1 != null && toBeSatisfied._2 != null) {
+        myRef.vehicleFreeTemp = false
+        myRef.sendToMovable(myId, toBeSatisfied._2, envelope(myId, toBeSatisfied._1, Vehicle_Out))
+      }
     }
   }
   
@@ -135,6 +147,8 @@ object Crossroad {
   // Logica dell'incrocio per decidere se e a chi mandare Vehicle_Out
   // Torna una coppia nulla se nessuno deve ricevere vehicle_out
   // Causa side-effect: qualora venga restituita una coppia, è stata già rimossa dalle vehicleRequests
+  // ATTENZIONE: il metodo consulta sempre la tabella delle richieste, quindi non considera l'ipotesi di essere invocato in corrispondenza di una nuova richiesta di passaggio
+  // Dunque tutte le richieste vengono messe in vehicle requests, a prescindere se vengono soddisfatte immediatamente o meno
   def crossroadLogic(myRef : ImmovableActor) : (String, ActorRef) = {
     // prima cosa: capisco che incrocio sono
     myRef.state.crossroadData.category match {

@@ -2825,13 +2825,13 @@
     "road" : "R000027600004200",
     "begintoend" : true,
     "tram" : false,
-    "bus_routes" : [ ]
+    "bus_routes" : [ 1 ]
   }, {
     "id" : "L000027600004202",
     "road" : "R000027600004200",
     "begintoend" : false,
     "tram" : false,
-    "bus_routes" : [ 1 ]
+    "bus_routes" : [ ]
   }, {
     "id" : "L000027600004203",
     "road" : "R000027600004200",
@@ -2981,13 +2981,13 @@
     "road" : "R000032400003720",
     "begintoend" : false,
     "tram" : false,
-    "bus_routes" : [ ]
+    "bus_routes" : [ 1 ]
   }, {
     "id" : "L000032400003722",
     "road" : "R000032400003720",
     "begintoend" : true,
     "tram" : false,
-    "bus_routes" : [ 1 ]
+    "bus_routes" : [ ]
   }, {
     "id" : "L000032400003723",
     "road" : "R000032400003720",

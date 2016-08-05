@@ -414,7 +414,7 @@ object Routes {
             // tra le corsie della strada ve ne è una della tratta
             getRoad(map, vert.id).get.lanesIDs.filter { laneId => getLane(map, laneId).get.bus_routes.contains(route) }.length > 0}
           assert(routeVertexes.length == 1)
-          return routeVertexes.head
+          return vertex
         case _ =>
       }
     }
@@ -445,7 +445,7 @@ object Routes {
             // tra le corsie della strada ve ne è una della tratta
             getRoad(map, vert.id).get.lanesIDs.filter { laneId => getLane(map, laneId).get.tram == true }.length > 0}
           assert(routeVertexes.length == 1)
-          return routeVertexes.head
+          return vertex
         case _ =>
       }
     }

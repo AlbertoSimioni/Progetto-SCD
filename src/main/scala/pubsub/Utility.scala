@@ -40,9 +40,6 @@ object Utility {
       }
     }
     else {
-      if(first.y != second.y) {
-        println("i punti problematici sono: first " + first.x + " " + first.y + ", second " + second.x + " " + second.y)
-      }
       assert(first.y == second.y)
       if(first.x > second.x) {
         return "left"

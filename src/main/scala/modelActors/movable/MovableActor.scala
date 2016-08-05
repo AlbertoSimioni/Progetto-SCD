@@ -665,15 +665,27 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
             // LANCIA EVENTO LEGATO AL PUNTO CORRENTE
             // dal momento che vi è una direzione diversa per ogni pezzo di percorso, la calcoliamo a partire dai primi due punti del percorso in questione
             // questo implicitamente assume che un pezzo di percorso sia composto almeno da due punti
-            if(currentNonPersistentPointsSequence(pathPhase).length < 2) {
-              println("Entità mobile " + id)
-              println("pathphase: " + pathPhase)
-              for(point <- currentNonPersistentPointsSequence(pathPhase)) {
-                println("point: " + point.x + point.y)
+            // ATTENZIONE: quando si ha un pedone che attraversa un incrocio che ha a che fare con tre corsie da un lato e due da un altro,
+            // non è vero che i primi due punti hanno stessa coordinata x o stessa coordinata y
+            // dunque, se siamo un pedone, prendiamo il secondo e il terzo
+            var index1 = 0
+            var index2 = 1
+            if(getMyLength() == pedestrian_length) {
+              index1 = index1 + 1
+              index2 = index2 + 1
+            }
+            // controllino inizio
+            if(pathPhase > currentNonPersistentPointsSequence.length-1 || currentNonPersistentPointsSequence(pathPhase).length - 1 < index2) {
+              if(pathPhase > currentNonPersistentPointsSequence.length-1) {
+                println(id + ": il pathPhase è troppo grande")
+              }
+              else {
+                println(id + ": il mio pezzo di percorso è minore di " + (index2 + 1))
               }
             }
-            val firstPoint = currentNonPersistentPointsSequence(pathPhase)(0)
-            val secondPoint = currentNonPersistentPointsSequence(pathPhase)(1)
+            // controllino fine
+            val firstPoint = currentNonPersistentPointsSequence(pathPhase)(index1)
+            val secondPoint = currentNonPersistentPointsSequence(pathPhase)(index2)
             val currentPoint = currentNonPersistentPointsSequence(pathPhase)(currentNonPersistentPointIndex)
             if(getMyLength() == pedestrian_length) {
               publisherGuiHandler ! pedestrianPosition(id, currentPoint.x, currentPoint.y, getGuiDirection(firstPoint, secondPoint))
@@ -710,13 +722,6 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
             // possiamo essere un pedone o un veicolo
             // in ogni caso, possiamo procedere senza problemi fino alla fine della (prima) sequenza di punti
             // LANCIA EVENTO LEGATO AL PUNTO CORRENTE
-            if(currentNonPersistentPointsSequence(pathPhase).length < 2) {
-              println("Entità mobile " + id)
-              println("pathphase: " + pathPhase)
-              for(point <- currentNonPersistentPointsSequence(pathPhase)) {
-                println("point: " + point.x + point.y)
-              }
-            }
             val firstPoint = currentNonPersistentPointsSequence(pathPhase)(0)
             val secondPoint = currentNonPersistentPointsSequence(pathPhase)(1)
             val currentPoint = currentNonPersistentPointsSequence(pathPhase)(currentNonPersistentPointIndex)
@@ -781,13 +786,6 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
           case bus_stop_step(bus_stop, direction, ignore) =>
             // a prescindere dall'entità che sono, devo procedere fino alla fine del percorso
             // LANCIA EVENTO LEGATO AL PUNTO CORRENTE
-            if(currentNonPersistentPointsSequence(pathPhase).length < 2) {
-              println("Entità mobile " + id)
-              println("pathphase: " + pathPhase)
-              for(point <- currentNonPersistentPointsSequence(pathPhase)) {
-                println("point: " + point.x + point.y)
-              }
-            }
             val firstPoint = currentNonPersistentPointsSequence(pathPhase)(0)
             val secondPoint = currentNonPersistentPointsSequence(pathPhase)(1)
             val currentPoint = currentNonPersistentPointsSequence(pathPhase)(currentNonPersistentPointIndex)
@@ -877,13 +875,6 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
           case tram_stop_step(tram_stop, direction, ignore) =>
             // a prescindere dall'entità che sono, devo procedere fino alla fine del percorso
             // LANCIA EVENTO LEGATO AL PUNTO CORRENTE
-            if(currentNonPersistentPointsSequence(pathPhase).length < 2) {
-              println("Entità mobile " + id)
-              println("pathphase: " + pathPhase)
-              for(point <- currentNonPersistentPointsSequence(pathPhase)) {
-                println("point: " + point.x + point.y)
-              }
-            }
             val firstPoint = currentNonPersistentPointsSequence(pathPhase)(0)
             val secondPoint = currentNonPersistentPointsSequence(pathPhase)(1)
             val currentPoint = currentNonPersistentPointsSequence(pathPhase)(currentNonPersistentPointIndex)

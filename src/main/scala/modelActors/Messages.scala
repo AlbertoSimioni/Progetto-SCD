@@ -171,7 +171,8 @@ object Messages {
   
   // stampa una stringa di logging del messaggio
   def printMessage(senderId : String, destinationId : String, message : Command) : Unit = {
-    var log : String = destinationId + ": ricevuto messaggio da " + senderId + ": "
+    var log : String = senderId + " => " + destinationId + ": "
+    
     message match {
       case IpRequest =>
         log = log + "IpRequest"
@@ -198,7 +199,51 @@ object Messages {
       case MovableActorResponse(_, _) =>
         log = log + "MovableActorResponse"
       case _ =>
-        
+        val content = develope(message)
+        content match {
+          case NextVehicleFirstRequest =>
+            log = log + "NextVehicleFirstRequest"
+          case NextVehicleRequest(id, last) =>
+            log = log + "NextVehicleRequest"
+          case NextVehicleResponse(id, ref) =>
+            log = log + "NextVehicleResponse"
+          case HandleLastVehicle =>
+            log = log + "HandleLastVehicle"
+          case LastOfTheLane =>
+            log = log + "LastOfTheLane"
+          case LaneAccessRequest(startPosition, direction) =>
+            log = log + "LaneAccessRequest"
+          case LaneAccessGranted(predecessorId, predecessorRef, successorId, successorRef) =>
+            log = log + "LaneAccessGranted"
+          case SuccessorArrived =>
+            log = log + "SuccessorArrived"
+          case PredecessorArrived =>
+            log = log + "PredecessorArrived"
+          case Advanced(lastPosition) =>
+            log = log + "Advanced"
+          case PredecessorGone =>
+            log = log + "PredecessorGone"
+          case VehicleBusy(comingFrom) =>
+            log = log + "VehicleBusy"
+          case VehicleFree(comingFrom) =>
+            log = log + "VehicleFree"
+          case CrossFree =>
+            log = log + "CrossFree"
+          case Vehicle_In(comingFrom) =>
+            log = log + "VehicleIn"
+          case Cross_In =>
+            log = log + "CrossIn"
+          case Vehicle_Out =>
+            log = log + "VehicleOut"
+          case Cross_Out =>
+            log = log + "CrossOut"
+          case WaitForPublicTransport(destination) =>
+            log = log + "WaitForPublicTransport"
+          case GetOut(travellers, numTravellers) =>
+            log = log + "GetOut"
+          case GetIn(travellers) =>
+            log = log + "GetIn"
+        }
     }
     println(log)
   }
@@ -518,5 +563,254 @@ object Messages {
             }
         }
     }
+  }
+  
+  // UTILITY
+  // effettua il deimbustamento di un comando per ottenere il messaggio
+  def develope(command : Command) : Any = {
+	  command match {
+  	  case ToPedestrian(FromPedestrian(message)) =>
+        return message
+  	  case ToPedestrian(FromCar(message)) =>
+        return message
+  	  case ToPedestrian(FromBus(message)) =>
+        return message
+  	  case ToPedestrian(FromTram(message)) =>
+        return message
+  	  case ToPedestrian(FromRoad(message)) =>
+        return message
+  	  case ToPedestrian(FromLane(message)) =>
+        return message
+  	  case ToPedestrian(FromCrossroad(message)) =>
+        return message
+  	  case ToPedestrian(FromPedestrianCrossroad(message)) =>
+        return message
+  	  case ToPedestrian(FromBusStop(message)) =>
+        return message
+  	  case ToPedestrian(FromTramStop(message)) =>
+        return message
+  	  case ToPedestrian(FromZone(message)) =>
+        return message
+  	  case ToCar(FromPedestrian(message)) =>
+        return message
+  	  case ToCar(FromCar(message)) =>
+        return message
+  	  case ToCar(FromBus(message)) =>
+        return message
+  	  case ToCar(FromTram(message)) =>
+        return message
+  	  case ToCar(FromRoad(message)) =>
+        return message
+  	  case ToCar(FromLane(message)) =>
+        return message
+  	  case ToCar(FromCrossroad(message)) =>
+        return message
+  	  case ToCar(FromPedestrianCrossroad(message)) =>
+        return message
+  	  case ToCar(FromBusStop(message)) =>
+        return message
+  	  case ToCar(FromTramStop(message)) =>
+        return message
+  	  case ToCar(FromZone(message)) =>
+        return message
+  	  case ToBus(FromPedestrian(message)) =>
+        return message
+  	  case ToBus(FromCar(message)) =>
+        return message
+  	  case ToBus(FromBus(message)) =>
+        return message
+  	  case ToBus(FromTram(message)) =>
+        return message
+  	  case ToBus(FromRoad(message)) =>
+        return message
+  	  case ToBus(FromLane(message)) =>
+        return message
+  	  case ToBus(FromCrossroad(message)) =>
+        return message
+  	  case ToBus(FromPedestrianCrossroad(message)) =>
+        return message
+  	  case ToBus(FromBusStop(message)) =>
+        return message
+  	  case ToBus(FromTramStop(message)) =>
+        return message
+  	  case ToBus(FromZone(message)) =>
+        return message
+  	  case ToTram(FromPedestrian(message)) =>
+        return message
+  	  case ToTram(FromCar(message)) =>
+        return message
+  	  case ToTram(FromBus(message)) =>
+        return message
+  	  case ToTram(FromTram(message)) =>
+        return message
+  	  case ToTram(FromRoad(message)) =>
+        return message
+  	  case ToTram(FromLane(message)) =>
+        return message
+  	  case ToTram(FromCrossroad(message)) =>
+        return message
+  	  case ToTram(FromPedestrianCrossroad(message)) =>
+        return message
+  	  case ToTram(FromBusStop(message)) =>
+        return message
+  	  case ToTram(FromTramStop(message)) =>
+        return message
+  	  case ToTram(FromZone(message)) =>
+        return message
+  	  case ToRoad(FromPedestrian(message)) =>
+        return message
+  	  case ToRoad(FromCar(message)) =>
+        return message
+  	  case ToRoad(FromBus(message)) =>
+        return message
+  	  case ToRoad(FromTram(message)) =>
+        return message
+  	  case ToRoad(FromRoad(message)) =>
+        return message
+  	  case ToRoad(FromLane(message)) =>
+        return message
+  	  case ToRoad(FromCrossroad(message)) =>
+        return message
+  	  case ToRoad(FromPedestrianCrossroad(message)) =>
+        return message
+  	  case ToRoad(FromBusStop(message)) =>
+        return message
+  	  case ToRoad(FromTramStop(message)) =>
+        return message
+  	  case ToRoad(FromZone(message)) =>
+        return message
+  	  case ToLane(FromPedestrian(message)) =>
+        return message
+  	  case ToLane(FromCar(message)) =>
+        return message
+  	  case ToLane(FromBus(message)) =>
+        return message
+  	  case ToLane(FromTram(message)) =>
+        return message
+  	  case ToLane(FromRoad(message)) =>
+        return message
+  	  case ToLane(FromLane(message)) =>
+        return message
+  	  case ToLane(FromCrossroad(message)) =>
+        return message
+  	  case ToLane(FromPedestrianCrossroad(message)) =>
+        return message
+  	  case ToLane(FromBusStop(message)) =>
+        return message
+  	  case ToLane(FromTramStop(message)) =>
+        return message
+  	  case ToLane(FromZone(message)) =>
+        return message
+  	  case ToCrossroad(FromPedestrian(message)) =>
+        return message
+  	  case ToCrossroad(FromCar(message)) =>
+        return message
+  	  case ToCrossroad(FromBus(message)) =>
+        return message
+  	  case ToCrossroad(FromTram(message)) =>
+        return message
+  	  case ToCrossroad(FromRoad(message)) =>
+        return message
+  	  case ToCrossroad(FromLane(message)) =>
+        return message
+  	  case ToCrossroad(FromCrossroad(message)) =>
+        return message
+  	  case ToCrossroad(FromPedestrianCrossroad(message)) =>
+        return message
+  	  case ToCrossroad(FromBusStop(message)) =>
+        return message
+  	  case ToCrossroad(FromTramStop(message)) =>
+        return message
+  	  case ToCrossroad(FromZone(message)) =>
+        return message
+  	  case ToPedestrianCrossroad(FromPedestrian(message)) =>
+        return message
+  	  case ToPedestrianCrossroad(FromCar(message)) =>
+        return message
+  	  case ToPedestrianCrossroad(FromBus(message)) =>
+        return message
+  	  case ToPedestrianCrossroad(FromTram(message)) =>
+        return message
+  	  case ToPedestrianCrossroad(FromRoad(message)) =>
+        return message
+  	  case ToPedestrianCrossroad(FromLane(message)) =>
+        return message
+  	  case ToPedestrianCrossroad(FromCrossroad(message)) =>
+        return message
+  	  case ToPedestrianCrossroad(FromPedestrianCrossroad(message)) =>
+        return message
+  	  case ToPedestrianCrossroad(FromBusStop(message)) =>
+        return message
+  	  case ToPedestrianCrossroad(FromTramStop(message)) =>
+        return message
+  	  case ToPedestrianCrossroad(FromZone(message)) =>
+        return message
+  	  case ToBusStop(FromPedestrian(message)) =>
+        return message
+  	  case ToBusStop(FromCar(message)) =>
+        return message
+  	  case ToBusStop(FromBus(message)) =>
+        return message
+  	  case ToBusStop(FromTram(message)) =>
+        return message
+  	  case ToBusStop(FromRoad(message)) =>
+        return message
+  	  case ToBusStop(FromLane(message)) =>
+        return message
+  	  case ToBusStop(FromCrossroad(message)) =>
+        return message
+  	  case ToBusStop(FromPedestrianCrossroad(message)) =>
+        return message
+  	  case ToBusStop(FromBusStop(message)) =>
+        return message
+  	  case ToBusStop(FromTramStop(message)) =>
+        return message
+  	  case ToBusStop(FromZone(message)) =>
+        return message
+  	  case ToTramStop(FromPedestrian(message)) =>
+        return message
+  	  case ToTramStop(FromCar(message)) =>
+        return message
+  	  case ToTramStop(FromBus(message)) =>
+        return message
+  	  case ToTramStop(FromTram(message)) =>
+        return message
+  	  case ToTramStop(FromRoad(message)) =>
+        return message
+  	  case ToTramStop(FromLane(message)) =>
+        return message
+  	  case ToTramStop(FromCrossroad(message)) =>
+        return message
+  	  case ToTramStop(FromPedestrianCrossroad(message)) =>
+        return message
+  	  case ToTramStop(FromBusStop(message)) =>
+        return message
+  	  case ToTramStop(FromTramStop(message)) =>
+        return message
+  	  case ToTramStop(FromZone(message)) =>
+        return message
+  	  case ToZone(FromPedestrian(message)) =>
+        return message
+  	  case ToZone(FromCar(message)) =>
+        return message
+  	  case ToZone(FromBus(message)) =>
+        return message
+  	  case ToZone(FromTram(message)) =>
+        return message
+  	  case ToZone(FromRoad(message)) =>
+        return message
+  	  case ToZone(FromLane(message)) =>
+        return message
+  	  case ToZone(FromCrossroad(message)) =>
+        return message
+  	  case ToZone(FromPedestrianCrossroad(message)) =>
+        return message
+  	  case ToZone(FromBusStop(message)) =>
+        return message
+  	  case ToZone(FromTramStop(message)) =>
+        return message
+  	  case ToZone(FromZone(message)) =>
+        return message
+	  }
   }
 }
