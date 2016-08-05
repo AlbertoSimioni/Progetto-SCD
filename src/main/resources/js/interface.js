@@ -74,7 +74,7 @@ window.onload = function() {
         };
     webSocket.onmessage = function(event) {
         var msg = JSON.parse(event.data);
-        //console.log(JSON.stringify(msg))
+        console.log(JSON.stringify(msg))
         if(msg.hasOwnProperty('dimensions')){ //MAP ARRIVED
             mapRegistry.buildMap(msg);
             paper.view.draw();
@@ -84,7 +84,7 @@ window.onload = function() {
             var lat = msg.info.lat
             var long = msg.info.long
             var car = registry.findCar(msg.info.id)
-            if (!car) {
+            if (car == null) {
                 registry.addCar(msg.info.id,lat,long,msg.info.direction)
             } else {
                 car.move(lat,long, msg.info.direction)
@@ -95,7 +95,7 @@ window.onload = function() {
             var lat = msg.info.lat
             var long = msg.info.long
             var pedestrian = registry.findPedestrian(msg.info.id)
-            if (!pedestrian) {
+            if (pedestrian == null) {
                 registry.addPedestrian(msg.info.id,lat,long,msg.info.direction)
             } else {
                 pedestrian.move(lat,long, msg.info.direction)
@@ -106,7 +106,7 @@ window.onload = function() {
             var lat = msg.info.lat
             var long = msg.info.long
             var tram = registry.findTram(msg.info.id)
-            if (!tram) {
+            if (tram == null) {
                 registry.addTram(msg.info.id,lat,long,msg.info.direction)
             } else {
                 tram.move(lat,long, msg.info.direction)
@@ -117,7 +117,7 @@ window.onload = function() {
             var lat = msg.info.lat
             var long = msg.info.long
             var bus = registry.findBus(msg.info.id)
-            if (!bus) {
+            if (bus == null) {
                 registry.addBus(msg.info.id,lat,long,msg.info.direction)
             } else {
                 bus.move(lat,long, msg.info.direction)
@@ -127,25 +127,25 @@ window.onload = function() {
 
         if(msg.type == "HideCar"){
             var car = registry.findCar(msg.info.id);
-            if(car){
+            if(car != null){
                 car.hide();
             }
         }
         if(msg.type == "HideBus"){
             var bus = registry.findBus(msg.info.id);
-            if(bus){
+            if(bus != null){
                 bus.hide();
             }
         }
         if(msg.type == "HideTram"){
             var tram = registry.findTram(msg.info.id);
-            if(tram){
+            if(tram != null){
                 tram.hide();
             }
         }
         if(msg.type == "HidePedestrian"){
             var pedestrian = registry.findPedestrian(msg.info.id);
-            if(pedestrian){
+            if(pedestrian != null){
                 pedestrian.hide();
             }
         }

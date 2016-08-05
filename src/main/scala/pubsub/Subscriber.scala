@@ -29,17 +29,17 @@ class Subscriber(contentType : String) extends Actor with ActorLogging {
   //Messaggi inviati dai worker per inviare al guihandler gli aggiornamenti nel model
   def readyModel: Actor.Receive = {
     case m @ carPosition(id,lat,long,dir) =>   context.actorSelection("/user/activeConnections") !
-      println("carPosition")
       ActiveConnections.SendMessageToClients(BrowserMessagesFormatter.CarPositionToJson(m))
+      println("carPosition")
     case m @ busPosition(id,lat,long,dir) =>   context.actorSelection("/user/activeConnections") !
-      println("busPosition")
       ActiveConnections.SendMessageToClients(BrowserMessagesFormatter.BusPositionToJson(m))
+      println("busPosition")
     case m @ tramPosition(id,lat,long,dir) =>   context.actorSelection("/user/activeConnections") !
-      println("tramPosition")
       ActiveConnections.SendMessageToClients(BrowserMessagesFormatter.TramPositionToJson(m))
+      println("tramPosition")
     case m @ pedestrianPosition(id,lat,long,dir) =>   context.actorSelection("/user/activeConnections") !
-      println("PedestrianPosition")
       ActiveConnections.SendMessageToClients(BrowserMessagesFormatter.PedestrianPositionToJson(m))
+      println("PedestrianPosition")
     case m @ hideCar(id,zoneID) =>   context.actorSelection("/user/activeConnections") !
       hideCar(id,zoneID)
       println("hideCar")
@@ -54,6 +54,9 @@ class Subscriber(contentType : String) extends Actor with ActorLogging {
       println("hideTram");
     case m @ semaphoreState(id,upGreen,rightGreen,downGreen,leftGreen,tramGreen) =>  context.actorSelection("/user/activeConnections") !
       ActiveConnections.updateSemaphoreState(id,BrowserMessagesFormatter.SemaphoreStateToJson(m))
+      if(id == "C000050400003960"){
+        println("semaforo C000050400003960 stato")
+      }
     case TimeCommand(time) =>    context.actorSelection("/user/activeConnections") !
       ActiveConnections.SendMessageToClients(BrowserMessagesFormatter.TimeToJson(time.hours,time.minutes))
     case CreateMobileEntity(id,route) =>  context.actorSelection("/user/activeConnections") !
