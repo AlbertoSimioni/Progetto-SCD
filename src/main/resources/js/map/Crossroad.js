@@ -25,6 +25,7 @@ Crossroad.circleColor = "#616360";
 Crossroad.prototype.changeColor = function(color){
     if(color == "oldColor") this.path.fillColor = Crossroad.color;
     else this.path.fillColor = color;
+    this.path.view.update();
 }
 
 Crossroad.prototype.buildVertexes = function(jsonVertexes) {
@@ -187,20 +188,25 @@ Crossroad.prototype.drawAngle = function() {
 Crossroad.prototype.changeLights = function(up,right,down,left,tram) {
     if(this.tramPath != null){
         this.tramPath.fillColor = tram;
+        //this.tramPath.view.update();
     }
     for (var i = this.vertexes.length - 1; i >= 0; i--) {
         var curVertex = this.vertexes[i];
         if (curVertex.type == "up") {
             curVertex.path.fillColor = up;
+            //curVertex.path.view.update();
         }
         if (curVertex.type == "down") {
             curVertex.path.fillColor = down;
+            //curVertex.path.view.update();
         }
         if (curVertex.type == "right") {
             curVertex.path.fillColor = right;
+            //curVertex.path.view.update();
         }
         if (curVertex.type == "left") {
             curVertex.path.fillColor = left;
+            //curVertex.path.view.update();
         }
     }
 };

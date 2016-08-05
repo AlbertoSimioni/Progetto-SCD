@@ -60,8 +60,11 @@ window.onload = function() {
     var amount = 2;
     paper.view.setViewSize(1080, 800)
     paper.view.draw();
-
-
+    paper.view.autoUpdate = false;
+    paper.view.onFrame = function(event) {
+       // Every frame, rotate the path by 3 degrees:
+       paper.view.update()
+   }
     var registry = new EntitiesRegistry()
 
 
@@ -82,9 +85,10 @@ window.onload = function() {
         }
         if (msg.type == "CarPosition") {
             var lat = msg.info.lat
-            var long = msg.info.long
+            var long = mapRegistry.normalizeYCoordinate(msg.info.long)
             var car = registry.findCar(msg.info.id)
             if (car == null) {
+
                 registry.addCar(msg.info.id,lat,long,msg.info.direction)
             } else {
                 car.move(lat,long, msg.info.direction)
@@ -93,7 +97,7 @@ window.onload = function() {
         }
         if (msg.type == "PedestrianPosition") {
             var lat = msg.info.lat
-            var long = msg.info.long
+            var long = mapRegistry.normalizeYCoordinate(msg.info.long)
             var pedestrian = registry.findPedestrian(msg.info.id)
             if (pedestrian == null) {
                 registry.addPedestrian(msg.info.id,lat,long,msg.info.direction)
@@ -104,7 +108,7 @@ window.onload = function() {
         }
         if (msg.type == "TramPosition") {
             var lat = msg.info.lat
-            var long = msg.info.long
+            var long = mapRegistry.normalizeYCoordinate(msg.info.long)
             var tram = registry.findTram(msg.info.id)
             if (tram == null) {
                 registry.addTram(msg.info.id,lat,long,msg.info.direction)
@@ -115,7 +119,7 @@ window.onload = function() {
         }
         if (msg.type == "BusPosition") {
             var lat = msg.info.lat
-            var long = msg.info.long
+            var long = mapRegistry.normalizeYCoordinate(msg.info.long)
             var bus = registry.findBus(msg.info.id)
             if (bus == null) {
                 registry.addBus(msg.info.id,lat,long,msg.info.direction)
