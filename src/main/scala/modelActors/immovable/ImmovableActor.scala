@@ -186,10 +186,10 @@ class ImmovableActor extends PersistentActor with AtLeastOnceDelivery with Actor
   // vehicleFreeTempMap => obiettivo principale è memorizzare i vehiclefree e i vehiclebusy, ma non appena è
   // stato concesso l'accesso ad un veicolo, la variabile corrispondente diventa false (invece di aspettare vehiclebusy)
   // Questo per fault tolerance purposes
-  var vehicle_pass = false
   var pedestrianRequests = Map[String, ActorRef]()
   var vehicleRequests = Map[String, (String, ActorRef)]()
   var numPedestrianCrossing = 0
+  var numVehicleCrossing = 0
   var vehicleFreeTempMap = Map[String, Boolean]()
   
   // BUS / TRAM STOP
@@ -238,6 +238,7 @@ class ImmovableActor extends PersistentActor with AtLeastOnceDelivery with Actor
             state.updateFilter(senderId, deliveryId)
             // persist body end
         	  // gestione vera e propria del messaggio
+            printMessage(senderId, destinationId, command)
         	  command match {
               case ReCreateMobileEntities =>
                 // messaggio mandato da se stessi per ricreare le entità mobili
@@ -283,6 +284,7 @@ class ImmovableActor extends PersistentActor with AtLeastOnceDelivery with Actor
             state.updateFilter(senderId, deliveryId)
             // persist body end
         	  // handling vero e proprio del messaggio
+            printMessage(senderId, destinationId, command)
         	  command match {
               case IpRequest =>
                 sendToMovable(destinationId, senderRef, IpResponse(getIp()))
@@ -352,7 +354,7 @@ class ImmovableActor extends PersistentActor with AtLeastOnceDelivery with Actor
       }
       case ToPersistentMessages.FromNonPersistent(senderRef, command) => command match {
         case Identity(id) =>
-          println("Ricevuta identità: " + id)
+          println("Identità arrivata: " + id)
           // messaggio dell'injector, per definirsi
           val entity = id.charAt(0) match {
             case 'R' =>

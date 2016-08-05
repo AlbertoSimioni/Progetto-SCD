@@ -146,7 +146,7 @@ object BusStop {
   def FromVehicle(myRef : ImmovableActor, myId : String, senderId : String, senderRef : ActorRef, message : Any) : Unit = {
     message match {
       case Vehicle_In(comingFrom) =>
-        if(myRef.vehicle_pass == true && myRef.vehicleFreeTempMap.get(comingFrom).getOrElse(true)) {
+        if(myRef.vehicleFreeTempMap.get(comingFrom).getOrElse(true)) {
           // poni il corrispondente vehicleFree a false
           if(myRef.vehicleFreeTempMap.contains(comingFrom)) {
             myRef.vehicleFreeTempMap = myRef.vehicleFreeTempMap.updated(comingFrom, false)

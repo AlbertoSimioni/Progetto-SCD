@@ -34,7 +34,7 @@ object PedestrianCrossroad {
       case FromPedestrian(message) =>
         message match {
           case Cross_In =>
-            if(myRef.vehicle_pass == false) {
+            if(myRef.numVehicleCrossing == 0) {
               // siamo in pedestrian_pass, soddisfa immediatamente la richiesta
               myRef.numPedestrianCrossing = myRef.numPedestrianCrossing + 1
               myRef.sendToMovable(myId, senderRef, envelope(myId, senderId, Cross_Out))
@@ -48,8 +48,8 @@ object PedestrianCrossroad {
             if(myRef.numPedestrianCrossing == 0) {
               if(myRef.vehicleRequests.size > 0) {
                 // vi sono richieste di veicoli in sospeso
-                myRef.vehicle_pass = true
                 for(entry <- myRef.vehicleRequests) {
+                  myRef.numVehicleCrossing = myRef.numVehicleCrossing + 1
                   myRef.sendToMovable(myId, entry._2._2, envelope(myId, entry._2._1, Vehicle_Out))
                 }
                 myRef.vehicleRequests = myRef.vehicleRequests.empty
@@ -110,7 +110,8 @@ object PedestrianCrossroad {
   def FromVehicle(myRef : ImmovableActor, myId : String, senderId : String, senderRef : ActorRef, message : Any) : Unit = {
     message match {
       case Vehicle_In(comingFrom) =>
-        if(myRef.vehicle_pass == true && myRef.vehicleFreeTempMap.get(comingFrom).getOrElse(true)) {
+        if((myRef.pedestrianRequests.size == 0 && myRef.numPedestrianCrossing == 0) && myRef.vehicleFreeTempMap.get(comingFrom).getOrElse(true)) {
+          myRef.numVehicleCrossing = myRef.numVehicleCrossing + 1
           // poni il corrispondente vehicleFree a false
           if(myRef.vehicleFreeTempMap.contains(comingFrom)) {
             myRef.vehicleFreeTempMap = myRef.vehicleFreeTempMap.updated(comingFrom, false)
@@ -147,6 +148,7 @@ object PedestrianCrossroad {
         }
         // persist body end
       case VehicleFree(comingFrom) =>
+        myRef.numVehicleCrossing = myRef.numVehicleCrossing - 1
         // metti a true la entry nella tabella temporanea
         if(myRef.vehicleFreeTempMap.contains(comingFrom)) {
           myRef.vehicleFreeTempMap = myRef.vehicleFreeTempMap.updated(comingFrom, true)
@@ -166,18 +168,19 @@ object PedestrianCrossroad {
         // persist body end
         // controlla se vi sono richieste di pedoni
         if(myRef.pedestrianRequests.size > 0) {
-          myRef.vehicle_pass = false
-          for(entry <- myRef.pedestrianRequests) {
-            myRef.numPedestrianCrossing = myRef.numPedestrianCrossing + 1
-            myRef.sendToMovable(myId, entry._2, envelope(myId, entry._1, Cross_Out))
+          if(myRef.numVehicleCrossing == 0) {
+            for(entry <- myRef.pedestrianRequests) {
+              myRef.numPedestrianCrossing = myRef.numPedestrianCrossing + 1
+              myRef.sendToMovable(myId, entry._2, envelope(myId, entry._1, Cross_Out))
+            }
+            myRef.pedestrianRequests = myRef.pedestrianRequests.empty
           }
-          myRef.pedestrianRequests = myRef.pedestrianRequests.empty
         }
         else {
           // controlla se c'è una richiesta relativa alla corsia
           if(myRef.vehicleRequests.contains(comingFrom)) {
-            myRef.vehicle_pass = true
             val entry = myRef.vehicleRequests.get(comingFrom).get
+            myRef.numVehicleCrossing = myRef.numVehicleCrossing + 1
             myRef.sendToMovable(myId, entry._2, envelope(myId, entry._1, Vehicle_Out))
             myRef.vehicleRequests = myRef.vehicleRequests - comingFrom
           }

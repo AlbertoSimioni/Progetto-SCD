@@ -169,6 +169,40 @@ object Messages {
   case class TravellersGoneOff(travellers : List[String])
   case class TravellersGoneOn(travellers : List[(String, String)])
   
+  // stampa una stringa di logging del messaggio
+  def printMessage(senderId : String, destinationId : String, message : Command) : Unit = {
+    var log : String = destinationId + ": ricevuto messaggio da " + senderId + ": "
+    message match {
+      case IpRequest =>
+        log = log + "IpRequest"
+      case IpResponse(_) =>
+        log = log + "IpResponse"
+      case Route(_) =>
+        log = log + "Route"
+      case ReCreateMobileEntities =>
+        log = log + "ReCreateMobileEntities"
+      case PersistAndNextStep =>
+        log = log + "PersistAndNextStep"
+      case MobileEntityAdd(_) =>
+        log = log + "MobileEntityAdd"
+      case MobileEntityRemove(_) =>
+        log = log + "MobileEntityRemove"
+      case ExecuteCurrentStep =>
+        log = log + "ExecuteCurrentStep"
+      case PauseExecution(_) =>
+        log = log + "PauseExecution"
+      case ResumeExecution =>
+        log = log + "ResumeExecution"
+      case MovableActorRequest(_) =>
+        log = log + "MovableActorRequest"
+      case MovableActorResponse(_, _) =>
+        log = log + "MovableActorResponse"
+      case _ =>
+        
+    }
+    println(log)
+  }
+  
   // effettua l'imbustamento giusto rispetto alle entità coinvolte
   def envelope(senderId : String, destinationId : String, message : Any) : Command = {
     destinationId.substring(0, 3) match {
@@ -193,9 +227,9 @@ object Messages {
               case 'P' =>
                 return ToPedestrian(FromPedestrianCrossroad(message))
               case 'B' =>
-                return ToPedestrian(FromBus(message))
+                return ToPedestrian(FromBusStop(message))
               case 'T' =>
-                return ToPedestrian(FromTram(message))
+                return ToPedestrian(FromTramStop(message))
               case 'Z' =>
                 return ToPedestrian(FromZone(message))
           }  
@@ -221,9 +255,9 @@ object Messages {
               case 'P' =>
                 return ToCar(FromPedestrianCrossroad(message))
               case 'B' =>
-                return ToCar(FromBus(message))
+                return ToCar(FromBusStop(message))
               case 'T' =>
-                return ToCar(FromTram(message))
+                return ToCar(FromTramStop(message))
               case 'Z' =>
                 return ToCar(FromZone(message))
           }  
@@ -249,9 +283,9 @@ object Messages {
               case 'P' =>
                 return ToBus(FromPedestrianCrossroad(message))
               case 'B' =>
-                return ToBus(FromBus(message))
+                return ToBus(FromBusStop(message))
               case 'T' =>
-                return ToBus(FromTram(message))
+                return ToBus(FromTramStop(message))
               case 'Z' =>
                 return ToBus(FromZone(message))
           }  
@@ -277,9 +311,9 @@ object Messages {
               case 'P' =>
                 return ToTram(FromPedestrianCrossroad(message))
               case 'B' =>
-                return ToTram(FromBus(message))
+                return ToTram(FromBusStop(message))
               case 'T' =>
-                return ToTram(FromTram(message))
+                return ToTram(FromTramStop(message))
               case 'Z' =>
                 return ToTram(FromZone(message))
           }  
@@ -307,9 +341,9 @@ object Messages {
                   case 'P' =>
                     return ToRoad(FromPedestrianCrossroad(message))
                   case 'B' =>
-                    return ToRoad(FromBus(message))
+                    return ToRoad(FromBusStop(message))
                   case 'T' =>
-                    return ToRoad(FromTram(message))
+                    return ToRoad(FromTramStop(message))
                   case 'Z' =>
                     return ToRoad(FromZone(message))
               }  
@@ -335,9 +369,9 @@ object Messages {
                   case 'P' =>
                     return ToLane(FromPedestrianCrossroad(message))
                   case 'B' =>
-                    return ToLane(FromBus(message))
+                    return ToLane(FromBusStop(message))
                   case 'T' =>
-                    return ToLane(FromTram(message))
+                    return ToLane(FromTramStop(message))
                   case 'Z' =>
                     return ToLane(FromZone(message))
               }  
@@ -363,9 +397,9 @@ object Messages {
                   case 'P' =>
                     return ToCrossroad(FromPedestrianCrossroad(message))
                   case 'B' =>
-                    return ToCrossroad(FromBus(message))
+                    return ToCrossroad(FromBusStop(message))
                   case 'T' =>
-                    return ToCrossroad(FromTram(message))
+                    return ToCrossroad(FromTramStop(message))
                   case 'Z' =>
                     return ToCrossroad(FromZone(message))
               }  
@@ -391,9 +425,9 @@ object Messages {
                   case 'P' =>
                     return ToPedestrianCrossroad(FromPedestrianCrossroad(message))
                   case 'B' =>
-                    return ToPedestrianCrossroad(FromBus(message))
+                    return ToPedestrianCrossroad(FromBusStop(message))
                   case 'T' =>
-                    return ToPedestrianCrossroad(FromTram(message))
+                    return ToPedestrianCrossroad(FromTramStop(message))
                   case 'Z' =>
                     return ToPedestrianCrossroad(FromZone(message))
               }  
@@ -419,9 +453,9 @@ object Messages {
                   case 'P' =>
                     return ToBusStop(FromPedestrianCrossroad(message))
                   case 'B' =>
-                    return ToBusStop(FromBus(message))
+                    return ToBusStop(FromBusStop(message))
                   case 'T' =>
-                    return ToBusStop(FromTram(message))
+                    return ToBusStop(FromTramStop(message))
                   case 'Z' =>
                     return ToBusStop(FromZone(message))
               }  
@@ -447,9 +481,9 @@ object Messages {
                   case 'P' =>
                     return ToTramStop(FromPedestrianCrossroad(message))
                   case 'B' =>
-                    return ToTramStop(FromBus(message))
+                    return ToTramStop(FromBusStop(message))
                   case 'T' =>
-                    return ToTramStop(FromTram(message))
+                    return ToTramStop(FromTramStop(message))
                   case 'Z' =>
                     return ToTramStop(FromZone(message))
               }  
@@ -475,9 +509,9 @@ object Messages {
                   case 'P' =>
                     return ToZone(FromPedestrianCrossroad(message))
                   case 'B' =>
-                    return ToZone(FromBus(message))
+                    return ToZone(FromBusStop(message))
                   case 'T' =>
-                    return ToZone(FromTram(message))
+                    return ToZone(FromTramStop(message))
                   case 'Z' =>
                     return ToZone(FromZone(message))
               }  

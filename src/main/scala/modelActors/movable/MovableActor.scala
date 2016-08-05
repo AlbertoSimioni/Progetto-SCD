@@ -138,7 +138,7 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
             state.updateFilter(senderId, deliveryId)
             // persist body end
             // gestione vera e propria del messaggio
-            println(id + ": ricevuto messaggio da entità immobile " + senderId)
+            printMessage(senderId, id, command)
             command match {
               case IpResponse(ipAddress) =>
                 if(isLocal(ipAddress)) {
@@ -173,7 +173,7 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
                 assert(id == state.previousVehicleId)
                 previousVehicle = ref
                 // fai ripartire l'esecuzione
-                sendToMovable(id, self, self, ExecuteCurrentStep)
+                sendToMovable(this.id, self, self, ExecuteCurrentStep)
                 
               case ToPedestrian(command) =>
                 Pedestrian.fromImmovableHandler(this, id, senderId, command)
@@ -203,7 +203,7 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
             state.updateFilter(senderId, deliveryId)
             // persist body end
             // handling vero e proprio del messaggio
-            println(id + ": ricevuto messaggio da entità mobile " + senderId)
+            printMessage(senderId, id, command)
             command match {
               case ExecuteCurrentStep =>
                 println(id + ": Executing step!")
@@ -614,10 +614,12 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
               if(state.currentPointIndex == state.currentPointsSequence(0).length-1) {
                 // abbiamo finito la lane
                 if(state.toZone() == false) {
-                  persist(PredecessorGoneNotSentYet) { evt => }
-                  // persist body begin
-                  state.predecessorGoneSent = false
-                  // persist body end
+                  if(previousVehicle != null) {
+                    persist(PredecessorGoneNotSentYet) { evt => }
+                    // persist body begin
+                    state.predecessorGoneSent = false
+                    // persist body end
+                  }
                   // la lane corrente diventa la nostra previousLane
                   previousLaneId = lane.id
                 }
@@ -664,7 +666,7 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
             }
             val firstPoint = currentNonPersistentPointsSequence(pathPhase)(0)
             val secondPoint = currentNonPersistentPointsSequence(pathPhase)(1)
-            val currentPoint = state.currentPointsSequence(pathPhase)(state.currentPointIndex)
+            val currentPoint = currentNonPersistentPointsSequence(pathPhase)(currentNonPersistentPointIndex)
             if(getMyLength() == pedestrian_length) {
               publisherGuiHandler ! pedestrianPosition(id, currentPoint.x, currentPoint.y, getGuiDirection(firstPoint, secondPoint))
             }
@@ -709,7 +711,7 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
             }
             val firstPoint = currentNonPersistentPointsSequence(pathPhase)(0)
             val secondPoint = currentNonPersistentPointsSequence(pathPhase)(1)
-            val currentPoint = state.currentPointsSequence(pathPhase)(state.currentPointIndex)
+            val currentPoint = currentNonPersistentPointsSequence(pathPhase)(currentNonPersistentPointIndex)
             if(getMyLength() == pedestrian_length) {
               publisherGuiHandler ! pedestrianPosition(id, currentPoint.x, currentPoint.y, getGuiDirection(firstPoint, secondPoint))
             }
@@ -780,7 +782,7 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
             }
             val firstPoint = currentNonPersistentPointsSequence(pathPhase)(0)
             val secondPoint = currentNonPersistentPointsSequence(pathPhase)(1)
-            val currentPoint = state.currentPointsSequence(pathPhase)(state.currentPointIndex)
+            val currentPoint = currentNonPersistentPointsSequence(pathPhase)(currentNonPersistentPointIndex)
             if(getMyLength() == pedestrian_length) {
               publisherGuiHandler ! pedestrianPosition(id, currentPoint.x, currentPoint.y, getGuiDirection(firstPoint, secondPoint))
             }
@@ -876,7 +878,7 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
             }
             val firstPoint = currentNonPersistentPointsSequence(pathPhase)(0)
             val secondPoint = currentNonPersistentPointsSequence(pathPhase)(1)
-            val currentPoint = state.currentPointsSequence(pathPhase)(state.currentPointIndex)
+            val currentPoint = currentNonPersistentPointsSequence(pathPhase)(currentNonPersistentPointIndex)
             if(getMyLength() == pedestrian_length) {
               publisherGuiHandler ! pedestrianPosition(id, currentPoint.x, currentPoint.y, getGuiDirection(firstPoint, secondPoint))
             }

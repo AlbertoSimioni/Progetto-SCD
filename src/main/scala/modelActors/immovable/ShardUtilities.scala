@@ -23,8 +23,8 @@ object ShardUtilities {
     // l'unica cosa da mantenere è che il punto più in alto a sinistra dello shard sia dentro la mappa
     // val floatY = sqrt((map_y.toFloat / map_x.toFloat) * numShards).toFloat
     // val floatX = numShards.toFloat / floatY
-    val floatX = map_x.toDouble / sqrt(numShards)
-    val floatY = map_y.toDouble / sqrt(numShards)
+    val floatX = map_x.toDouble / ceil(sqrt(numShards))
+    val floatY = map_y.toDouble / ceil(sqrt(numShards))
     return (ceil(floatX).toInt, ceil(floatY).toInt)
   }
   

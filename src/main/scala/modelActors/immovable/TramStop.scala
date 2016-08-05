@@ -51,7 +51,18 @@ object TramStop {
           case VehicleFree(comingFrom) =>
             FromVehicle(myRef, myId, senderId, senderRef, message)
         }
+        
       case FromBus(message) =>
+        message match {
+          case Vehicle_In(comingFrom) =>
+            FromVehicle(myRef, myId, senderId, senderRef, message)
+          case VehicleBusy(comingFrom) =>
+            FromVehicle(myRef, myId, senderId, senderRef, message)
+          case VehicleFree(comingFrom) =>
+            FromVehicle(myRef, myId, senderId, senderRef, message)
+        }
+        
+      case FromTram(message) =>
         message match {
           case Vehicle_In(comingFrom) =>
             FromVehicle(myRef, myId, senderId, senderRef, message)
@@ -102,15 +113,6 @@ object TramStop {
             }
             myRef.sendToMovable(myId, senderRef, envelope(myId, senderId, GetIn(goingOn)))
         }
-      case FromTram(message) =>
-        message match {
-          case Vehicle_In(comingFrom) =>
-            FromVehicle(myRef, myId, senderId, senderRef, message)
-          case VehicleBusy(comingFrom) =>
-            FromVehicle(myRef, myId, senderId, senderRef, message)
-          case VehicleFree(comingFrom) =>
-            FromVehicle(myRef, myId, senderId, senderRef, message)
-        }
     }
   }
   
@@ -146,7 +148,7 @@ object TramStop {
   def FromVehicle(myRef : ImmovableActor, myId : String, senderId : String, senderRef : ActorRef, message : Any) : Unit = {
     message match {
       case Vehicle_In(comingFrom) =>
-        if(myRef.vehicle_pass == true && myRef.vehicleFreeTempMap.get(comingFrom).getOrElse(true)) {
+        if(myRef.vehicleFreeTempMap.get(comingFrom).getOrElse(true)) {
           // poni il corrispondente vehicleFree a false
           if(myRef.vehicleFreeTempMap.contains(comingFrom)) {
             myRef.vehicleFreeTempMap = myRef.vehicleFreeTempMap.updated(comingFrom, false)
