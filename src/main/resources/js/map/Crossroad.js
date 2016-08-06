@@ -23,9 +23,10 @@ Crossroad.color = "#C0C1C4";
 Crossroad.circleColor = "#616360";
 
 Crossroad.prototype.changeColor = function(color){
-    if(color == "oldColor") this.path.fillColor = Crossroad.color;
+/*    if(color == "oldColor") this.path.fillColor = Crossroad.color;
     else this.path.fillColor = color;
-    this.path.view.update();
+    */
+    lastPath.push(this.path);
 }
 
 Crossroad.prototype.buildVertexes = function(jsonVertexes) {
@@ -62,6 +63,7 @@ Crossroad.prototype.draw = function() {
     "use strict";
     this.path = new Path.Rectangle(this.from, this.to);
     this.path.fillColor = Crossroad.color;
+    this.path.oldColor = Crossroad.color;
     if (this.category == "roundabout") {
         var circlePath = new Path.Circle(new Point(this.from.x + Crossroad.width / 2, this.from.y - Crossroad.width / 2), Crossroad.width / 4);
         circlePath.fillColor = Crossroad.circleColor;
@@ -187,25 +189,25 @@ Crossroad.prototype.drawAngle = function() {
 
 Crossroad.prototype.changeLights = function(up,right,down,left,tram) {
     if(this.tramPath != null){
-        this.tramPath.fillColor = tram;
+        //this.tramPath.fillColor = tram;
         //this.tramPath.view.update();
     }
     for (var i = this.vertexes.length - 1; i >= 0; i--) {
         var curVertex = this.vertexes[i];
         if (curVertex.type == "up") {
-            curVertex.path.fillColor = up;
+           // curVertex.path.fillColor = up;
             //curVertex.path.view.update();
         }
-        if (curVertex.type == "down") {
-            curVertex.path.fillColor = down;
+        else if (curVertex.type == "down") {
+           // curVertex.path.fillColor = down;
             //curVertex.path.view.update();
         }
-        if (curVertex.type == "right") {
-            curVertex.path.fillColor = right;
+        else if (curVertex.type == "right") {
+           // curVertex.path.fillColor = right;
             //curVertex.path.view.update();
         }
-        if (curVertex.type == "left") {
-            curVertex.path.fillColor = left;
+        else if (curVertex.type == "left") {
+            //curVertex.path.fillColor = left;
             //curVertex.path.view.update();
         }
     }
