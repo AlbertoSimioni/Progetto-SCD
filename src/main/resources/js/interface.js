@@ -4,9 +4,10 @@ function traslladar(a, b) {
         var center = paper.project.view.center;
         var desX = (a.x - b.x);
         var desY = (a.y - b.y);
-
-        var newCenter = [ center.x + desX, center.y + desY ];
-        return newCenter;
+        var delta = [desX,desY];
+        return delta;
+       // var newCenter = [ center.x + desX, center.y + desY ];
+        //return newCenter;
     }
 
     function zoomIn() {
@@ -37,17 +38,17 @@ window.onload = function() {
 
             var myTool = new paper.Tool();
             myTool.onMouseDown = function(event) {
-                path = new Point();
-                path.add(event.point);
+                //path = new Point();
+                //path.add(event.point);
                 $("#myCanvas").css('cursor', '-webkit-grabbing');
-
             };
 
             myTool.onMouseDrag = function(event) {
-                path.add(event.point);
+                //path.add(event.point);
 
                 var des = traslladar(event.downPoint, event.point);
-                paper.project.view.center = des;
+                paper.view.translate(new Point(-des[0],-des[1]))
+                //paper.project.view.center = des;
 
             }
 
@@ -59,15 +60,16 @@ window.onload = function() {
             $('#myCanvas').mousewheel(function(event) {
                 event.deltaY > 0 ? zoomIn() : zoomOut();
             });
+
     var amount = 2;
     paper.view.setViewSize(1080, 800)
-    paper.view.draw();
-    paper.view.autoUpdate = false;
-    paper.view.onFrame = function(event) {
+    //paper.view.draw();
+   // paper.view.autoUpdate = false;
+   /* paper.view.onFrame = function(event) {
        // Every frame, rotate the path by 3 degrees:
        if(!pathDrawing)
         paper.view.update()
-   }
+   }*/
 
 
 
@@ -80,10 +82,10 @@ window.onload = function() {
         };
     webSocket.onmessage = function(event) {
         var msg = JSON.parse(event.data);
-        console.log(JSON.stringify(msg))
+        //console.log(JSON.stringify(msg))
         if(msg.hasOwnProperty('dimensions')){ //MAP ARRIVED
             mapRegistry.buildMap(msg);
-            paper.view.draw();
+            //paper.view.draw();
             fitMap();
         }
         if (msg.type == "CarPosition") {
