@@ -35,20 +35,23 @@ Crosswalk.prototype.changeColorSidewalk = function(color,position){
     else if(position == "right"){
         sidewalk = this.sidewalkPaths[1];
     }
+    /*
     if(color == "oldColor"){
         sidewalk.fillColor = Sidewalk.color;
     }
     else{
         sidewalk.fillColor = color;
-    }
+    }*/
+    lastPath.push(sidewalk);
 
 }
 Crosswalk.prototype.changeColor = function(color){
      for(var i = 0 ;i <  this.whitePaths.length;i++){
-        if(color == "oldColor")
+        /*if(color == "oldColor")
             this.whitePaths[i].fillColor = "white"
         else
-            this.whitePaths[i].fillColor = color
+            this.whitePaths[i].fillColor = color*/
+         lastPath.push(this.whitePaths[i]);
      }
 }
 
@@ -75,21 +78,25 @@ Crosswalk.prototype.drawHorizontal = function(){
         var path = new Path.Rectangle(new Point(xStart,curY), new Point(xEnd, curY-Crosswalk.linesWidth));
         if(white){
             path.fillColor = "white";
+            path.oldColor = "white"
             this.whitePaths.push(path);
         }
-        else path.fillColor = "black";
+        else { path.fillColor = "black"; path.oldColor = "black"; }
         white = !white;
         curY -= Crosswalk.linesWidth;
     }
     if(!this.isTripleLane){
         var path0 = new Path.Rectangle(new Point(xStart,curY), new Point(xEnd, this.to.y));
         path0.fillColor = "white";
+        path0.oldColor = "white";
         this.whitePaths.push(path0);
     }
     var path1 = new Path.Rectangle(new Point(xStart,this.from.y + Sidewalk.width), new Point(xEnd,this.from.y));
+    path1.oldColor = Sidewalk.color;
     path1.fillColor = Sidewalk.color;
     this.sidewalkPaths.push(path1);
     var path2 = new Path.Rectangle(new Point(xStart,this.to.y), new Point(xEnd,this.to.y - Sidewalk.width));
+    path2.oldColor = Sidewalk.color;
     path2.fillColor = Sidewalk.color;
     this.sidewalkPaths.push(path2);
 };
@@ -107,22 +114,26 @@ Crosswalk.prototype.drawVertical = function(){
         var path = new Path.Rectangle(new Point(curX,yStart), new Point(curX+Crosswalk.linesWidth, yEnd));
         if(white){
             path.fillColor = "white";
+            path.oldColor = "white";
             this.whitePaths.push(path);
         }
-        else path.fillColor = "black";
+        else{ path.fillColor = "black"; path.oldColor = "black"; }
         white = !white;
         curX += Crosswalk.linesWidth;
     }
     if(!this.isTripleLane){
         var path0 = new Path.Rectangle(new Point(curX,yStart), new Point(this.to.x, yEnd ));
         path0.fillColor = "white";
+        path0.oldColor = "white";
         this.whitePaths.push(path0);
     }
     //sidewalks
     var path1 = new Path.Rectangle(new Point(this.from.x - Sidewalk.width,yStart), new Point(this.from.x, yEnd));
     path1.fillColor = Sidewalk.color;
+    path1.oldColor = Sidewalk.color;
     this.sidewalkPaths.push(path1);
     var path2 = new Path.Rectangle(new Point(this.to.x,yStart), new Point(this.to.x + Sidewalk.width,yEnd));
     path2.fillColor = Sidewalk.color;
+    path2.oldColor = Sidewalk.color;
     this.sidewalkPaths.push(path2);
 };

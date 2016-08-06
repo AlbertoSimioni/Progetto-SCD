@@ -21,6 +21,7 @@ Lane.width = 6;
 Lane.triangleRadius = 2;
 
 Lane.prototype.changeColor = function(color){
+    /*
     if(color == "oldColor"){
         if (this.tram)
             this.path.fillColor = "orange";
@@ -28,7 +29,8 @@ Lane.prototype.changeColor = function(color){
             this.path.fillColor = "black";
     }
     else
-        this.path.fillColor = color;
+        this.path.fillColor = color;*/
+    lastPath.push(this.path);
 }
 
 //Disegna la corsia e il corrispondente triangolino per la direzione
@@ -38,6 +40,7 @@ Lane.prototype.draw = function() {
         this.path.fillColor = "orange";
     else
         this.path.fillColor = "black";
+    this.path.oldColor = this.path.fillColor;
     if(!this.stop){
         var triangle = null;
         //da qui fino alla fine codice per disegnare il triangolino che indica la direzione

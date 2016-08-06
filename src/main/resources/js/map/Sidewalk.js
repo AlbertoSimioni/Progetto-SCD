@@ -15,8 +15,10 @@ Sidewalk.color = "#616360";
 
 
 Sidewalk.prototype.changeColor = function(color){
+    /*
     if(color == "oldColor") this.path.fillColor = Sidewalk.color;
-    else this.path.fillColor = color;
+    else this.path.fillColor = color;*/
+    lastPath.push(this.path);
 }
 
 
@@ -24,4 +26,5 @@ Sidewalk.prototype.changeColor = function(color){
 Sidewalk.prototype.draw = function() {
     this.path = new Path.Rectangle(this.from, this.to);
     this.path.fillColor = Sidewalk.color;
+    this.path.oldColor = Sidewalk.color;
 }

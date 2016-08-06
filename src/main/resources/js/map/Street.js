@@ -55,43 +55,43 @@ Street.prototype.changeColorBusStop = function(color,position,entityType){
 Street.prototype.changeColorTramStop = function(color,position,entityType){
     var tramPosition = this.getTramPosition()
     if(entityType == "P"){ this.changeColor(color,position);}
-    if(entityType=="T"){
+    else if(entityType=="T"){
         if(tramPosition == "up"){
             this.lanes[2].changeColor(color);
         }
-        if(tramPosition == "down"){
+        else if(tramPosition == "down"){
             this.lanes[0].changeColor(color);
         }
-        if(tramPosition == "left"){
+        else if(tramPosition == "left"){
             this.lanes[0].changeColor(color);
         }
-        if(tramPosition == "right"){
+        else if(tramPosition == "right"){
             this.lanes[2].changeColor(color);
         }
     }
-    if(entityType=="B" || entityType=="C"){
+    else if(entityType=="B" || entityType=="C"){
         if(tramPosition == "right" && position == "right"){
             this.lanes[1].changeColor(color);
         }
-        if(tramPosition == "right" &&  position == "left"){
+        else if(tramPosition == "right" &&  position == "left"){
             this.lanes[0].changeColor(color);
         }
-        if(tramPosition == "left" &&  position == "left"){
+        else if(tramPosition == "left" &&  position == "left"){
             this.lanes[1].changeColor(color);
         }
-        if(tramPosition == "left" &&  position == "right"){
+        else if(tramPosition == "left" &&  position == "right"){
             this.lanes[2].changeColor(color);
         }
-        if(tramPosition == "down" &&  position == "down"){
+        else if(tramPosition == "down" &&  position == "down"){
             this.lanes[1].changeColor(color);
         }
-        if(tramPosition == "down" &&  position == "up"){
+        else if(tramPosition == "down" &&  position == "up"){
             this.lanes[2].changeColor(color);
         }
-        if(tramPosition == "up" &&  position == "up"){
+        else if(tramPosition == "up" &&  position == "up"){
             this.lanes[1].changeColor(color);
         }
-        if(tramPosition == "up" &&  position == "down"){
+        else if(tramPosition == "up" &&  position == "down"){
             this.lanes[0].changeColor(color);
         }
     }

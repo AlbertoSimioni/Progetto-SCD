@@ -18,9 +18,11 @@ function traslladar(a, b) {
     }
 
 var webSocket = null;
-var lastPath = null;
+var lastPath = [];
 var lastEntityID = null;
 var mapRegistry = new MapRegistry();
+var registry = new EntitiesRegistry();
+var pathDrawing = false;
 
 window.onload = function() {
     // Get a reference to the canvas object
@@ -63,9 +65,10 @@ window.onload = function() {
     paper.view.autoUpdate = false;
     paper.view.onFrame = function(event) {
        // Every frame, rotate the path by 3 degrees:
-       paper.view.update()
+       if(!pathDrawing)
+        paper.view.update()
    }
-    var registry = new EntitiesRegistry()
+
 
 
     var WS = window['MozWebSocket'] ? MozWebSocket : WebSocket
@@ -173,9 +176,14 @@ window.onload = function() {
 
         if(msg.type == "path"){
             var  path = msg.steps;
-            colorSteps(lastPath,"oldColor");
+            pathDrawing = true;
+            //colorSteps(lastPath,"oldColor");
+            changeColorPath("oldColor");
+            lastPath = [];
             colorSteps(path,"#00ccff");
-            lastPath = path;
+            changeColorPath("#00ccff");
+            //lastPath = path;
+            pathDrawing = false;
         }
 
         if(msg.type == "zoneState"){
@@ -202,45 +210,62 @@ function checkTime(i) {
     return i;
 }
 
+function changeColorPath(color){
+    if(color == "oldColor"){
+        for(var i in lastPath){
+            lastPath[i].fillColor = lastPath[i].oldColor;
+
+        }
+    }
+    else{
+        for(var i in lastPath){
+            lastPath[i].fillColor = color;
+
+        }
+    }
+}
+
 function colorSteps(steps,color){
    for(var i in steps)
    {
-     var id = steps[i].id;
-     var type = steps[i].type;
+     var step = steps[i];
+     var id = step.id;
+     var type = step.type;
      if(type == "lane"){
         var lane = mapRegistry.getLane(id);
+        //change
         lane.changeColor(color);
      }
      if(type == "road"){
-        var position = steps[i].position;
+        var position = step.position;
         mapRegistry.getStreet(id).changeColor(color,position);
 
      }
-     if(type == "crossroad"){
+     else if(type == "crossroad"){
         mapRegistry.getCrossroad(id).changeColor(color);
      }
 
-     if(type == "zone"){
+     else if(type == "zone"){
         mapRegistry.getZone(id).changeColor(color);
      }
 
-     if(type == "bus_stop"){
+     else if(type == "bus_stop"){
         var busStop = mapRegistry.getBusStop(id);
-        var position = steps[i].position;
-        var entityType = steps[i].entity;
+        var position = step.position;
+        var entityType = step.entity;
         busStop.changeColorBusStop(color,position,entityType)
      }
 
-     if(type == "tram_stop"){
+     else if(type == "tram_stop"){
         var tramStop = mapRegistry.getTramStop(id);
-        var position = steps[i].position;
-        var entityType = steps[i].entity;
+        var position = step.position;
+        var entityType = step.entity;
         tramStop.changeColorTramStop(color,position,entityType)
      }
 
-     if(type == "crosswalk"){
-        var entityType = steps[i].entity;
-        var position = steps[i].position;
+     else if(type == "crosswalk"){
+        var entityType = step.entity;
+        var position = step.position;
         var positionPrec = steps[i-1].position;
         if(entityType == "P"){
             var crosswalk = mapRegistry.getCrosswalk(id);

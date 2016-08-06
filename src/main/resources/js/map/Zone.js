@@ -15,14 +15,16 @@ function Zone(id, from, type) {
 
 Zone.width = 12;
 
-Zone.prototype.changeColor = function(color){
-    if(color == "oldColor"){
+/*   if(color == "oldColor"){
           if(this.type == "houseplace") this.path.fillColor = "yellow";
           if(this.type == "workplace") this.path.fillColor = "purple";
           if(this.type == "funplace") this.path.fillColor = "blue";
     }
-    else this.path.fillColor = color;
-}
+    else this.path.fillColor = color;*/
+
+Zone.prototype.changeColor = function(color){
+    lastPath.push(this.path);
+};
 
 Zone.prototype.draw = function(){
     "use strict";
@@ -30,6 +32,7 @@ Zone.prototype.draw = function(){
     if(this.type == "houseplace") this.path.fillColor = "yellow";
     if(this.type == "workplace") this.path.fillColor = "purple";
     if(this.type == "funplace") this.path.fillColor = "blue";
+    this.path.oldColor = this.path.fillColor;
     this.path.onMouseDown = this.myOnMouseDown;
     this.path.showing = false;
     this.path.myData = this.id;

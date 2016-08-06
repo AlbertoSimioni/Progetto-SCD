@@ -56,7 +56,6 @@ MapRegistry.prototype.getLane = function(id){
     var street = this.streets[streetId]
     var lane = null;
     for(var i = 0 ;i <  street.lanes.length;i++){
-        console.log(street.lanes[i].id)
         if(street.lanes[i].id == id) lane = street.lanes[i]
     }
     if(lane == null) console.log("ERRORE: LANE NON TROVATA")

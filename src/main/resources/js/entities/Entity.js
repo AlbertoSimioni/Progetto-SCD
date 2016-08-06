@@ -57,10 +57,10 @@ Entity.prototype.myOnMouseDown = function(event) {
     // We retrieve the tooltip from its name in the parent node (group) then remove it
     //this.tooltipLabel.remove();
     var entityId = this.myData;
-    console.log(entityId);
     if(lastEntityID != null && lastEntityID == entityId){
-        colorSteps(lastPath,"oldColor");
+        changeColorPath("oldColor");
         lastEntityID = null;
+        lastPath = [];
     }
     else{
         lastEntityID = entityId;
