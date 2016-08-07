@@ -64,8 +64,11 @@ window.onload = function() {
     var amount = 2;
     paper.view.setViewSize(1080, 800)
     //paper.view.draw();
-   // paper.view.autoUpdate = false;
-   /* paper.view.onFrame = function(event) {
+    paper.view.autoUpdate = false;
+    var myVar = setInterval(updateView, 100);
+
+
+ /*   paper.view.onFrame = function(event) {
        // Every frame, rotate the path by 3 degrees:
        if(!pathDrawing)
         paper.view.update()
@@ -225,6 +228,11 @@ function changeColorPath(color){
 
         }
     }
+}
+
+function updateView(){
+    if(!pathDrawing)
+        paper.view.update()
 }
 
 function colorSteps(steps,color){
