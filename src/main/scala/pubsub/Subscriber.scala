@@ -29,28 +29,28 @@ class Subscriber(contentType : String) extends Actor with ActorLogging {
   //Messaggi inviati dai worker per inviare al guihandler gli aggiornamenti nel model
   def readyModel: Actor.Receive = {
     case m @ carPosition(id,lat,long,dir) =>   context.actorSelection("/user/activeConnections") !
-      ActiveConnections.SendMessageToClients(BrowserMessagesFormatter.CarPositionToJson(m))
+      ActiveConnections.SendMessageToClients(BrowserMessagesFormatter.CarPositionToJson(m),true)
       println("carPosition")
     case m @ busPosition(id,lat,long,dir) =>   context.actorSelection("/user/activeConnections") !
-      ActiveConnections.SendMessageToClients(BrowserMessagesFormatter.BusPositionToJson(m))
+      ActiveConnections.SendMessageToClients(BrowserMessagesFormatter.BusPositionToJson(m),true)
       println("busPosition")
     case m @ tramPosition(id,lat,long,dir) =>   context.actorSelection("/user/activeConnections") !
-      ActiveConnections.SendMessageToClients(BrowserMessagesFormatter.TramPositionToJson(m))
+      ActiveConnections.SendMessageToClients(BrowserMessagesFormatter.TramPositionToJson(m),true)
       println("tramPosition")
     case m @ pedestrianPosition(id,lat,long,dir) =>   context.actorSelection("/user/activeConnections") !
-      ActiveConnections.SendMessageToClients(BrowserMessagesFormatter.PedestrianPositionToJson(m))
+      ActiveConnections.SendMessageToClients(BrowserMessagesFormatter.PedestrianPositionToJson(m),true)
       println("PedestrianPosition")
     case m @ hideCar(id,zoneID) =>   context.actorSelection("/user/activeConnections") !
       hideCar(id,zoneID)
       println("hideCar")
     case m @ hideBus(id) =>   context.actorSelection("/user/activeConnections") !
-      ActiveConnections.SendMessageToClients(BrowserMessagesFormatter.HideBusToJson(m))
+      ActiveConnections.SendMessageToClients(BrowserMessagesFormatter.HideBusToJson(m),false)
       println("hideBus")
     case m @ hidePedestrian(id,zoneID,inVehicle) =>   context.actorSelection("/user/activeConnections") !
       hidePedestrian(id,zoneID,inVehicle)
       println("hidePedestrian")
     case m @ hideTram(id) =>   context.actorSelection("/user/activeConnections") !
-      ActiveConnections.SendMessageToClients(BrowserMessagesFormatter.HideTramToJson(m))
+      ActiveConnections.SendMessageToClients(BrowserMessagesFormatter.HideTramToJson(m),false)
       println("hideTram");
     case m @ semaphoreState(id,upGreen,rightGreen,downGreen,leftGreen,tramGreen) =>  context.actorSelection("/user/activeConnections") !
       ActiveConnections.updateSemaphoreState(id,BrowserMessagesFormatter.SemaphoreStateToJson(m))
@@ -58,7 +58,7 @@ class Subscriber(contentType : String) extends Actor with ActorLogging {
         println("semaforo C000050400003960 stato")
       }
     case TimeCommand(time) =>    context.actorSelection("/user/activeConnections") !
-      ActiveConnections.SendMessageToClients(BrowserMessagesFormatter.TimeToJson(time.hours,time.minutes))
+      ActiveConnections.SendMessageToClients(BrowserMessagesFormatter.TimeToJson(time.hours,time.minutes),false)
     case CreateMobileEntity(id,route) =>  context.actorSelection("/user/activeConnections") !
       ActiveConnections.entityPath(id,BrowserMessagesFormatter.PathToJson(id,route))
     case entityAwaked(entityID,zoneID) => context.actorSelection("/user/activeConnections") !

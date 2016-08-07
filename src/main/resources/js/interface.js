@@ -91,49 +91,10 @@ window.onload = function() {
             //paper.view.draw();
             fitMap();
         }
-        if (msg.type == "CarPosition") {
-            var lat = msg.info.lat
-            var long = mapRegistry.normalizeYCoordinate(msg.info.long)
-            var car = registry.findCar(msg.info.id)
-            if (car == null) {
-
-                registry.addCar(msg.info.id,lat,long,msg.info.direction)
-            } else {
-                car.move(lat,long, msg.info.direction)
-                car.show();
-            }
-        }
-        if (msg.type == "PedestrianPosition") {
-            var lat = msg.info.lat
-            var long = mapRegistry.normalizeYCoordinate(msg.info.long)
-            var pedestrian = registry.findPedestrian(msg.info.id)
-            if (pedestrian == null) {
-                registry.addPedestrian(msg.info.id,lat,long,msg.info.direction)
-            } else {
-                pedestrian.move(lat,long, msg.info.direction)
-                pedestrian.show();
-            }
-        }
-        if (msg.type == "TramPosition") {
-            var lat = msg.info.lat
-            var long = mapRegistry.normalizeYCoordinate(msg.info.long)
-            var tram = registry.findTram(msg.info.id)
-            if (tram == null) {
-                registry.addTram(msg.info.id,lat,long,msg.info.direction)
-            } else {
-                tram.move(lat,long, msg.info.direction)
-                tram.show();
-            }
-        }
-        if (msg.type == "BusPosition") {
-            var lat = msg.info.lat
-            var long = mapRegistry.normalizeYCoordinate(msg.info.long)
-            var bus = registry.findBus(msg.info.id)
-            if (bus == null) {
-                registry.addBus(msg.info.id,lat,long,msg.info.direction)
-            } else {
-                bus.move(lat,long, msg.info.direction)
-                bus.show();
+        if(msg.type == "positions"){
+            var positions = msg.positions;
+            for(var pos in positions){
+                showPosition(positions[pos]);
             }
         }
 
@@ -233,6 +194,54 @@ function changeColorPath(color){
 function updateView(){
     if(!pathDrawing)
         paper.view.update()
+}
+
+function showPosition(msg){
+ if (msg.type == "CarPosition") {
+            var lat = msg.info.lat
+            var long = mapRegistry.normalizeYCoordinate(msg.info.long)
+            var car = registry.findCar(msg.info.id)
+            if (car == null) {
+
+                registry.addCar(msg.info.id,lat,long,msg.info.direction)
+            } else {
+                car.move(lat,long, msg.info.direction)
+                car.show();
+            }
+        }
+        if (msg.type == "PedestrianPosition") {
+            var lat = msg.info.lat
+            var long = mapRegistry.normalizeYCoordinate(msg.info.long)
+            var pedestrian = registry.findPedestrian(msg.info.id)
+            if (pedestrian == null) {
+                registry.addPedestrian(msg.info.id,lat,long,msg.info.direction)
+            } else {
+                pedestrian.move(lat,long, msg.info.direction)
+                pedestrian.show();
+            }
+        }
+        if (msg.type == "TramPosition") {
+            var lat = msg.info.lat
+            var long = mapRegistry.normalizeYCoordinate(msg.info.long)
+            var tram = registry.findTram(msg.info.id)
+            if (tram == null) {
+                registry.addTram(msg.info.id,lat,long,msg.info.direction)
+            } else {
+                tram.move(lat,long, msg.info.direction)
+                tram.show();
+            }
+        }
+        if (msg.type == "BusPosition") {
+            var lat = msg.info.lat
+            var long = mapRegistry.normalizeYCoordinate(msg.info.long)
+            var bus = registry.findBus(msg.info.id)
+            if (bus == null) {
+                registry.addBus(msg.info.id,lat,long,msg.info.direction)
+            } else {
+                bus.move(lat,long, msg.info.direction)
+                bus.show();
+            }
+        }
 }
 
 function colorSteps(steps,color){

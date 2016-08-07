@@ -10,7 +10,10 @@ import org.json4s._
 import org.json4s.DefaultFormats
 import org.json4s.jackson.JsonMethods._
 import java.io._
+import scala.StringBuilder
 import scala.collection.mutable
+import scala.concurrent.duration._
+
 /**
  * Created by Alberto on 28/07/2015.
  */
@@ -21,7 +24,7 @@ object ActiveConnections {
 
   case class Unregister(ws: WebSocket) extends ConnectionMessage
 
-  case class SendMessageToClients(message: String) extends ConnectionMessage
+  case class SendMessageToClients(message: String,buffered: Boolean) extends ConnectionMessage
 
   case class updateSemaphoreState(id: String, state: String) extends ConnectionMessage
 
@@ -34,10 +37,16 @@ SendMessageToClients con la stringa contenente il messaggio.
 La stringa deve essere già stata formattata in JSON
 */
 class ActiveConnections extends Actor with ActorLogging {
+  import context.dispatcher
   val clients = mutable.ListBuffer[WebSocket]()
   val semaphoreStates = mutable.HashMap[String,String]()
   val entityPaths = mutable.HashMap[String,String]()
   val zoneStates = mutable.HashMap[String,String]()
+  var bufferPositions : StringBuilder =  new StringBuilder
+  bufferPositions ++=  s"""{"type": "positions", "positions":["""
+  var bufferEmpty = true;
+  val autoTick = context.system.scheduler.schedule(0 millis, 100 millis, self, "sendBuff")
+
 
   override def receive = {
 
@@ -55,7 +64,7 @@ class ActiveConnections extends Actor with ActorLogging {
       }
       cars += 1
       zoneStates.put(zoneID,pedestrians.toString() + "-" + cars.toString());
-      self ! ActiveConnections.SendMessageToClients(BrowserMessagesFormatter.HideCarToJson(m))
+      self ! ActiveConnections.SendMessageToClients(BrowserMessagesFormatter.HideCarToJson(m),false)
 
     case m @ hidePedestrian(id,zoneID,inVehicle) =>
       if(!inVehicle) {
@@ -72,7 +81,7 @@ class ActiveConnections extends Actor with ActorLogging {
         pedestrians += 1
         zoneStates.put(zoneID, pedestrians.toString() + "-" + cars.toString());
       }
-      self ! ActiveConnections.SendMessageToClients(BrowserMessagesFormatter.HidePedestrianToJson(m))
+      self ! ActiveConnections.SendMessageToClients(BrowserMessagesFormatter.HidePedestrianToJson(m),false)
 
     case pubsub.Messages.entityAwaked(entityID,zoneID) =>
       var zoneState = zoneStates.get(zoneID)
@@ -151,14 +160,31 @@ class ActiveConnections extends Actor with ActorLogging {
     case ActiveConnections.updateSemaphoreState(id, state) =>
       val semaphore = semaphoreStates.get(id)
       semaphoreStates.put(id,state)
-      self ! ActiveConnections.SendMessageToClients(state)
+      self ! ActiveConnections.SendMessageToClients(state,false)
 
     case ActiveConnections.entityPath(id,path) =>
-      println("path received " + id)
+      //println("path received " + id)
       entityPaths.put(id,path)
 
-    case ActiveConnections.SendMessageToClients(message) =>
-      for(client <- clients) client.send(message)
+    case ActiveConnections.SendMessageToClients(message,buffered) =>
+      if(!buffered) {
+        for (client <- clients) client.send(message)
+      }
+      else{
+        bufferEmpty = false;
+        bufferPositions ++= message + ",";
+      }
+
+    case "sendBuff" =>
+      if(!bufferEmpty) {
+        bufferPositions.delete(bufferPositions.length - 1, bufferPositions.length)
+        bufferPositions ++= "]}"
+        val positions : String = bufferPositions.toString()
+        for (client <- clients) client.send(positions)
+        bufferPositions = new StringBuilder()
+        bufferEmpty = true;
+        bufferPositions ++=  s"""{"type": "positions", "positions":["""
+      }
   }
 
 }
