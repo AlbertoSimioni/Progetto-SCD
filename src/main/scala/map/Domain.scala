@@ -323,15 +323,15 @@ object Domain {
              finalMap = finalMap + (lane._1 -> tuple)
              previousLane = lane._1
            }
-           val rightLanes = getEnteringLanes(rightVertex, `right`)
-           for(lane <- rightLanes) {
-             val tuple = (lane._2, `right`, List[String](previousLane))
+           val upLanes = getEnteringLanes(upVertex, `up`)
+           for(lane <- upLanes) {
+             val tuple = (lane._2, `up`, List[String](previousLane))
              finalMap = finalMap + (lane._1 -> tuple)
              previousLane = lane._1
            }
-           val upLanes = getEnteringLanes(downVertex, `up`)
-           for(lane <- upLanes) {
-             val tuple = (lane._2, `up`, List[String](previousLane))
+           val rightLanes = getEnteringLanes(rightVertex, `right`)
+           for(lane <- rightLanes) {
+             val tuple = (lane._2, `right`, List[String](previousLane))
              finalMap = finalMap + (lane._1 -> tuple)
              previousLane = lane._1
            }
@@ -346,7 +346,7 @@ object Domain {
            // dobbiamo capire se abbiamo una lane del tram oppure no (al massimo ve ne è una)
            val leftLanes = getEnteringLanes(leftVertex, `left`)
            val rightLanes = getEnteringLanes(rightVertex, `right`)
-           val upLanes = getEnteringLanes(downVertex, `up`)
+           val upLanes = getEnteringLanes(upVertex, `up`)
            val downLanes = getEnteringLanes(downVertex, `down`)
            if(leftLanes.length > 1) {
              // due corsie a sinistra, quella del tram è la più bassa

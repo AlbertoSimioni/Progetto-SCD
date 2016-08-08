@@ -75,6 +75,50 @@ object Vehicle {
           myRef.nextVehicle = null
           myRef.nextVehicleLastPosition = null
         }
+      case SuccessorGone =>
+        if(senderId == myRef.state.previousVehicleId) {
+          // smetti di inviare update della posizione
+          var event : Event = null
+          if(myRef.getMyLength() == car_length) {
+            event = CarEvent(PreviousVehicleGone)
+          }
+          else if(myRef.getMyLength() == bus_length) {
+            event = BusEvent(PreviousVehicleGone)
+          }
+          else {
+            // tram
+            event = TramEvent(PreviousVehicleGone)
+          }
+          myRef.persist(event) { evt => }
+          // persist body begin
+          myRef.state.previousVehicleId = null
+          // persist body end
+          myRef.previousVehicle = null
+        }
+      case PredecessorChanged(predecessorId, predecessorRef) =>
+        var event : Event = null
+        if(myRef.getMyLength() == car_length) {
+          event = CarEvent(NextVehicleIdArrived(predecessorId))
+        }
+        else if(myRef.getMyLength() == bus_length) {
+          event = BusEvent(NextVehicleIdArrived(predecessorId))
+        }
+        else {
+          // tram
+          event = TramEvent(NextVehicleIdArrived(predecessorId))
+        }
+        myRef.persist(event) { evt => }
+        // persist body begin
+        myRef.state.nextVehicleId = predecessorId
+        // persist body end
+        myRef.nextVehicle = predecessorRef
+        myRef.nextVehicleLastPosition = point(-1, -1)
+      case SuccessorChanged(successorId, successorRef) =>
+        myRef.persist(PredecessorArrived(successorId)) { evt => }
+        // persist body begin
+        myRef.state.previousVehicleId = successorId
+        // persist body end
+        myRef.previousVehicle = successorRef
     }
   }
   
@@ -116,8 +160,6 @@ object Vehicle {
         // altrimenti aspettiamo il primo Advanced
         if(ref == null) {
           myRef.nextVehicleLastPosition = null
-          // attiva l'interessamento agli eventi di avanzamento
-          myRef.interestedInVelocityTick = true
         }
         else {
           // posizione dummy
@@ -125,6 +167,8 @@ object Vehicle {
           // attiva l'aggiornamento della posizione dal veicolo successivo
           myRef.sendToMovable(myId, myRef.self, ref, envelope(myId, id, SuccessorArrived))
         }
+        // attiva l'interessamento agli eventi di avanzamento
+        myRef.interestedInVelocityTick = true
     }
   }
   

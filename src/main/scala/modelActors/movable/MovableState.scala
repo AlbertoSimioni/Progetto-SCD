@@ -191,7 +191,7 @@ class MovableState {
       }
       // aggiusta l'indice e restituisci lo step corrispondente
       if(targetIndex < 0) {
-        targetIndex = commonList.length + offset
+        targetIndex = commonList.length + targetIndex
       }
       else {
         targetIndex = targetIndex % commonList.length
@@ -217,7 +217,7 @@ class MovableState {
       }
       // aggiusta l'indice e restituisci lo step corrispondente
       if(targetIndex < 0) {
-        targetIndex = commonList.length + offset
+        targetIndex = commonList.length + targetIndex
       }
       else {
         targetIndex = targetIndex % commonList.length
@@ -227,7 +227,7 @@ class MovableState {
     else if(busRoute != null) {
       var targetIndex = index + offset
       if(targetIndex < 0) {
-        targetIndex = busRoute.route.length + offset
+        targetIndex = busRoute.route.length + targetIndex
       }
       else {
         targetIndex = targetIndex % busRoute.route.length
@@ -237,7 +237,7 @@ class MovableState {
     else {
       var targetIndex = index + offset
       if(targetIndex < 0) {
-        targetIndex = tramRoute.route.length + offset
+        targetIndex = tramRoute.route.length + targetIndex
       }
       else {
         targetIndex = targetIndex % tramRoute.route.length
@@ -343,7 +343,7 @@ class MovableState {
   
   // TIME
   // tempo corrente
-  var currentTime : TimeValue = null
+  var currentTime = TimeValue(0, 0)
   
   // DOMINIO
   // id del veicolo davanti a noi

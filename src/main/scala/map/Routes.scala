@@ -76,10 +76,16 @@ object Routes {
     // oltre al percorso, restituisce un flag
     // se il flag è a true, allora il percorso include l'utilizzo di un mezzo pubblico in uno dei tre pezzi
     //
+    // ATTENZIONE! FISSIAMO UN PERCORSO IN FASE DI TESTING
     // crea i tempi
-    val times = createTimes()
+    // val times = createTimes()
+    val times = (TimeValue(16, 30), TimeValue(0, 30), TimeValue(8, 30))
     // crea le destinazioni
-    val places = createPlaces()
+    // val places = createPlaces()
+    val houseplaceId = "Z000058800002520" //"Z000040800001680"
+    val workplaceId = "Z000048000000480" //"Z000014400004800"
+    val funplaceId = "Z000056400004800" //"Z000012000001440"
+    val places = (houseplaceId, workplaceId, funplaceId)
     // ottieni i tre pezzi di percorso
     val firstRoute = pedestrianBreadthFirstSearch(map, places._1, places._2)
     val secondRoute = pedestrianBreadthFirstSearch(map, places._2, places._3)
@@ -102,10 +108,16 @@ object Routes {
    * Sceglie le tre destinazioni (home, work e fun) casualmente e genera i percorsi per raggiungerli
    */
   def createCarRoute() : car_route = {
+    // ATTENZIONE! FISSIAMO UN PERCORSO IN FASE DI TESTING
     // crea i tempi
-    val times = createTimes()
+    // val times = createTimes()
+    val times = (TimeValue(4, 18), TimeValue(12, 18), TimeValue(20, 18))
     // crea le destinazioni
-    val places = createPlaces()
+    // val places = createPlaces()
+    val houseplaceId = "Z000040800001680"
+    val workplaceId = "Z000014400004800"
+    val funplaceId = "Z000012000001440"
+    val places = (houseplaceId, workplaceId, funplaceId)
     // ottieni i tre pezzi di percorso
     val firstRoute = carBreadthFirstSearch(map, places._1, places._2)
     val secondRoute = carBreadthFirstSearch(map, places._2, places._3)
@@ -685,17 +697,14 @@ object Routes {
   def routeReplacement(input : List[step], busRoutesSlices : List[List[List[step]]], tramRoutesSlices : List[List[List[step]]]) : List[step] = {
 	  // modifica il percorso in input sulla base dei mezzi pubblici in input
     // il percorso viene modificato se esiste un pezzo del percorso che può essere eseguito con un mezzo pubblico
+    //
+    // modifica
+    // si decide di preferire il trasporto via tram quando possibile
+    // si effettua dunque il replacement con il tram
+    // solo se questo non sortisce effetto, allora si passa al bus
     var subslice = List[step]()
     var startIndex = -1
     var endIndex = -1
-		for(busRouteSlices <- busRoutesSlices) {
-		  val (longestSubslice, start, end) = findLongestSubslice(input, busRouteSlices)
-		  if(longestSubslice.length > subslice.length) {
-			  subslice = longestSubslice
-        startIndex = start
-        endIndex = end
-		  }
-		}
 	  for(tramRouteSlices <- tramRoutesSlices) {
 		  val (longestSubslice, start, end) = findLongestSubslice(input, tramRouteSlices)
 		  if(longestSubslice.length > subslice.length) {
@@ -714,7 +723,25 @@ object Routes {
       return input.slice(0, startIndex) ++ substitution ++ input.slice(endIndex + 1, input.length)
 	  }
     else {
-      return input
+      for(busRouteSlices <- busRoutesSlices) {
+        val (longestSubslice, start, end) = findLongestSubslice(input, busRouteSlices)
+        if(longestSubslice.length > subslice.length) {
+          subslice = longestSubslice
+          startIndex = start
+          endIndex = end
+        }
+      }
+      if(subslice.length != 0) {
+        // bisogna rimpiazzare il pezzo di percorso a piedi col mezzo pubblico
+        // lo step iniziale e quello finale del subslice sono ovviamente contenuti nel route in input,
+        // tranne per il fatto che sono ignorati
+        // allora basta prendere il pezzo di percorso a piedi e sostituirlo con step iniziale e finale del subslice
+        val substitution = List(subslice.head, subslice.last)
+        return input.slice(0, startIndex) ++ substitution ++ input.slice(endIndex + 1, input.length)
+      }
+      else {
+        return input
+      }
     }
   }
   

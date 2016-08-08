@@ -115,6 +115,12 @@ object Car {
             Vehicle.FromVehicle(myRef, myId, senderId, senderRef, message)
           case PredecessorGone =>
             Vehicle.FromVehicle(myRef, myId, senderId, senderRef, message)
+          case SuccessorGone =>
+            Vehicle.FromVehicle(myRef, myId, senderId, senderRef, message)
+          case PredecessorChanged(predecessorId, predecessorRef) =>
+            Vehicle.FromVehicle(myRef, myId, senderId, senderRef, message)
+          case SuccessorChanged(successorId, successorRef) =>
+            Vehicle.FromVehicle(myRef, myId, senderId, senderRef, message)
         }
       case FromBus(message) =>
         message match {
@@ -125,6 +131,12 @@ object Car {
           case Advanced(lastPosition) =>
             Vehicle.FromVehicle(myRef, myId, senderId, senderRef, message)
           case PredecessorGone =>
+            Vehicle.FromVehicle(myRef, myId, senderId, senderRef, message)
+          case SuccessorGone =>
+            Vehicle.FromVehicle(myRef, myId, senderId, senderRef, message)
+          case PredecessorChanged(predecessorId, predecessorRef) =>
+            Vehicle.FromVehicle(myRef, myId, senderId, senderRef, message)
+          case SuccessorChanged(successorId, successorRef) =>
             Vehicle.FromVehicle(myRef, myId, senderId, senderRef, message)
         }
       case FromTram(message) =>
@@ -137,6 +149,12 @@ object Car {
             Vehicle.FromVehicle(myRef, myId, senderId, senderRef, message)
           case PredecessorGone =>
             Vehicle.FromVehicle(myRef, myId, senderId, senderRef, message)
+          case SuccessorGone =>
+            Vehicle.FromVehicle(myRef, myId, senderId, senderRef, message)
+          case PredecessorChanged(predecessorId, predecessorRef) =>
+            Vehicle.FromVehicle(myRef, myId, senderId, senderRef, message)
+          case SuccessorChanged(successorId, successorRef) =>
+            Vehicle.FromVehicle(myRef, myId, senderId, senderRef, message)
         }
     }
   }
@@ -147,6 +165,8 @@ object Car {
         state.nextVehicleId = id
       case NextVehicleGone =>
         state.nextVehicleId = null
+      case PreviousVehicleGone =>
+        state.previousVehicleId = null
     }
   }
   

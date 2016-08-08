@@ -98,6 +98,12 @@ object Messages {
   case class Advanced(lastPosition : point)
   // inviato da un veicolo ad un altro per segnalare di non dover più porre attenzione alla posizione (corsia libera)
   case object PredecessorGone
+  // inviato da un veicolo al successivo per segnalare di non dover più mandare update della posizione
+  case object SuccessorGone
+  // inviato per notificare un cambio di successore
+  case class SuccessorChanged(successorId : String, successorRef : ActorRef)
+  // inviato per notificare un cambio di predecessore
+  case class PredecessorChanged(predecessorId : String, predecessorRef : ActorRef)
   
   // inviato da una entità mobile all'entità precedente della lane per avvisare che si è arrivati nella nuova lane
   case class VehicleBusy(comingFrom : String)
@@ -160,6 +166,7 @@ object Messages {
   case object NextVehicleGone
   
   case class PredecessorArrived(id : String) extends Event
+  case object PreviousVehicleGone
   case object PredecessorGoneNotSentYet extends Event
   case object PredecessorGoneSent extends Event
   
@@ -223,14 +230,20 @@ object Messages {
             log = log + "Advanced"
           case PredecessorGone =>
             log = log + "PredecessorGone"
+          case SuccessorGone =>
+            log = log + "SuccessorGone"
+          case PredecessorChanged =>
+            log = log + "PredecessorChanged"
+          case SuccessorChanged =>
+            log = log + "SuccessorChanged"
           case VehicleBusy(comingFrom) =>
-            log = log + "VehicleBusy"
+            log = log + "VehicleBusy(" + comingFrom + ")"
           case VehicleFree(comingFrom) =>
-            log = log + "VehicleFree"
+            log = log + "VehicleFree(" + comingFrom + ")"
           case CrossFree =>
             log = log + "CrossFree"
           case Vehicle_In(comingFrom) =>
-            log = log + "VehicleIn"
+            log = log + "VehicleIn(" + comingFrom + ")"
           case Cross_In =>
             log = log + "CrossIn"
           case Vehicle_Out =>

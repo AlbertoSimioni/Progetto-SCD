@@ -42,7 +42,7 @@ class ImmovableState {
   def actorsToBeWakenUp(currentTime : TimeValue) : List[String] = {
     var toBeWakenUp = List[String]()
     for(pair <- sleepingActors) {
-      if(isLate(currentTime, pair._2)) {
+      if(isLate(pair._2, currentTime)) {
         toBeWakenUp = toBeWakenUp :+ pair._1
       }
     }

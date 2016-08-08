@@ -83,6 +83,12 @@ object Tram {
             Vehicle.FromVehicle(myRef, myId, senderId, senderRef, message)
           case PredecessorGone =>
             Vehicle.FromVehicle(myRef, myId, senderId, senderRef, message)
+          case SuccessorGone =>
+            Vehicle.FromVehicle(myRef, myId, senderId, senderRef, message)
+          case PredecessorChanged(predecessorId, predecessorRef) =>
+            Vehicle.FromVehicle(myRef, myId, senderId, senderRef, message)
+          case SuccessorChanged(successorId, successorRef) =>
+            Vehicle.FromVehicle(myRef, myId, senderId, senderRef, message)
         }
       case FromBus(message) =>
         message match {
@@ -93,6 +99,12 @@ object Tram {
           case Advanced(lastPosition) =>
             Vehicle.FromVehicle(myRef, myId, senderId, senderRef, message)
           case PredecessorGone =>
+            Vehicle.FromVehicle(myRef, myId, senderId, senderRef, message)
+          case SuccessorGone =>
+            Vehicle.FromVehicle(myRef, myId, senderId, senderRef, message)
+          case PredecessorChanged(predecessorId, predecessorRef) =>
+            Vehicle.FromVehicle(myRef, myId, senderId, senderRef, message)
+          case SuccessorChanged(successorId, successorRef) =>
             Vehicle.FromVehicle(myRef, myId, senderId, senderRef, message)
         }
       case FromTram(message) =>
@@ -105,6 +117,12 @@ object Tram {
             Vehicle.FromVehicle(myRef, myId, senderId, senderRef, message)
           case PredecessorGone =>
             Vehicle.FromVehicle(myRef, myId, senderId, senderRef, message)
+          case SuccessorGone =>
+            Vehicle.FromVehicle(myRef, myId, senderId, senderRef, message)
+          case PredecessorChanged(predecessorId, predecessorRef) =>
+            Vehicle.FromVehicle(myRef, myId, senderId, senderRef, message)
+          case SuccessorChanged(successorId, successorRef) =>
+            Vehicle.FromVehicle(myRef, myId, senderId, senderRef, message)
         }
         
     }
@@ -116,6 +134,8 @@ object Tram {
         state.nextVehicleId = id
       case NextVehicleGone =>
         state.nextVehicleId = null
+      case PreviousVehicleGone =>
+        state.previousVehicleId = null
       case TravellersGoneOff(goingOff) =>
         for(traveller <- goingOff) {
           state.travellers = state.travellers - traveller

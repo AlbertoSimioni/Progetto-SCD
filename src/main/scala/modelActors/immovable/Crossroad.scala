@@ -105,6 +105,10 @@ object Crossroad {
            println(text)
           }
         }
+        else {
+          var text = myId + ": sto facendo aspettare " + senderId + " nonostante abbia appena fatto richiesta a causa di vehicleFree"
+          println(text)
+        }
       case VehicleBusy(comingFrom) =>
         // per sicurezza, metti a false anche la entry nella tabella temporanea
         myRef.vehicleFreeTemp = false

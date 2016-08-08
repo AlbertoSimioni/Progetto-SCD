@@ -102,28 +102,29 @@ class Injector extends Actor {
               self ! PoisonPill
             
             case CreatePedestrian(id) =>
+              println("ATTENZIONE! PERCORSO PEDONE NON RANDOM")
               val pedestrianRoute = Routes.createPedestrianRoute()._1
               val firstId = Routes.getStepId(pedestrianRoute.houseToWorkRoute(0))
               sendToImmovable(self, firstId, CreateMobileEntity(id, pedestrianRoute))
               publisherGuiHanlder ! CreateMobileEntity(id, pedestrianRoute)
-              println("pedone creato e messaggio mandato")
+              println("Orario uscita di casa pedone: " + pedestrianRoute.houseEndTime)
             case CreateCar(id) =>
+              println("ATTENZIONE! PERCORSO AUTOMOBILE NON RANDOM")
               val carRoute = Routes.createCarRoute()
               val firstId = Routes.getStepId(carRoute.houseToWorkRoute(0))
               sendToImmovable(self, firstId, CreateMobileEntity(id, carRoute))
               publisherGuiHanlder ! CreateMobileEntity(id, carRoute)
+              println("Orario uscita di casa macchina: " + carRoute.houseEndTime)
             case CreateBus(id, route) =>
               val busRoute = Routes.createBusRoute(route)
               val firstId = Routes.getStepId(busRoute.route(0))
               sendToImmovable(self, firstId, CreateMobileEntity(id, busRoute))
               publisherGuiHanlder ! CreateMobileEntity(id, busRoute)
-              println("bus creato e messaggio mandato")
             case CreateTram(id, route) =>
               val tramRoute = Routes.createTramRoute(route)
               val firstId = Routes.getStepId(tramRoute.route(0))
               sendToImmovable(self, firstId, CreateMobileEntity(id, tramRoute))
               publisherGuiHanlder ! CreateMobileEntity(id, tramRoute)
-              println("tram creato e messaggio mandato")
           }
       }
   }
