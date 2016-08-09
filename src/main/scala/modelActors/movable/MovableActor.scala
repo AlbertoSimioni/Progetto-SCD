@@ -734,36 +734,52 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
             // ATTENZIONE: quando si ha un pedone che attraversa un incrocio che ha a che fare con tre corsie da un lato e due da un altro,
             // non è vero che i primi due punti hanno stessa coordinata x o stessa coordinata y
             // dunque, se siamo un pedone, prendiamo il secondo e il terzo
-            val currentPoint = currentNonPersistentPointsSequence(pathPhase)(currentNonPersistentPointIndex)
-            if(getMyLength() == pedestrian_length) {
-              publisherGuiHandler ! pedestrianPosition(id, currentPoint.x, currentPoint.y, getGuiDirection(currentNonPersistentPointsSequence(pathPhase)))
+            
+            // ATTENZIONE: potremmo essere nel caso in cui il primo pezzo di percorso è vuoto
+            // questo succede in taluni casi con i pedoni
+            // in tal caso, si fa avanzare pathPhase finche la lunghezza del percorso non è di almeno 1
+            while(pathPhase < currentNonPersistentPointsSequence.length && currentNonPersistentPointsSequence(pathPhase).length < 1) {
+              pathPhase = pathPhase + 1
             }
-            else if(getMyLength() == car_length) {
-              publisherGuiHandler ! carPosition(id, currentPoint.x, currentPoint.y, getGuiDirection(currentNonPersistentPointsSequence(pathPhase)))
-            }
-            else if(getMyLength() == bus_length) {
-              publisherGuiHandler ! busPosition(id, currentPoint.x, currentPoint.y, getGuiDirection(currentNonPersistentPointsSequence(pathPhase)))
+            if(pathPhase == currentNonPersistentPointsSequence.length) {
+              // l'ultimo pezzo di percorso è di lunghezza 0
+              // dunque persist and next step
+              sendToMovable(id, self, self, PersistAndNextStep)
+              // fine del componente che stiamo percorrendo, spegni l'interruttore
+              interestedInVelocityTick = false
             }
             else {
-              // tram
-              publisherGuiHandler ! tramPosition(id, currentPoint.x, currentPoint.y, getGuiDirection(currentNonPersistentPointsSequence(pathPhase)))
-            }
-            
-            if(currentNonPersistentPointIndex == currentNonPersistentPointsSequence(pathPhase).length - 1) {
-              if(pathPhase == currentNonPersistentPointsSequence.length - 1) {
-                // siamo alla fine
-                sendToMovable(id, self, self, PersistAndNextStep)
-                // fine del componente che stiamo percorrendo, spegni l'interruttore
-                interestedInVelocityTick = false
+              val currentPoint = currentNonPersistentPointsSequence(pathPhase)(currentNonPersistentPointIndex)
+              if(getMyLength() == pedestrian_length) {
+                publisherGuiHandler ! pedestrianPosition(id, currentPoint.x, currentPoint.y, getGuiDirection(currentNonPersistentPointsSequence(pathPhase)))
+              }
+              else if(getMyLength() == car_length) {
+                publisherGuiHandler ! carPosition(id, currentPoint.x, currentPoint.y, getGuiDirection(currentNonPersistentPointsSequence(pathPhase)))
+              }
+              else if(getMyLength() == bus_length) {
+                publisherGuiHandler ! busPosition(id, currentPoint.x, currentPoint.y, getGuiDirection(currentNonPersistentPointsSequence(pathPhase)))
               }
               else {
-                // abbiamo ancora dei pezzi di percorso
-                pathPhase = pathPhase + 1
-                currentNonPersistentPointIndex = 0
+                // tram
+                publisherGuiHandler ! tramPosition(id, currentPoint.x, currentPoint.y, getGuiDirection(currentNonPersistentPointsSequence(pathPhase)))
               }
-            }
-            else {
-              currentNonPersistentPointIndex = currentNonPersistentPointIndex + 1
+              
+              if(currentNonPersistentPointIndex == currentNonPersistentPointsSequence(pathPhase).length - 1) {
+                if(pathPhase == currentNonPersistentPointsSequence.length - 1) {
+                  // siamo alla fine
+                  sendToMovable(id, self, self, PersistAndNextStep)
+                  // fine del componente che stiamo percorrendo, spegni l'interruttore
+                  interestedInVelocityTick = false
+                }
+                else {
+                  // abbiamo ancora dei pezzi di percorso
+                  pathPhase = pathPhase + 1
+                  currentNonPersistentPointIndex = 0
+                }
+              }
+              else {
+                currentNonPersistentPointIndex = currentNonPersistentPointIndex + 1
+              }
             }
             
           case pedestrian_crossroad_step(pedestrian_crossroad, direction) =>
@@ -1039,6 +1055,10 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
         state.previousVehicleId = null
         state.predecessorGoneSent = true
         
+      // AT LEAST ONCE
+      case PersistDeliveryId(deliveryId) =>
+        state.deliveryId = deliveryId
+        
       case PedestrianEvent(event) =>
         Pedestrian.eventHandler(event, state)
       case CarEvent(event) =>
@@ -1076,13 +1096,35 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
   // UTILITY
   // Funzione che permette l'invio di un messaggio ad un attore immobile, effettuando l'enveloping adeguato
   def sendToImmovable(senderId : String, senderRef : ActorRef, destinationId : String, command : Command) : Unit = {
-    deliver(shardRegion.path, deliveryId => ToImmovable(destinationId, ToPersistentMessages.FromMovable(senderId, senderRef, Request(deliveryId, command))))
+    deliver(shardRegion.path, deliveryId => {
+      if(deliveryId >= state.deliveryId) {
+        persist(PersistDeliveryId(deliveryId)) { evt => }
+        state.deliveryId = deliveryId
+      }
+      else {
+        // potremmo essere dopo un ripristino
+        persist(PersistDeliveryId(state.deliveryId + deliveryId)) { evt => }
+        state.deliveryId = state.deliveryId + deliveryId
+      }
+      ToImmovable(destinationId, ToPersistentMessages.FromMovable(senderId, senderRef, Request(state.deliveryId, command)))
+    })
   }
   
   // UTILITY
   // Funzione che permette l'invio di un messaggio ad un attore mobile, effettuando l'enveloping adeguato
   def sendToMovable(senderId : String, senderRef : ActorRef, destinationRef : ActorRef, command : Command) : Unit = {
-    deliver(destinationRef.path, deliveryId => ToMovable(destinationRef, ToPersistentMessages.FromMovable(senderId, senderRef, Request(deliveryId, command))))
+    deliver(destinationRef.path, deliveryId => {
+      if(deliveryId >= state.deliveryId) {
+        persist(PersistDeliveryId(deliveryId)) { evt => }
+        state.deliveryId = deliveryId
+      }
+      else {
+        // potremmo essere dopo un ripristino
+        persist(PersistDeliveryId(state.deliveryId + deliveryId)) { evt => }
+        state.deliveryId = state.deliveryId + deliveryId
+      }
+      ToMovable(destinationRef, ToPersistentMessages.FromMovable(senderId, senderRef, Request(state.deliveryId, command)))
+    })
   }
   
   // UTILITY

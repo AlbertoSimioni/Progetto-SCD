@@ -617,6 +617,10 @@ class ImmovableActor extends PersistentActor with AtLeastOnceDelivery with Actor
       case MobileEntitySleeping(id, wakeupTime) =>
         state.addSleepingActor(id, wakeupTime)
         
+      // AT LEAST ONCE
+      case PersistDeliveryId(deliveryId) =>
+        state.deliveryId = deliveryId
+        
       case BusStopEvent(event) =>
         BusStop.eventHandler(event, state)
       case CrossroadEvent(event) =>
@@ -673,13 +677,35 @@ class ImmovableActor extends PersistentActor with AtLeastOnceDelivery with Actor
   // UTILITY
   // Funzione che permette l'invio di un messaggio ad un attore immobile, effettuando l'enveloping adeguato
   def sendToImmovable(senderId : String, destinationId : String, command : Command) : Unit = {
-    deliver(shardRegion.path, deliveryId => ToImmovable(destinationId, ToPersistentMessages.FromImmovable(senderId, Request(deliveryId, command))))
+    deliver(shardRegion.path, deliveryId => {
+      if(deliveryId >= state.deliveryId) {
+        persist(PersistDeliveryId(deliveryId)) { evt => }
+        state.deliveryId = deliveryId
+      }
+      else {
+        // potremmo essere dopo un ripristino
+        persist(PersistDeliveryId(state.deliveryId + deliveryId)) { evt => }
+        state.deliveryId = state.deliveryId + deliveryId
+      }
+      ToImmovable(destinationId, ToPersistentMessages.FromImmovable(senderId, Request(state.deliveryId, command)))
+    })
   }
   
   // UTILITY
   // Funzione che permette l'invio di un messaggio ad un attore mobile, effettuando l'enveloping adeguato
   def sendToMovable(senderId : String, destinationRef : ActorRef, command : Command) : Unit = {
-    deliver(destinationRef.path, deliveryId => ToMovable(destinationRef, ToPersistentMessages.FromImmovable(senderId, Request(deliveryId, command))))
+    deliver(destinationRef.path, deliveryId => {
+      if(deliveryId >= state.deliveryId) {
+        persist(PersistDeliveryId(deliveryId)) { evt => }
+        state.deliveryId = deliveryId
+      }
+      else {
+        // potremmo essere dopo un ripristino
+        persist(PersistDeliveryId(state.deliveryId + deliveryId)) { evt => }
+        state.deliveryId = state.deliveryId + deliveryId
+      }
+      ToMovable(destinationRef, ToPersistentMessages.FromImmovable(senderId, Request(state.deliveryId, command)))
+    })
   }
   
   // UTILITY

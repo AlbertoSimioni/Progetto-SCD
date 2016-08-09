@@ -134,6 +134,9 @@ object Messages {
   // evento per il filtro dei duplicati
   case class NoDuplicate(senderId : String, deliveryId : Long) extends Event
   
+  // evento per il salvataggio del deliveryId corrente
+  case class PersistDeliveryId(deliveryId : Long) extends Event
+  
   // evento per la definizione dell'entità immobile
   case class IdentityArrived(id : String) extends Event
   // attore mobile aggiunto in gestione

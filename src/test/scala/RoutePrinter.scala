@@ -43,10 +43,12 @@ object RoutePrinter {
           println(printStep(step))
         }
       case bus_route(steps) =>
+        println("Bus route:")
         for(step <- steps) {
           println(printStep(step))
         }
       case tram_route(steps) =>
+        println("Tram route:")
         for(step <- steps) {
           println(printStep(step))
         }

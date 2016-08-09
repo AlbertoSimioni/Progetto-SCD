@@ -1,5 +1,7 @@
 package modelActors.immovable
 
+import scala.Long.MinValue
+
 import akka.persistence.AtLeastOnceDelivery.AtLeastOnceDeliverySnapshot
 
 import map.Domain._
@@ -89,6 +91,10 @@ class ImmovableState {
       lastMessages = lastMessages + (actorId -> deliveryId)
     }
   }
+  
+  // AT-LEAST-ONCE
+  // ultima delivery id utilizzata, per ripristino
+  var deliveryId = MinValue
   
   var id : String = null
   var kind : String = null

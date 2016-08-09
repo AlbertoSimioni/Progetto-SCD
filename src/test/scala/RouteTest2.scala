@@ -17,4 +17,8 @@ class RouteTest2 extends UnitSpec {
     RoutePrinter.printRoute(pedestrianRoute._1)
   }
   
+  "A tram route" should "print out" in {
+    RoutePrinter.printRoute(createTramRoute(1))
+  }
+  
 }
