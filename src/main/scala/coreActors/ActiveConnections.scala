@@ -45,7 +45,7 @@ class ActiveConnections extends Actor with ActorLogging {
   var bufferPositions : StringBuilder =  new StringBuilder
   bufferPositions ++=  s"""{"type": "positions", "positions":["""
   var bufferEmpty = true;
-  val autoTick = context.system.scheduler.schedule(0 millis, 100 millis, self, "sendBuff")
+  val autoTick = context.system.scheduler.schedule(0 millis, 95 millis, self, "sendBuff")
 
 
   override def receive = {

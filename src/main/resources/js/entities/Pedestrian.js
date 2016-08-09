@@ -15,12 +15,12 @@ function Pedestrian(id, lat,long, direction) {
     if(this.isHorizontal){
         size = new Size(Pedestrian.leng,Pedestrian.height);
         currLat = lat + Pedestrian.leng/2.0;
-        currLong = long + Pedestrian.height/2.0;
+        currLong = long - Pedestrian.height/2.0;
         }
     else{
         size = new Size(Pedestrian.height,Pedestrian.leng);
         currLat = lat + Pedestrian.height/2;
-        currLong = long + Pedestrian.leng/2;
+        currLong = long - Pedestrian.leng/2;
         }
     this.currentLat = currLat;
     this.currentLong = currLong;
@@ -45,11 +45,11 @@ Pedestrian.prototype.move = function(lat,long, direction) {
     var currLong = 0;
     if(isHor){
         currLat = lat + Pedestrian.leng/2.0;
-        currLong = long + Pedestrian.height/2.0;
+        currLong = long - Pedestrian.height/2.0;
         }
     else{
         currLat = lat + Pedestrian.height/2.0;
-        currLong = long + Pedestrian.leng/2.0;
+        currLong = long - Pedestrian.leng/2.0;
         }
     this.currentLat = currLat;
     this.currentLong = currLong;

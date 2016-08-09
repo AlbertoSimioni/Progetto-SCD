@@ -46,12 +46,12 @@ function Car(id, lat,long, direction) {
     if(this.isHorizontal){
         size = new Size(Car.leng,Car.height);
         currLat = lat + Car.leng/2.0;
-        currLong = long + Car.height/2.0;
+        currLong = long - Car.height/2.0;
         }
     else{
         size = new Size(Car.height,Car.leng);
         currLat = lat + Car.height/2.0;
-        currLong = long + Car.leng/2.0;
+        currLong = long - Car.leng/2.0;
         }
     this.currentLat = currLat;
     this.currentLong = currLong;
@@ -78,11 +78,11 @@ Car.prototype.move = function(lat,long, direction) {
     var currLong = 0;
     if(isHor){
         currLat = lat + Car.leng/2.0;
-        currLong = long + Car.height/2.0;
+        currLong = long - Car.height/2.0;
         }
     else{
         currLat = lat + Car.height/2.0;
-        currLong = long + Car.leng/2.0;
+        currLong = long - Car.leng/2.0;
         }
     this.currentLat = currLat;
     this.currentLong = currLong;

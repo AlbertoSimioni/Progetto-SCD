@@ -972,7 +972,7 @@ object PointsSequence {
                   firstPointsList = firstPointsList :+ currentPoint
                 }
                 for(current_y <- lastPoint.y + ((24 + bus_length - 1) / 2) + 1 to lastPoint.y + 24 + bus_length - 1) {
-                  val currentPoint = point(lastPoint.x, lastPoint.y)
+                  val currentPoint = point(lastPoint.x, current_y)
                   secondPointsList = secondPointsList :+ currentPoint
                 }
               }
@@ -1259,7 +1259,7 @@ object PointsSequence {
                   firstPointsList = firstPointsList :+ currentPoint
                 }
                 for(current_y <- lastPoint.y + ((24 + tram_length - 1) / 2) + 1 to lastPoint.y + 24 + tram_length - 1) {
-                  val currentPoint = point(lastPoint.x, lastPoint.y)
+                  val currentPoint = point(lastPoint.x, current_y)
                   secondPointsList = secondPointsList :+ currentPoint
                 }
               }
@@ -1732,13 +1732,26 @@ object PointsSequence {
       case previousLaneStep @ lane_step(previousLane, direction) =>
         // sono un veicolo
         previousDirection = direction
-        val previousSequence = handleLaneStep(previousLaneStep, entityLength, previousPreviousStep, crossroadStep)
-        beginPoint = previousSequence(0)(previousSequence(0).length - 1)
+
+        if(entityLength == tram_length){
+          val previousSequence = handleTramLaneStep(previousLaneStep)
+          beginPoint = previousSequence(0)(previousSequence(0).length - 1)
+        }
+        else{
+          val previousSequence = handleLaneStep(previousLaneStep, entityLength, previousPreviousStep, crossroadStep)
+          beginPoint = previousSequence(0)(previousSequence(0).length - 1)
+        }
         nextStep match {
           // DEVE essere un lane_step o un crossroad_step
           case nextLaneStep @ lane_step(nextLane, _) =>
-            val nextSequence = handleLaneStep(nextLaneStep, entityLength, crossroadStep, nextNextStep)
-            endPoint = nextSequence(0)(0)
+            if(entityLength == tram_length){
+              val nextSequence = handleTramLaneStep(nextLaneStep)
+              endPoint = nextSequence(0)(0)
+            }
+            else{
+              var nextSequence = handleLaneStep(nextLaneStep, entityLength, crossroadStep, nextNextStep)
+              endPoint = nextSequence(0)(0)
+            }
           case nextCrossroadStep @ crossroad_step(nextCrossroad, _) =>
           // dobbiamo recuperare il punto dallo step ancora successivo, che DEVE essere un lane step
           nextNextStep match {
@@ -1890,7 +1903,7 @@ object PointsSequence {
                 val offsetY = endPoint.y - beginPoint.y
                 val firstPointsList = calcShift(beginPoint, offsetX, `left`)
                 // seconda parte
-                val newPoint = point(endPoint.x, beginPoint.y + entityLength)
+                val newPoint = point(endPoint.x, beginPoint.y)
                 val secondPointsList = calcShift(newPoint, offsetY - 1, `up`)
                 pointsList = pointsList :+ firstPointsList
                 pointsList = pointsList :+ secondPointsList

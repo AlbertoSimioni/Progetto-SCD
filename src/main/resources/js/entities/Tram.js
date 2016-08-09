@@ -15,12 +15,12 @@ function Tram(id, lat,long, direction) {
     if(this.isHorizontal){
         size = new Size(Tram.leng,Tram.height);
         currLat = lat + Tram.leng/2.0;
-        currLong = long + Tram.height/2.0;
+        currLong = long - Tram.height/2.0;
         }
     else{
         size = new Size(Tram.height,Tram.leng);
         currLat = lat + Tram.height/2;
-        currLong = long + Tram.leng/2;
+        currLong = long - Tram.leng/2;
         }
     this.currentLat = currLat;
     this.currentLong = currLong;
@@ -45,11 +45,11 @@ Tram.prototype.move = function(lat,long, direction) {
     var currLong = 0;
     if(isHor){
         currLat = lat + Tram.leng/2.0;
-        currLong = long + Tram.height/2.0;
+        currLong = long - Tram.height/2.0;
         }
     else{
         currLat = lat + Tram.height/2.0;
-        currLong = long + Tram.leng/2.0;
+        currLong = long - Tram.leng/2.0;
         }
     this.currentLat = currLat;
     this.currentLong = currLong;

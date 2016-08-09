@@ -15,12 +15,12 @@ function Bus(id, lat,long, direction) {
     if(this.isHorizontal){
         size = new Size(Bus.leng,Bus.height);
         currLat = lat + Bus.leng/2.0;
-        currLong = long + Bus.height/2.0;
+        currLong = long - Bus.height/2.0;
         }
     else{
         size = new Size(Bus.height,Bus.leng);
         currLat = lat + Bus.height/2.0;
-        currLong = long + Bus.leng/2.0;
+        currLong = long - Bus.leng/2.0;
         }
     this.currentLat = currLat;
     this.currentLong = currLong;
@@ -44,11 +44,11 @@ Bus.prototype.move = function(lat,long, direction) {
     var currLong = 0;
     if(isHor){
         currLat = lat + Bus.leng/2.0;
-        currLong = long + Bus.height/2.0;
+        currLong = long - Bus.height/2.0;
         }
     else{
         currLat = lat + Bus.height/2.0;
-        currLong = long + Bus.leng/2.0;
+        currLong = long - Bus.leng/2.0;
         }
     this.currentLat = currLat;
     this.currentLong = currLong;
