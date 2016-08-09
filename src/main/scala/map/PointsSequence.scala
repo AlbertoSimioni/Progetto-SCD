@@ -972,7 +972,7 @@ object PointsSequence {
                   firstPointsList = firstPointsList :+ currentPoint
                 }
                 for(current_y <- lastPoint.y + ((24 + bus_length - 1) / 2) + 1 to lastPoint.y + 24 + bus_length - 1) {
-                  val currentPoint = point(lastPoint.x, lastPoint.y)
+                  val currentPoint = point(lastPoint.x, current_y)
                   secondPointsList = secondPointsList :+ currentPoint
                 }
               }
@@ -1259,7 +1259,7 @@ object PointsSequence {
                   firstPointsList = firstPointsList :+ currentPoint
                 }
                 for(current_y <- lastPoint.y + ((24 + tram_length - 1) / 2) + 1 to lastPoint.y + 24 + tram_length - 1) {
-                  val currentPoint = point(lastPoint.x, lastPoint.y)
+                  val currentPoint = point(lastPoint.x, current_y)
                   secondPointsList = secondPointsList :+ currentPoint
                 }
               }
@@ -1700,6 +1700,7 @@ object PointsSequence {
   }
   
   def handleCrossroadStep(crossroadStep : crossroad_step, previousPreviousStep : step, previousStep : step, nextStep : step, nextNextStep : step, nextNextNextStep : step, entityLength : Int) : List[List[point]] = {
+    var currStep =  crossroadStep;
     var pointsList = List[List[point]]()
     // vi sono solo due possibilità: o lo step precedente è un road_step (pedone)
     // o lo step precedente è un lane_step (veicolo)
@@ -1718,6 +1719,7 @@ object PointsSequence {
             val nextSequence = handleRoadPedestrianStep(nextRoadStep, crossroadStep, nextNextStep)
             endPoint = nextSequence(0)(0)
           case nextCrossroadStep @ crossroad_step(nextCrossroad, _) =>
+            currStep = nextCrossroadStep;
             // dobbiamo recuperare il punto dallo step ancora successivo, che DEVE essere un road step
             nextNextStep match {
               case nextNextRoadStep @ road_step(nextNextRoad, _) =>
@@ -1753,6 +1755,7 @@ object PointsSequence {
               endPoint = nextSequence(0)(0)
             }
           case nextCrossroadStep @ crossroad_step(nextCrossroad, _) =>
+            currStep = nextCrossroadStep;
           // dobbiamo recuperare il punto dallo step ancora successivo, che DEVE essere un lane step
           nextNextStep match {
             case nextNextLaneStep @ lane_step(nextNextLane, _) =>
@@ -1780,9 +1783,9 @@ object PointsSequence {
       case `up` =>
         if(previousDirection.beginToEnd) {
           // solo un pedone può raggiungere un incrocio da up e beginToEnd == true
-          crossroadStep.direction.position match {
+          currStep.direction.position match {
             case `up` =>
-              if(crossroadStep.direction.beginToEnd) {
+              if(currStep.direction.beginToEnd) {
                 // controlla la y per decidere se il numero di corsie è diverso
                 val offset = endPoint.x - beginPoint.x
                 if(beginPoint.y == endPoint.y) {
@@ -1804,7 +1807,7 @@ object PointsSequence {
                 println("We should not be here!")
               }
             case `down` =>
-              if(crossroadStep.direction.beginToEnd) {
+              if(currStep.direction.beginToEnd) {
                 // non è possibile avere questa combinazione
                 println("We should not be here!")
               }
@@ -1813,7 +1816,7 @@ object PointsSequence {
                 println("We should not be here!")
               }
             case `left` =>
-              if(crossroadStep.direction.beginToEnd) {
+              if(currStep.direction.beginToEnd) {
                 // prima parte
                 val offsetX = endPoint.x - beginPoint.x
                 val offsetY = endPoint.y - beginPoint.y
@@ -1829,7 +1832,7 @@ object PointsSequence {
                 println("We should not be here!")
               }
             case `right` =>
-              if(crossroadStep.direction.beginToEnd) {
+              if(currStep.direction.beginToEnd) {
                 // non è possibile avere questa combinazione
                 println("We should not be here!")
               }
@@ -1848,9 +1851,9 @@ object PointsSequence {
         }
         else {
           // qui possiamo avere sia veicoli che pedoni
-          crossroadStep.direction.position match {
+          currStep.direction.position match {
             case `up` =>
-              if(crossroadStep.direction.beginToEnd) {
+              if(currStep.direction.beginToEnd) {
                 // non è possibile avere questa combinazione
                 println("We should not be here!")
               }
@@ -1872,7 +1875,7 @@ object PointsSequence {
                 }
               }
             case `down` =>
-              if(crossroadStep.direction.beginToEnd) {
+              if(currStep.direction.beginToEnd) {
                 // non è possibile avere questa combinazione
                 println("We should not be here!")
               }
@@ -1881,7 +1884,7 @@ object PointsSequence {
                 println("We should not be here!")
               }
             case `left` =>
-              if(crossroadStep.direction.beginToEnd) {
+              if(currStep.direction.beginToEnd) {
                 // non è possibile avere questa combinazione
                 println("We should not be here!")
               }
@@ -1897,13 +1900,13 @@ object PointsSequence {
                 pointsList = pointsList :+ secondPointsList
               }
             case `right` =>
-              if(crossroadStep.direction.beginToEnd) {
+              if(currStep.direction.beginToEnd) {
                 // prima parte
                 val offsetX = beginPoint.x - endPoint.x
                 val offsetY = endPoint.y - beginPoint.y
                 val firstPointsList = calcShift(beginPoint, offsetX, `left`)
                 // seconda parte
-                val newPoint = point(endPoint.x, beginPoint.y + entityLength)
+                val newPoint = point(endPoint.x, beginPoint.y)
                 val secondPointsList = calcShift(newPoint, offsetY - 1, `up`)
                 pointsList = pointsList :+ firstPointsList
                 pointsList = pointsList :+ secondPointsList
@@ -1916,9 +1919,9 @@ object PointsSequence {
         }
       case `down` =>
         if(previousDirection.beginToEnd) {
-          crossroadStep.direction.position match {
+          currStep.direction.position match {
             case `up` =>
-              if(crossroadStep.direction.beginToEnd) {
+              if(currStep.direction.beginToEnd) {
                 // non è possibile avere questa combinazione
                 println("We should not be here!")
               }
@@ -1927,7 +1930,7 @@ object PointsSequence {
                 println("We should not be here!")
               }
             case `down` =>
-              if(crossroadStep.direction.beginToEnd) {
+              if(currStep.direction.beginToEnd) {
                 // controlla la y per decidere se il numero di corsie è diverso
                 val offset = endPoint.x - beginPoint.x
                 if(beginPoint.y == endPoint.y) {
@@ -1949,7 +1952,7 @@ object PointsSequence {
                 println("We should not be here!")
               }
             case `left` =>
-              if(crossroadStep.direction.beginToEnd) {
+              if(currStep.direction.beginToEnd) {
                 // non è possibile avere questa combinazione
                 println("We should not be here!")
               }
@@ -1965,7 +1968,7 @@ object PointsSequence {
                 pointsList = pointsList :+ secondPointsList
               }
             case `right` =>
-              if(crossroadStep.direction.beginToEnd) {
+              if(currStep.direction.beginToEnd) {
                 // prima parte
                 val offsetX = endPoint.x - beginPoint.x - entityLength
                 val offsetY = endPoint.y - beginPoint.y
@@ -1983,9 +1986,9 @@ object PointsSequence {
           }
         }
         else {
-          crossroadStep.direction.position match {
+          currStep.direction.position match {
             case `up` =>
-              if(crossroadStep.direction.beginToEnd) {
+              if(currStep.direction.beginToEnd) {
                 // non è possibile avere questa combinazione
                 println("We should not be here!")
               }
@@ -1994,7 +1997,7 @@ object PointsSequence {
                 println("We should not be here!")
               }
             case `down` =>
-              if(crossroadStep.direction.beginToEnd) {
+              if(currStep.direction.beginToEnd) {
                 // non è possibile avere questa combinazione
                 println("We should not be here!")
               }
@@ -2016,7 +2019,7 @@ object PointsSequence {
                 }
               }
             case `left` =>
-              if(crossroadStep.direction.beginToEnd) {
+              if(currStep.direction.beginToEnd) {
                 // prima parte
                 val offsetX = beginPoint.x - endPoint.x
                 val offsetY = endPoint.y - beginPoint.y
@@ -2032,7 +2035,7 @@ object PointsSequence {
                 println("We should not be here!")
               }
             case `right` =>
-              if(crossroadStep.direction.beginToEnd) {
+              if(currStep.direction.beginToEnd) {
                 // non è possibile avere questa combinazione
                 println("We should not be here!")
               }
@@ -2052,9 +2055,9 @@ object PointsSequence {
       case `left` =>
         if(previousDirection.beginToEnd) {
           // siamo sicuramente un pedone
-          crossroadStep.direction.position match {
+          currStep.direction.position match {
             case `up` =>
-              if(crossroadStep.direction.beginToEnd) {
+              if(currStep.direction.beginToEnd) {
                 // prima parte
                 val offsetX = endPoint.x - beginPoint.x
                 val offsetY = endPoint.y - beginPoint.y - entityLength
@@ -2070,7 +2073,7 @@ object PointsSequence {
                 println("We should not be here!")
               }
             case `down` =>
-              if(crossroadStep.direction.beginToEnd) {
+              if(currStep.direction.beginToEnd) {
                 // non è possibile avere questa combinazione
                 println("We should not be here!")
               }
@@ -2086,7 +2089,7 @@ object PointsSequence {
                 pointsList = pointsList :+ secondPointsList
               }
             case `left` =>
-              if(crossroadStep.direction.beginToEnd) {
+              if(currStep.direction.beginToEnd) {
                 // controlla la x per decidere se il numero di corsie è diverso
                 val offset = endPoint.y - beginPoint.y
                 if(beginPoint.x == endPoint.x) {
@@ -2108,7 +2111,7 @@ object PointsSequence {
                 println("We should not be here!")
               }
             case `right` =>
-              if(crossroadStep.direction.beginToEnd) {
+              if(currStep.direction.beginToEnd) {
                 // non è possibile avere questa combinazione
                 println("We should not be here!")
               }
@@ -2120,9 +2123,9 @@ object PointsSequence {
         }
         else {
           // possiamo essere sia veicolo sia pedone
-          crossroadStep.direction.position match {
+          currStep.direction.position match {
             case `up` =>
-              if(crossroadStep.direction.beginToEnd) {
+              if(currStep.direction.beginToEnd) {
                 // non è possibile avere questa combinazione
                 println("We should not be here!")
               }
@@ -2138,7 +2141,7 @@ object PointsSequence {
                 pointsList = pointsList :+ secondPointsList
               }
             case `down` =>
-              if(crossroadStep.direction.beginToEnd) {
+              if(currStep.direction.beginToEnd) {
                 // prima parte
                 val offsetX = endPoint.x - beginPoint.x
                 val offsetY = beginPoint.y - endPoint.y
@@ -2154,7 +2157,7 @@ object PointsSequence {
                 println("We should not be here!")
               }
             case `left` =>
-              if(crossroadStep.direction.beginToEnd) {
+              if(currStep.direction.beginToEnd) {
                 // non è possibile avere questa combinazione
                 println("We should not be here!")
               }
@@ -2176,7 +2179,7 @@ object PointsSequence {
                 }
               }
             case `right` =>
-              if(crossroadStep.direction.beginToEnd) {
+              if(currStep.direction.beginToEnd) {
                 // non è possibile avere questa combinazione
                 println("We should not be here!")
               }
@@ -2189,9 +2192,9 @@ object PointsSequence {
       case `right` =>
         if(previousDirection.beginToEnd) {
           // possiamo essere sia veicolo sia pedone
-          crossroadStep.direction.position match {
+          currStep.direction.position match {
             case `up` =>
-              if(crossroadStep.direction.beginToEnd) {
+              if(currStep.direction.beginToEnd) {
                 // non è possibile avere questa combinazione
                 println("We should not be here!")
               }
@@ -2207,7 +2210,7 @@ object PointsSequence {
                 pointsList = pointsList :+ secondPointsList
               }
             case `down` =>
-              if(crossroadStep.direction.beginToEnd) {
+              if(currStep.direction.beginToEnd) {
                 // prima parte
                 val offsetX = endPoint.x - beginPoint.x
                 val offsetY = endPoint.y - beginPoint.y - entityLength
@@ -2223,7 +2226,7 @@ object PointsSequence {
                 println("We should not be here!")
               }
             case `left` =>
-              if(crossroadStep.direction.beginToEnd) {
+              if(currStep.direction.beginToEnd) {
                 // non è possibile avere questa combinazione
                 println("We should not be here!")
               }
@@ -2232,7 +2235,7 @@ object PointsSequence {
                 println("We should not be here!")
               }
             case `right` =>
-              if(crossroadStep.direction.beginToEnd) {
+              if(currStep.direction.beginToEnd) {
                 // controlla la x per decidere se il numero di corsie è diverso
                 val offset = endPoint.y - beginPoint.y
                 if(beginPoint.x == endPoint.x) {
@@ -2257,9 +2260,9 @@ object PointsSequence {
         }
         else {
           // siamo sicuramente un pedone
-          crossroadStep.direction.position match {
+          currStep.direction.position match {
             case `up` =>
-              if(crossroadStep.direction.beginToEnd) {
+              if(currStep.direction.beginToEnd) {
                 // prima parte
                 val offsetX = endPoint.x - beginPoint.x
                 val offsetY = beginPoint.y - endPoint.y
@@ -2275,7 +2278,7 @@ object PointsSequence {
                 println("We should not be here!")
               }
             case `down` =>
-              if(crossroadStep.direction.beginToEnd) {
+              if(currStep.direction.beginToEnd) {
                 // non è possibile avere questa combinazione
                 println("We should not be here!")
               }
@@ -2291,7 +2294,7 @@ object PointsSequence {
                 pointsList = pointsList :+ secondPointsList
               }
             case `left` =>
-              if(crossroadStep.direction.beginToEnd) {
+              if(currStep.direction.beginToEnd) {
                 // non è possibile avere questa combinazione
                 println("We should not be here!")
               }
@@ -2300,7 +2303,7 @@ object PointsSequence {
                 println("We should not be here!")
               }
             case `right` =>
-              if(crossroadStep.direction.beginToEnd) {
+              if(currStep.direction.beginToEnd) {
                 // non è possibile avere questa combinazione
                 println("We should not be here!")
               }
