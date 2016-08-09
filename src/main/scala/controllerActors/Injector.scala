@@ -21,12 +21,19 @@ import map.Domain._
 import map.JSONReader
 import map.Routes
 import map.Routes._
+import time.TimeMessages._
 
 /**
  * @author Matteo Pozza
  * La classe modella l'attore che crea entità mobili, generando un percorso appropriato e iniettandolo dentro all'entità.
  */
 class Injector extends Actor {
+  
+  val immediateTime = (TimeValue(16, 30), TimeValue(0, 30), TimeValue(8, 30))
+  val deferredTime = (TimeValue(2, 30), TimeValue(10, 30), TimeValue(18, 30))
+  val pedestrianBusPlaces = ("Z000008400004680", "Z000048000000480", "Z000038400004320")
+  val carPlaces = ("Z000040800001680", "Z000014400004800", "Z000012000001440")
+  var i = 0
   
   // SHARDING
   // Permette di comunicare con altri ImmovableActor utilizzando il loro identificativo invece che il loro indirizzo
@@ -103,18 +110,23 @@ class Injector extends Actor {
             
             case CreatePedestrian(id) =>
               println("ATTENZIONE! PERCORSO PEDONE NON RANDOM")
-              val pedestrianRoute = Routes.createPedestrianRoute()._1
+              var pedestrianRoute : pedestrian_route = null
+              if(i == 0) {
+                pedestrianRoute = Routes.createPedestrianRoute(pedestrianBusPlaces, immediateTime)._1
+                i = i + 1
+              }
+              else {
+                pedestrianRoute = Routes.createPedestrianRoute(carPlaces, deferredTime)._1
+              }
               val firstId = Routes.getStepId(pedestrianRoute.houseToWorkRoute(0))
               sendToImmovable(self, firstId, CreateMobileEntity(id, pedestrianRoute))
               publisherGuiHanlder ! CreateMobileEntity(id, pedestrianRoute)
-              println("Orario uscita di casa pedone: " + pedestrianRoute.houseEndTime)
             case CreateCar(id) =>
               println("ATTENZIONE! PERCORSO AUTOMOBILE NON RANDOM")
-              val carRoute = Routes.createCarRoute()
+              val carRoute = Routes.createCarRoute(carPlaces, immediateTime)
               val firstId = Routes.getStepId(carRoute.houseToWorkRoute(0))
               sendToImmovable(self, firstId, CreateMobileEntity(id, carRoute))
               publisherGuiHanlder ! CreateMobileEntity(id, carRoute)
-              println("Orario uscita di casa macchina: " + carRoute.houseEndTime)
             case CreateBus(id, route) =>
               val busRoute = Routes.createBusRoute(route)
               val firstId = Routes.getStepId(busRoute.route(0))

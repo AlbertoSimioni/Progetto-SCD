@@ -57,6 +57,11 @@ object MovableActor {
   // Utilizzato per gestire gli avanzamenti negli spostamenti
   case object VelocityTick
   
+  // SHUTDOWN
+  // La gestione della poison pill è ambigua, utilizzo un messaggio dedicato:
+  // http://getakka.net/docs/persistence/persistent-actors
+  case object Shutdown
+  
 }
 
 class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery {
@@ -166,6 +171,7 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
                 state.handleRoute(route)
                 // persist body end
               case ResumeExecution =>
+                println("Sono " + id + " e sto riprendendo l'esecuzione da " + state.getCurrentStepId)
                 // comincia (o riprendi) l'esecuzione
                 sendToImmovable(id, self, state.getCurrentStepId, IpRequest)
               case MovableActorResponse(id, ref) =>
@@ -518,6 +524,10 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
       // persist body begin
       state.currentTime = timeValue
       // persist body end
+      
+    // SHUTDOWN
+    case Shutdown =>
+      context.stop(self)
       
     // VELOCITY
     case VelocityTick =>
@@ -1086,12 +1096,12 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
   def shutdown() : Unit = {
     // disiscriviti dai messaggi temporali generali
     mediator ! Unsubscribe(timeMessage, self)
-    // smatti di mandarti messaggi per la regolazione della velocità
+    // smetti di mandarti messaggi per la regolazione della velocità
     velocityTimer.cancel()
     // smetti di mandarti messaggi per l'esecuzione di snapshot
     snapshotTimer.cancel()
     // ammazzati
-    self ! PoisonPill
+    self ! Shutdown
   }
   
   // UTILITY

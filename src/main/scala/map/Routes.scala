@@ -75,17 +75,14 @@ object Routes {
   def createPedestrianRoute() : (pedestrian_route, Boolean) = {
     // oltre al percorso, restituisce un flag
     // se il flag è a true, allora il percorso include l'utilizzo di un mezzo pubblico in uno dei tre pezzi
-    //
-    // ATTENZIONE! FISSIAMO UN PERCORSO IN FASE DI TESTING
     // crea i tempi
-    // val times = createTimes()
-    val times = (TimeValue(16, 30), TimeValue(0, 30), TimeValue(8, 30))
+    val times = createTimes()
     // crea le destinazioni
-    // val places = createPlaces()
-    val houseplaceId = "Z000058800002520" //"Z000040800001680"
-    val workplaceId = "Z000048000000480" //"Z000014400004800"
-    val funplaceId = "Z000056400004800" //"Z000012000001440"
-    val places = (houseplaceId, workplaceId, funplaceId)
+    val places = createPlaces()
+    return createPedestrianRoute(places, times)
+  }
+  
+  def createPedestrianRoute(places : (String, String, String), times : (TimeValue, TimeValue, TimeValue)) : (pedestrian_route, Boolean) = {
     // ottieni i tre pezzi di percorso
     val firstRoute = pedestrianBreadthFirstSearch(map, places._1, places._2)
     val secondRoute = pedestrianBreadthFirstSearch(map, places._2, places._3)
@@ -108,16 +105,14 @@ object Routes {
    * Sceglie le tre destinazioni (home, work e fun) casualmente e genera i percorsi per raggiungerli
    */
   def createCarRoute() : car_route = {
-    // ATTENZIONE! FISSIAMO UN PERCORSO IN FASE DI TESTING
     // crea i tempi
-    // val times = createTimes()
-    val times = (TimeValue(4, 18), TimeValue(12, 18), TimeValue(20, 18))
+    val times = createTimes()
     // crea le destinazioni
-    // val places = createPlaces()
-    val houseplaceId = "Z000040800001680"
-    val workplaceId = "Z000014400004800"
-    val funplaceId = "Z000012000001440"
-    val places = (houseplaceId, workplaceId, funplaceId)
+    val places = createPlaces()
+    return createCarRoute(places, times)
+  }
+  
+  def createCarRoute(places : (String, String, String), times : (TimeValue, TimeValue, TimeValue)) : car_route = {
     // ottieni i tre pezzi di percorso
     val firstRoute = carBreadthFirstSearch(map, places._1, places._2)
     val secondRoute = carBreadthFirstSearch(map, places._2, places._3)

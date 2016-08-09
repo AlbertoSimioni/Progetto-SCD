@@ -791,7 +791,7 @@ object BreadthFirst {
       directions = directions :+ arriving_direction
     }
     else {
-      for(vertex <- crossroad.vertexes) {
+      for(vertex <- crossroad.vertexes.filter { current => current.id != arriving_vertex.id || (current.point.x != arriving_vertex.point.x || current.point.y != arriving_vertex.point.y) }) {
         if(vertex.id != "nil") {
           // verso dx (beginToEnd), dal basso =>
           //   se il vertice ha la stessa y, stessa direzione

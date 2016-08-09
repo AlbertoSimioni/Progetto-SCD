@@ -11,6 +11,7 @@ class RouteTest extends UnitSpec {
   
   "A pedestrian path" should "include bus transport when possible" in {
     var busUsed = false
+    var index = 0
     var flag = false
     var path : pedestrian_route = null
     while(busUsed == false) {
@@ -27,6 +28,7 @@ class RouteTest extends UnitSpec {
             path.houseToWorkRoute(i+1) match {
               case bus_stop_step(_, _, false) =>
                 busUsed = true
+                index = i
               case _ =>
                 
             }
@@ -35,7 +37,7 @@ class RouteTest extends UnitSpec {
         }
       }
       if(busUsed) {
-        println("Bus usato nella tratta da casa a lavoro")
+        println("Bus usato nella tratta da casa a lavoro: step " + index + " e " + (index+1))
       }
       else {
         for(i <- 0 until path.workToFunRoute.length-1) {
@@ -44,6 +46,7 @@ class RouteTest extends UnitSpec {
               path.workToFunRoute(i+1) match {
                 case bus_stop_step(_, _, false) =>
                   busUsed = true
+                  index = i
                 case _ =>
                   
               }
@@ -52,7 +55,7 @@ class RouteTest extends UnitSpec {
           }
         }
         if(busUsed) {
-          println("Bus usato nella tratta da lavoro a svago")
+          println("Bus usato nella tratta da lavoro a svago: step " + index + " e " + (index+1))
         }
         else {
           for(i <- 0 until path.funToHomeRoute.length-1) {
@@ -61,6 +64,7 @@ class RouteTest extends UnitSpec {
                 path.funToHomeRoute(i+1) match {
                   case bus_stop_step(_, _, false) =>
                     busUsed = true
+                    index = i
                   case _ =>
                     
                 }
@@ -69,7 +73,7 @@ class RouteTest extends UnitSpec {
             }
           }
           if(busUsed) {
-            println("Bus usato nella tratta da svago a casa")
+            println("Bus usato nella tratta da svago a casa: step " + index + " e " + (index+1))
           }
         }
       }
@@ -94,7 +98,7 @@ class RouteTest extends UnitSpec {
     println("Funplace: " + funplace)
   }
   
-  "A pedestrian path" should "include tram transport when possible" in {
+  /*"A pedestrian path" should "include tram transport when possible" in {
     var tramUsed = false
     var flag = false
     var path : pedestrian_route = null
@@ -177,6 +181,6 @@ class RouteTest extends UnitSpec {
     println("Houseplace: " + houseplace)
     println("Workplace: " + workplace)
     println("Funplace: " + funplace)
-  }
+  }*/
   
 }

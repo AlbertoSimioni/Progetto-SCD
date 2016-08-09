@@ -509,6 +509,7 @@ class ImmovableActor extends PersistentActor with AtLeastOnceDelivery with Actor
       val toBeWakenUp = state.actorsToBeWakenUp(timeValue)
       if(toBeWakenUp.isEmpty == false) {
         for(id <- toBeWakenUp) {
+          println(state.id + ": sto svegliando l'entità " + id + " perchè sono le " + timeValue)
           persist(MobileEntityWakingUp(id)) { evt => }
           // persist body begin
           state.removeSleepingActor(id)
