@@ -33,7 +33,10 @@ class Injector extends Actor {
   val deferredTime = (TimeValue(2, 30), TimeValue(10, 30), TimeValue(18, 30))
   val pedestrianBusPlaces = ("Z000008400004680", "Z000048000000480", "Z000038400004320")
   val carPlaces = ("Z000040800001680", "Z000014400004800", "Z000012000001440")
+  val carPlaces2 = ("Z000032400001440", "Z000014400004800", "Z000012000001440")
+  val carPlaces3 = ("Z000031200002040", "Z000014400004800", "Z000012000001440")
   var i = 0
+  var j = 0
   
   // SHARDING
   // Permette di comunicare con altri ImmovableActor utilizzando il loro identificativo invece che il loro indirizzo
@@ -123,7 +126,18 @@ class Injector extends Actor {
               publisherGuiHanlder ! CreateMobileEntity(id, pedestrianRoute)
             case CreateCar(id) =>
               println("ATTENZIONE! PERCORSO AUTOMOBILE NON RANDOM")
-              val carRoute = Routes.createCarRoute(carPlaces, immediateTime)
+              var carRoute : car_route = null
+              if(j < 2) {
+                carRoute = Routes.createCarRoute(carPlaces, immediateTime)
+                j = j + 1
+              }
+              else if(j < 4) {
+                carRoute = Routes.createCarRoute(carPlaces2, immediateTime)
+                j = j + 1
+              }
+              else {
+                carRoute = Routes.createCarRoute(carPlaces3, immediateTime)
+              }
               val firstId = Routes.getStepId(carRoute.houseToWorkRoute(0))
               sendToImmovable(self, firstId, CreateMobileEntity(id, carRoute))
               publisherGuiHanlder ! CreateMobileEntity(id, carRoute)

@@ -230,7 +230,7 @@ object Messages {
           case PredecessorArrived =>
             log = log + "PredecessorArrived"
           case Advanced(lastPosition) =>
-            log = log + "Advanced"
+            log = log + "Advanced(" + lastPosition + ")"
           case PredecessorGone =>
             log = log + "PredecessorGone"
           case SuccessorGone =>

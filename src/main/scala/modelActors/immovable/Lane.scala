@@ -135,11 +135,20 @@ object Lane {
         if(myRef.pendingLaneRequests.size > 0) {
           var satisfied = List[String]()
           for(entry <- myRef.pendingLaneRequests) {
-            if(checkEnoughSpace(myRef, entry._2._2, entry._2._3)) {
+            if(checkEnoughSpace(myRef, entry._1, entry._2._2, entry._2._3)) {
               // soddisfa immediatamente la richiesta
               val neighbours = getNeighbours(myRef, entry._2._2, entry._2._3)
               val predecessorRef = myRef.handledMobileEntitiesMap.get(neighbours._1).getOrElse(null)
               val successorRef = myRef.handledMobileEntitiesMap.get(neighbours._2).getOrElse(null)
+              // possiamo aggiungere la sua posizione iniziale a quelle di positionMap
+              if(myRef.state.handledMobileEntities.contains(senderId)) {
+                if(myRef.positionsMap.contains(entry._1)) {
+                  myRef.positionsMap = myRef.positionsMap.updated(entry._1, entry._2._2)
+                }
+                else {
+                  myRef.positionsMap = myRef.positionsMap + (entry._1 -> entry._2._2)
+                }
+              }
               myRef.sendToMovable(myId, entry._2._1, envelope(myId, entry._1, LaneAccessGranted(neighbours._1, predecessorRef, neighbours._2, successorRef)))
               satisfied = satisfied :+ entry._1
             }
@@ -165,11 +174,20 @@ object Lane {
         // infatti, la risposta del check si basa sulle informazioni presenti nella tabella positionsMap
         // potrebbe accadere che, al ripristino, le posizioni di tutti i veicoli debbano ancora essere ricevute dalla lane
         // e sulla base di queste parziali informazioni conceda l'accesso ad un veicolo, facendolo collidere con un altro
-        if(checkEnoughSpace(myRef, startPosition, direction)) {
+        if(checkEnoughSpace(myRef, senderId, startPosition, direction)) {
           // soddisfa immediatamente la richiesta
           val neighbours = getNeighbours(myRef, startPosition, direction)
           val predecessorRef = myRef.handledMobileEntitiesMap.get(neighbours._1).getOrElse(null)
           val successorRef = myRef.handledMobileEntitiesMap.get(neighbours._2).getOrElse(null)
+          // possiamo aggiungere la sua posizione iniziale a quelle di positionMap
+          if(myRef.state.handledMobileEntities.contains(senderId)) {
+            if(myRef.positionsMap.contains(senderId)) {
+              myRef.positionsMap = myRef.positionsMap.updated(senderId, startPosition)
+            }
+            else {
+              myRef.positionsMap = myRef.positionsMap + (senderId -> startPosition)
+            }
+          }
           myRef.sendToMovable(myId, senderRef, envelope(myId, senderId, LaneAccessGranted(neighbours._1, predecessorRef, neighbours._2, successorRef)))
         }
         else {
@@ -182,7 +200,7 @@ object Lane {
   
   // UTILITY
   // controlla se c'è spazio a sufficienza per il nuovo veicolo
-  def checkEnoughSpace(myRef : ImmovableActor, startPosition : point, direction : direction) : Boolean = {
+  def checkEnoughSpace(myRef : ImmovableActor, requesterId : String, startPosition : point, direction : direction) : Boolean = {
     val neighbours = getNeighbours(myRef, startPosition, direction)
     if(neighbours._1 == null && neighbours._2 == null) {
       // nè predecessore nè successore
@@ -194,7 +212,7 @@ object Lane {
       direction.position match {
         case `up` =>
           // coordinata x, decrescente
-          if(startPosition.x + getLengthFromId(myRef.state.id) < predecessorPoint.x - padding) {
+          if(startPosition.x + getLengthFromId(requesterId) < predecessorPoint.x - padding) {
             return true
           }
           else {
@@ -210,7 +228,7 @@ object Lane {
           }
         case `left` =>
           // coordinata y, decrescente
-          if(startPosition.y + getLengthFromId(myRef.state.id) < predecessorPoint.y - padding) {
+          if(startPosition.y + getLengthFromId(requesterId) < predecessorPoint.y - padding) {
             return true
           }
           else {
@@ -240,7 +258,7 @@ object Lane {
           }
         case `down` =>
           // coordinata x, crescente
-          if(startPosition.x + getLengthFromId(myRef.state.id) < successorPoint.x) {
+          if(startPosition.x + getLengthFromId(requesterId) < successorPoint.x) {
             return true
           }
           else {
@@ -256,7 +274,7 @@ object Lane {
           }
         case `right` =>
           // coordinata y, crescente
-          if(startPosition.y + getLengthFromId(myRef.state.id) < successorPoint.y) {
+          if(startPosition.y + getLengthFromId(requesterId) < successorPoint.y) {
             return true
           }
           else {
@@ -271,7 +289,7 @@ object Lane {
       direction.position match {
         case `up` =>
           // coordinata x, decrescente
-          if(startPosition.x + getLengthFromId(myRef.state.id) < predecessorPoint.x - padding && startPosition.x > successorPoint.x + getLengthFromId(neighbours._2)) {
+          if(startPosition.x + getLengthFromId(requesterId) < predecessorPoint.x - padding && startPosition.x > successorPoint.x + getLengthFromId(neighbours._2)) {
             return true
           }
           else {
@@ -279,7 +297,7 @@ object Lane {
           }
         case `down` =>
           // coordinata x, crescente
-          if(startPosition.x > predecessorPoint.x + getLengthFromId(neighbours._1) + padding && startPosition.x + getLengthFromId(myRef.state.id) < successorPoint.x) {
+          if(startPosition.x > predecessorPoint.x + getLengthFromId(neighbours._1) + padding && startPosition.x + getLengthFromId(requesterId) < successorPoint.x) {
             return true
           }
           else {
@@ -287,7 +305,7 @@ object Lane {
           }
         case `left` =>
           // coordinata y, decrescente
-          if(startPosition.y + getLengthFromId(myRef.state.id) < predecessorPoint.y - padding && startPosition.y > successorPoint.y + getLengthFromId(neighbours._2)) {
+          if(startPosition.y + getLengthFromId(requesterId) < predecessorPoint.y - padding && startPosition.y > successorPoint.y + getLengthFromId(neighbours._2)) {
             return true
           }
           else {
@@ -295,7 +313,7 @@ object Lane {
           }
         case `right` =>
           // coordinata y, crescente
-          if(startPosition.y > predecessorPoint.y + getLengthFromId(neighbours._1) + padding && startPosition.y + getLengthFromId(myRef.state.id) < successorPoint.y) {
+          if(startPosition.y > predecessorPoint.y + getLengthFromId(neighbours._1) + padding && startPosition.y + getLengthFromId(requesterId) < successorPoint.y) {
             return true
           }
           else {
@@ -332,7 +350,7 @@ object Lane {
         // trova il successor
         var successor : String = null
         for(entry <- myRef.positionsMap) {
-          if(entry._2.x < startPosition.x) {
+          if(entry._2.x <= startPosition.x) {
             // potrebbe essere il successore
             if(successor != null) {
               if(entry._2.x > myRef.positionsMap.get(successor).get.x) {
@@ -368,7 +386,7 @@ object Lane {
         // trova il successor
         var successor : String = null
         for(entry <- myRef.positionsMap) {
-          if(entry._2.x > startPosition.x) {
+          if(entry._2.x >= startPosition.x) {
             // potrebbe essere il successore
             if(successor != null) {
               if(entry._2.x < myRef.positionsMap.get(successor).get.x) {
@@ -404,7 +422,7 @@ object Lane {
         // trova il successor
         var successor : String = null
         for(entry <- myRef.positionsMap) {
-          if(entry._2.y < startPosition.y) {
+          if(entry._2.y <= startPosition.y) {
             // potrebbe essere il successore
             if(successor != null) {
               if(entry._2.y > myRef.positionsMap.get(successor).get.y) {
@@ -440,7 +458,7 @@ object Lane {
         // trova il successor
         var successor : String = null
         for(entry <- myRef.positionsMap) {
-          if(entry._2.y > startPosition.y) {
+          if(entry._2.y >= startPosition.y) {
             // potrebbe essere il successore
             if(successor != null) {
               if(entry._2.y < myRef.positionsMap.get(successor).get.y) {

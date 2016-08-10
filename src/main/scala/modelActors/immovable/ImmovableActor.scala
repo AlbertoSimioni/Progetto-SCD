@@ -238,12 +238,12 @@ class ImmovableActor extends PersistentActor with AtLeastOnceDelivery with Actor
             state.updateFilter(senderId, deliveryId)
             // persist body end
         	  // gestione vera e propria del messaggio
-            printMessage(senderId, destinationId, command)
+            //printMessage(senderId, destinationId, command)
         	  command match {
               case ReCreateMobileEntities =>
                 // messaggio mandato da se stessi per ricreare le entità mobili
                 for(current_id <- state.handledMobileEntities) {
-                  val reCreatedMobileEntity = context.actorOf(MovableActor.props(current_id))
+                  val reCreatedMobileEntity = context.actorOf(MovableActor.props(current_id).withDispatcher("custom-dispatcher"))
                   // fai partire ciascuna entità
                   sendToMovable(destinationId, reCreatedMobileEntity, ResumeExecution)
                   // aggiungi una entry alla tabella 
@@ -284,13 +284,15 @@ class ImmovableActor extends PersistentActor with AtLeastOnceDelivery with Actor
             state.updateFilter(senderId, deliveryId)
             // persist body end
         	  // handling vero e proprio del messaggio
-            printMessage(senderId, destinationId, command)
+            if(senderId == "CAR0000007" || senderId == "CAR0000008") {
+              printMessage(senderId, destinationId, command)
+            }
         	  command match {
               case IpRequest =>
                 sendToMovable(destinationId, senderRef, IpResponse(getIp()))
               case ReCreateMe(id) =>
                 // ri-creazione di un attore mobile
-                val reCreatedMobileEntity = context.actorOf(MovableActor.props(id))
+                val reCreatedMobileEntity = context.actorOf(MovableActor.props(id).withDispatcher("custom-dispatcher"))
                 // fai riprendere la sua esecuzione
                 sendToMovable(destinationId, reCreatedMobileEntity, ResumeExecution)
               case MobileEntityAdd(id) =>
@@ -318,6 +320,34 @@ class ImmovableActor extends PersistentActor with AtLeastOnceDelivery with Actor
                 handledMobileEntitiesMap = handledMobileEntitiesMap.filter(pair => pair._1 != id)
                 // fallo anche sulla tabella delle posizioni
                 positionsMap = positionsMap.filter(pair => pair._1 != id)
+                // dal momento che abbiamo rimosso potenzialemente delle posizioni nella nostra map, va effettuato un controllo sulle pending requests
+                // vedi se ci sono delle richieste pendenti da soddisfare
+                if(pendingLaneRequests.size > 0) {
+                  var satisfied = List[String]()
+                  for(entry <- pendingLaneRequests) {
+                    if(Lane.checkEnoughSpace(this, entry._1, entry._2._2, entry._2._3)) {
+                      // soddisfa immediatamente la richiesta
+                      val neighbours = Lane.getNeighbours(this, entry._2._2, entry._2._3)
+                      val predecessorRef = handledMobileEntitiesMap.get(neighbours._1).getOrElse(null)
+                      val successorRef = handledMobileEntitiesMap.get(neighbours._2).getOrElse(null)
+                      // possiamo aggiungere la sua posizione iniziale a quelle di positionMap
+                      if(state.handledMobileEntities.contains(senderId)) {
+                        if(positionsMap.contains(entry._1)) {
+                          positionsMap = positionsMap.updated(entry._1, entry._2._2)
+                        }
+                        else {
+                          positionsMap = positionsMap + (entry._1 -> entry._2._2)
+                        }
+                      }
+                      sendToMovable(state.id, entry._2._1, envelope(state.id, entry._1, LaneAccessGranted(neighbours._1, predecessorRef, neighbours._2, successorRef)))
+                      satisfied = satisfied :+ entry._1
+                    }
+                  }
+                  // rimuovi dalla lista delle richieste pendenti quelle soddisfatte
+                  for(requestingId <- satisfied) {
+                    pendingLaneRequests = pendingLaneRequests - requestingId
+                  }
+                }
               case PauseExecution(wakeupTime) =>
                 // l'attore mobile chiede di essere messo in stato dormiente
                 persist(MobileEntitySleeping(senderId, wakeupTime)) { evt => }
@@ -464,7 +494,7 @@ class ImmovableActor extends PersistentActor with AtLeastOnceDelivery with Actor
             state.handledMobileEntities = state.handledMobileEntities :+ id
           }
           // persist body end
-          val createdMobileEntity = context.actorOf(MovableActor.props(id))
+          val createdMobileEntity = context.actorOf(MovableActor.props(id).withDispatcher("custom-dispatcher"))
           // aggiungi o aggiorna
           if(handledMobileEntitiesMap.contains(id) == true) {
             handledMobileEntitiesMap = handledMobileEntitiesMap.updated(id, createdMobileEntity)
@@ -509,12 +539,11 @@ class ImmovableActor extends PersistentActor with AtLeastOnceDelivery with Actor
       val toBeWakenUp = state.actorsToBeWakenUp(timeValue)
       if(toBeWakenUp.isEmpty == false) {
         for(id <- toBeWakenUp) {
-          println(state.id + ": sto svegliando l'entità " + id + " perchè sono le " + timeValue)
           persist(MobileEntityWakingUp(id)) { evt => }
           // persist body begin
           state.removeSleepingActor(id)
           // persist body end
-          val wakenUpEntity = context.actorOf(MovableActor.props(id))
+          val wakenUpEntity = context.actorOf(MovableActor.props(id).withDispatcher("custom-dispatcher"))
           sendToMovable(state.id, wakenUpEntity, ResumeExecution)
         }
       }

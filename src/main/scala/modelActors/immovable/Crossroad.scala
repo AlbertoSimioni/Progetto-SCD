@@ -94,20 +94,6 @@ object Crossroad {
             myRef.vehicleFreeTemp = false
             myRef.sendToMovable(myId, toBeSatisfied._2, envelope(myId, toBeSatisfied._1, Vehicle_Out))
           }
-          else {
-           var text = myId + ": sto facendo aspettare " + senderId + " nonostante abbia appena fatto richiesta"
-           if(myRef.state.crossroadData.category == `semaphore` && myRef.greenLane != comingFrom) {
-             text = text + " perchè è rosso"
-           }
-           else {
-             text = text + "... ?"
-           }
-           println(text)
-          }
-        }
-        else {
-          var text = myId + ": sto facendo aspettare " + senderId + " nonostante abbia appena fatto richiesta a causa di vehicleFree"
-          println(text)
         }
       case VehicleBusy(comingFrom) =>
         // per sicurezza, metti a false anche la entry nella tabella temporanea
