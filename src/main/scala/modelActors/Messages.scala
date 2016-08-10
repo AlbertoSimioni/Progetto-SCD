@@ -188,6 +188,8 @@ object Messages {
         log = log + "IpRequest"
       case IpResponse(_) =>
         log = log + "IpResponse"
+      case ReCreateMe(id) =>
+          log = log + "ReCreateMe"
       case Route(_) =>
         log = log + "Route"
       case ReCreateMobileEntities =>
