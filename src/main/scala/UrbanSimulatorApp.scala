@@ -73,7 +73,7 @@ object UrbanSimulatorApp extends App with ReactiveApi with MainActors with React
   
   val shardRegionActor = ClusterSharding(system).start(
     typeName = ImmovableActor.typeOfEntries,
-    entryProps = Some(ImmovableActor.props()),
+    entryProps = Some(ImmovableActor.props().withDispatcher("custom-dispatcher")),
     idExtractor = ImmovableActor.idExtractor,
     shardResolver = ImmovableActor.shardResolver,
     allocationStrategy = ShardingPolicy)

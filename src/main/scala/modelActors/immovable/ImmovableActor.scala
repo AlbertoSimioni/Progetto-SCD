@@ -238,7 +238,7 @@ class ImmovableActor extends PersistentActor with AtLeastOnceDelivery with Actor
             state.updateFilter(senderId, deliveryId)
             // persist body end
         	  // gestione vera e propria del messaggio
-            //printMessage(senderId, destinationId, command)
+            printMessage(senderId, destinationId, command)
         	  command match {
               case ReCreateMobileEntities =>
                 // messaggio mandato da se stessi per ricreare le entità mobili
@@ -284,9 +284,7 @@ class ImmovableActor extends PersistentActor with AtLeastOnceDelivery with Actor
             state.updateFilter(senderId, deliveryId)
             // persist body end
         	  // handling vero e proprio del messaggio
-            if(senderId == "CAR0000007" || senderId == "CAR0000008") {
-              printMessage(senderId, destinationId, command)
-            }
+            printMessage(senderId, destinationId, command)
         	  command match {
               case IpRequest =>
                 sendToMovable(destinationId, senderRef, IpResponse(getIp()))
