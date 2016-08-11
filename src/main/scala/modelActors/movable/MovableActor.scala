@@ -1072,6 +1072,10 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
         state.previousVehicleId = null
         state.predecessorGoneSent = true
         
+      // PREVIOUS LANE
+      case PreviousLaneChanged(previousLaneId) =>
+        state.previousLaneId = previousLaneId
+        
       // AT LEAST ONCE
       case PersistDeliveryId(deliveryId) =>
         state.deliveryId = deliveryId
