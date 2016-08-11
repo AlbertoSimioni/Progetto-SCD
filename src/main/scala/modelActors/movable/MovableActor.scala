@@ -143,7 +143,9 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
             state.updateFilter(senderId, deliveryId)
             // persist body end
             // gestione vera e propria del messaggio
-            // printMessage(senderId, id, command)
+            if(senderId == "CAR0000007" || senderId == "CAR0000008") {
+              printMessage(senderId, id, command)
+            }
             command match {
               case IpResponse(ipAddress) =>
                 if(isLocal(ipAddress)) {
@@ -171,7 +173,6 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
                 state.handleRoute(route)
                 // persist body end
               case ResumeExecution =>
-                println("Sono " + id + " e sto riprendendo l'esecuzione da " + state.getCurrentStepId)
                 // comincia (o riprendi) l'esecuzione
                 sendToImmovable(id, self, state.getCurrentStepId, IpRequest)
               case MovableActorResponse(id, ref) =>
@@ -209,7 +210,9 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
             state.updateFilter(senderId, deliveryId)
             // persist body end
             // handling vero e proprio del messaggio
-            // printMessage(senderId, id, command)
+            if(senderId == "CAR0000007" || senderId == "CAR0000008") {
+              printMessage(senderId, id, command)
+            }
             command match {
               case ExecuteCurrentStep =>
                 val stepSequence = state.getStepSequence()

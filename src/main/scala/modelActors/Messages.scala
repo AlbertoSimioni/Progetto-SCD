@@ -182,7 +182,7 @@ object Messages {
   // stampa una stringa di logging del messaggio
   def printMessage(senderId : String, destinationId : String, message : Command) : Unit = {
     var log : String = senderId + " => " + destinationId + ": "
-    
+    var flag = false
     message match {
       case IpRequest =>
         log = log + "IpRequest"
@@ -233,6 +233,7 @@ object Messages {
             log = log + "PredecessorArrived"
           case Advanced(lastPosition) =>
             log = log + "Advanced(" + lastPosition + ")"
+            flag = true
           case PredecessorGone =>
             log = log + "PredecessorGone"
           case SuccessorGone =>
@@ -263,7 +264,9 @@ object Messages {
             log = log + "GetIn"
         }
     }
-    println(log)
+    if(flag == false) {
+      println(log)
+    }
   }
   
   // effettua l'imbustamento giusto rispetto alle entità coinvolte

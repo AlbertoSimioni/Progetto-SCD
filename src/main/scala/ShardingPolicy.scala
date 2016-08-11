@@ -129,14 +129,6 @@ object ShardingPolicy extends ShardAllocationStrategy with Serializable {
     // 3) segnala come "da riallocare" gli shard che non appartengono alle rispettive liste e che non sono già in spostamento
     
     //println("REBALANCE!")
-    // debug begin
-    for(entry <- currentShardAllocations) {
-      println(entry._1.path.name + " handles the following shards:")
-      for(shard <- entry._2) {
-        println(shard)
-      }
-    }
-    // debug end
     val rectangles = computeRectangles(currentShardAllocations.size, current_map_x, current_map_y)
     val map = associateRectanglesNodes(rectangles, currentShardAllocations)
     var toBeReallocated = Set[ShardId]()

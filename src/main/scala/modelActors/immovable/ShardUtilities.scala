@@ -20,7 +20,7 @@ object ShardUtilities {
     val numShards = 10 * numNodes
     // dobbiamo dividere la mappa in numShards parti il più possibili simili tra loro
     // da ricordare che non ci interessa assolutamente avere esatta precisione: ci va bene che uno shard sia più piccolo di un altro
-    // l'unica cosa da mantenere è che il punto più in alto a sinistra dello shard sia dentro la mappa
+    // l'unica cosa da mantenere è che il punto più in basso a sinistra dello shard sia dentro la mappa
     // val floatY = sqrt((map_y.toFloat / map_x.toFloat) * numShards).toFloat
     // val floatX = numShards.toFloat / floatY
     val floatX = map_x.toDouble / ceil(sqrt(numShards))
@@ -61,7 +61,7 @@ object ShardUtilities {
     var index = 0
     while(index < shardIDs.length) {
       val (_, curr_shard_x, curr_shard_y, _) = splitId(shardIDs(index))
-      if(abs(curr_shard_x - x) <= shard_x && abs(curr_shard_y - y) <= shard_y) {
+      if((x >= curr_shard_x && abs(curr_shard_x - x) <= shard_x) && (y >=curr_shard_y && abs(curr_shard_y - y) <= shard_y)) {
         return shardIDs(index)
       }
       index = index + 1
@@ -100,6 +100,7 @@ object ShardUtilities {
           val (_, neighbor_x, neighbor_y, _) = splitId(neighborId)
           result = getShardMembership(neighbor_x, neighbor_y, shard_x, shard_y)
         }
+      /*  
       case "zone" =>
         // trova la lane di appartenenza
         val road = JSONReader.getZoneRoad(current_map, id)
@@ -116,7 +117,7 @@ object ShardUtilities {
             }
             lane = lanes.head
         }
-        result = decideShard(lane)
+        result = decideShard(lane)*/
       case _ =>
         // restituisci lo shard di appartenenza in base alle coordinate ottenute
         result = getShardMembership(x, y, shard_x, shard_y)
