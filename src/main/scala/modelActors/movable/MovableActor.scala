@@ -143,9 +143,7 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
             state.updateFilter(senderId, deliveryId)
             // persist body end
             // gestione vera e propria del messaggio
-            if(id == "CAR0000007" || id == "CAR0000008") {
-              printMessage(senderId, id, command)
-            }
+            // printMessage(senderId, id, command)
             command match {
               case IpResponse(ipAddress) =>
                 if(isLocal(ipAddress)) {
@@ -211,9 +209,7 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
             state.updateFilter(senderId, deliveryId)
             // persist body end
             // handling vero e proprio del messaggio
-            if(id == "CAR0000007" || id == "CAR0000008") {
-              printMessage(senderId, id, command)
-            }
+            // printMessage(senderId, id, command)
             command match {
               case ExecuteCurrentStep =>
                 val stepSequence = state.getStepSequence()
