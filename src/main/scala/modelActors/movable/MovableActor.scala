@@ -106,9 +106,6 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
   // Riferimento al veicolo precedente
   var previousVehicle : ActorRef = null
   
-  //Id della lane precedente
-  var previousLaneId : String = null
-  
   // variabile che modella dove siamo arrivati nel percorso
   var pathPhase = 0
   
@@ -264,9 +261,12 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
                           previousVehicle = null
                         }
                         // se c'è una qualche previousLane, avvisala di modificare i campi lastVehicle (qualora fossimo stati l'unico veicolo)
-                        if(previousLaneId != null) {
-                          sendToImmovable(id, self, previousLaneId, envelope(id, previousLaneId, HandleLastVehicle))
-                          previousLaneId = null
+                        if(state.previousLaneId != null) {
+                          sendToImmovable(id, self, state.previousLaneId, envelope(id, state.previousLaneId, HandleLastVehicle))
+                          persist(PreviousLaneChanged(null)) { evt => }
+                          // persist body begin
+                          state.previousLaneId = null
+                          // persist body end
                         }
                         // a prescindere da primo approccio allo step o ripristino, l'unico dato di cui dispongo
                         // è l'eventuale id del next vehicle
@@ -659,6 +659,7 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
                   }
                   sendToImmovable(id, self, previousStepId, envelope(id, previousStepId, VehicleFree(previousLaneId)))
                 }
+                // se non stiamo andando in una zona
                 if(state.toZone() == false) {
                   if(previousVehicle != null) {
                     persist(PredecessorGoneNotSentYet) { evt => }
@@ -667,7 +668,10 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
                     // persist body end
                   }
                   // la lane corrente diventa la nostra previousLane
-                  previousLaneId = lane.id
+                  persist(PreviousLaneChanged(lane.id)) { evt => }
+                  // persist body begin
+                  state.previousLaneId = lane.id
+                  // persist body end
                 }
                 else {
                   // dobbiamo avvisare eventuali predecessore e successore che ce ne stiamo andando
@@ -691,7 +695,10 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
                   }
                   // notifichiamo la lane che gestisca la nostra uscita di scena
                   sendToImmovable(id, self, lane.id, envelope(id, lane.id, HandleLastVehicle))
-                  previousLaneId = null
+                  persist(PreviousLaneChanged(null)) { evt => }
+                  // persist body begin
+                  state.previousLaneId = null
+                  // persist body end
                   // dal momento che stiamo andando in una zone, azzeriamo il nostro stato
                   persist(PredecessorGoneSent) { evt => }
                   // persist body begin

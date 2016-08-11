@@ -359,6 +359,10 @@ class MovableState {
   // mappa dei pedoni trasportati, con rispettive destinazioni
   var travellers = Map[String, String]()
   
+  // VEICOLO
+  // id della previous lane
+  var previousLaneId : String = null
+  
   // AT-LEAST-ONCE
   // Stato della at-least-once dell'attore
   //var deliveryState : AtLeastOnceDeliverySnapshot = null

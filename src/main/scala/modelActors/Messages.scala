@@ -179,6 +179,8 @@ object Messages {
   case class TravellersGoneOff(travellers : List[String])
   case class TravellersGoneOn(travellers : List[(String, String)])
   
+  case class PreviousLaneChanged(laneId : String)
+  
   // stampa una stringa di logging del messaggio
   def printMessage(senderId : String, destinationId : String, message : Command) : Unit = {
     var log : String = senderId + " => " + destinationId + ": "
