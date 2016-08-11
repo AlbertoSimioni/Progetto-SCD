@@ -261,12 +261,23 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
                           previousVehicle = null
                         }
                         // se c'è una qualche previousLane, avvisala di modificare i campi lastVehicle (qualora fossimo stati l'unico veicolo)
+                        if(id == "CAR0000012") {
+                          println(id + ": ECCOMI QUA")
+                        }
                         if(state.previousLaneId != null) {
+                          if(id == "CAR0000012") {
+                            println(id + ": LA MIA PREVIOUS LANE È DIVERSA DA NULL E GLI MANDO HANDLELASTVEHICLE")
+                          }
                           sendToImmovable(id, self, state.previousLaneId, envelope(id, state.previousLaneId, HandleLastVehicle))
                           persist(PreviousLaneChanged(null)) { evt => }
                           // persist body begin
                           state.previousLaneId = null
                           // persist body end
+                        }
+                        else {
+                          if(id == "CAR0000012") {
+                            println(id + ": LA MIA PREVIOUS LANE È UGUALE A NULL")
+                          }
                         }
                         // a prescindere da primo approccio allo step o ripristino, l'unico dato di cui dispongo
                         // è l'eventuale id del next vehicle
