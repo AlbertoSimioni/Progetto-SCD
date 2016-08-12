@@ -61,7 +61,7 @@ object Car {
               myRef.sendToMovable(myId, myRef.self, predecessorRef, envelope(myId, predecessorId, PredecessorArrived))
             }
             if(successorId != null && successorRef != null) {
-              myRef.sendToMovable(myId, myRef.self, successorRef, envelope(myId, successorId, SuccessorArrived))
+              myRef.sendToMovable(myId, myRef.self, successorRef, envelope(myId, successorId, SuccessorArrived(myRef.state.getCurrentStepId)))
             }
             // qualora il predecessor fosse null, significa che siamo gli ultimi della lane
             if(predecessorId == null) {
@@ -79,7 +79,9 @@ object Car {
               myRef.state.beginOfTheStep = false
               // persist body end
             }
-            // dal momento che hai tutti i riferimenti, attiva l'interessamento agli eventi di avanzamento
+            // attiva l'interessamento agli eventi di avanzamento
+            // lo facciamo a prescindere, perchè vogliamo inviare quantomeno la nostra posizione iniziale alla lane e all'eventuale predecessore
+            // dunque un giro di velocity tick ci è necessario
             myRef.interestedInVelocityTick = true
         }
       case FromPedestrianCrossroad(message) =>
@@ -107,7 +109,7 @@ object Car {
         
       case FromCar(message) =>
         message match {
-          case SuccessorArrived =>
+          case SuccessorArrived(laneId) =>
             Vehicle.FromVehicle(myRef, myId, senderId, senderRef, message)
           case PredecessorArrived =>
             Vehicle.FromVehicle(myRef, myId, senderId, senderRef, message)
@@ -124,7 +126,7 @@ object Car {
         }
       case FromBus(message) =>
         message match {
-          case SuccessorArrived =>
+          case SuccessorArrived(laneId) =>
             Vehicle.FromVehicle(myRef, myId, senderId, senderRef, message)
           case PredecessorArrived =>
             Vehicle.FromVehicle(myRef, myId, senderId, senderRef, message)
@@ -141,7 +143,7 @@ object Car {
         }
       case FromTram(message) =>
         message match {
-          case SuccessorArrived =>
+          case SuccessorArrived(laneId) =>
             Vehicle.FromVehicle(myRef, myId, senderId, senderRef, message)
           case PredecessorArrived =>
             Vehicle.FromVehicle(myRef, myId, senderId, senderRef, message)

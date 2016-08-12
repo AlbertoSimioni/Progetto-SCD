@@ -90,7 +90,7 @@ object Messages {
   case class LaneAccessGranted(predecessorId : String, predecessorRef : ActorRef, successorId : String, successorRef : ActorRef)
   
   // inviato da un veicolo ad un altro veicolo per chiedere la ricezione della posizione
-  case object SuccessorArrived
+  case class SuccessorArrived(laneId : String)
   // inviato da un veicolo per notificare ad un altro che da ora in poi dovrà regolarsi sull'avanzamento
   case object PredecessorArrived
   // inviato da un veicolo ad un altro veicolo per fornire l'ultima posizione in push
@@ -229,13 +229,15 @@ object Messages {
             log = log + "LaneAccessRequest"
           case LaneAccessGranted(predecessorId, predecessorRef, successorId, successorRef) =>
             log = log + "LaneAccessGranted"
-          case SuccessorArrived =>
-            log = log + "SuccessorArrived"
+          case SuccessorArrived(laneId) =>
+            log = log + "SuccessorArrived(" + laneId + ")"
           case PredecessorArrived =>
             log = log + "PredecessorArrived"
           case Advanced(lastPosition) =>
             log = log + "Advanced(" + lastPosition + ")"
-            flag = true
+            if(destinationId.startsWith("L")) {
+              flag = true
+            }
           case PredecessorGone =>
             log = log + "PredecessorGone"
           case SuccessorGone =>

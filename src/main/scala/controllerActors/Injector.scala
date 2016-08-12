@@ -121,6 +121,7 @@ class Injector extends Actor {
               else {
                 pedestrianRoute = Routes.createPedestrianRoute(carPlaces, deferredTime)._1
               }
+              //val pedestrianRoute = Routes.createPedestrianRoute()._1
               val firstId = Routes.getStepId(pedestrianRoute.houseToWorkRoute(0))
               sendToImmovable(self, firstId, CreateMobileEntity(id, pedestrianRoute))
               publisherGuiHanlder ! CreateMobileEntity(id, pedestrianRoute)
@@ -138,6 +139,7 @@ class Injector extends Actor {
               else {
                 carRoute = Routes.createCarRoute(carPlaces3, immediateTime)
               }
+              //val carRoute = Routes.createCarRoute()
               val firstId = Routes.getStepId(carRoute.houseToWorkRoute(0))
               sendToImmovable(self, firstId, CreateMobileEntity(id, carRoute))
               publisherGuiHanlder ! CreateMobileEntity(id, carRoute)

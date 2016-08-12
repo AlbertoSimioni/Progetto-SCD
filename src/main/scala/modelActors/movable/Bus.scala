@@ -76,7 +76,7 @@ object Bus {
         
       case FromCar(message) =>
         message match {
-          case SuccessorArrived =>
+          case SuccessorArrived(laneId) =>
             Vehicle.FromVehicle(myRef, myId, senderId, senderRef, message)
           case PredecessorArrived =>
             Vehicle.FromVehicle(myRef, myId, senderId, senderRef, message)
@@ -93,7 +93,7 @@ object Bus {
         }
       case FromBus(message) =>
         message match {
-          case SuccessorArrived =>
+          case SuccessorArrived(laneId) =>
             Vehicle.FromVehicle(myRef, myId, senderId, senderRef, message)
           case PredecessorArrived =>
             Vehicle.FromVehicle(myRef, myId, senderId, senderRef, message)
@@ -110,7 +110,7 @@ object Bus {
         }
       case FromTram(message) =>
         message match {
-          case SuccessorArrived =>
+          case SuccessorArrived(laneId) =>
             Vehicle.FromVehicle(myRef, myId, senderId, senderRef, message)
           case PredecessorArrived =>
             Vehicle.FromVehicle(myRef, myId, senderId, senderRef, message)
