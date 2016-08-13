@@ -143,7 +143,7 @@ class ImmovableActor extends PersistentActor with AtLeastOnceDelivery with Actor
   
   // PERSISTENCE
   // Permette di effettuare il salvataggio dello snapshot ogni 10 secondi
-  val snapshotTimer = context.system.scheduler.schedule(0 millis, 10000 millis, self, SaveSnapshot)
+  // val snapshotTimer = context.system.scheduler.schedule(0 millis, 10000 millis, self, SaveSnapshot)
   
   // SHARDING
   // Permette di comunicare con altri TestActor utilizzando il loro identificativo invece che il loro indirizzo
@@ -420,13 +420,8 @@ class ImmovableActor extends PersistentActor with AtLeastOnceDelivery with Actor
                 state.kind = "Crossroad"
                 state.crossroadData = entry.get
                 // persist body end
-                state.crossroadData.category match {
-                  case `classic` | `semaphore` | `roundabout` =>
-                    crossroadConfiguration = getCrossroadConfiguration(state.crossroadData.id)
-                    greenLane = crossroadConfiguration.keys.head
-                  case _ =>
-                    
-                }
+                crossroadConfiguration = getCrossroadConfiguration(state.crossroadData.id)
+                greenLane = crossroadConfiguration.keys.head
               }
               else {
           	    println("Problems with received crossroad identifier")

@@ -80,7 +80,7 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
   
   // PERSISTENCE
   // Permette di effettuare il salvataggio dello snapshot ogni 10 secondi
-  val snapshotTimer = context.system.scheduler.schedule(0 millis, 10000 millis, self, SaveSnapshot)
+  // val snapshotTimer = context.system.scheduler.schedule(0 millis, 10000 millis, self, SaveSnapshot)
   
   // SHARDING
   // Permette di comunicare con altri ImmovableActor utilizzando il loro identificativo invece che il loro indirizzo
@@ -93,7 +93,7 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
   
   // TIME
   // Tick utilizzato solo negli avanzamenti
-  val velocityTimer = context.system.scheduler.schedule(0 millis, Duration(getVelocityTickInterval(id), "millis"), self, VelocityTick)
+  //val velocityTimer = context.system.scheduler.schedule(0 millis, Duration(getVelocityTickInterval(id), "millis"), self, VelocityTick)
   
   // VELOCITY
   // interruttore per l'interessamento ai tick di velocità o meno
@@ -224,6 +224,8 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
                     }
                     // attiva l'interessamento agli eventi di avanzamento
                     interestedInVelocityTick = true
+                    // sendToMovable(id, self, self, VelocityTick)
+                    self ! VelocityTick
                   case lane_step(lane, direction) =>
                     // sto approciando una lane
                     // potrei partire da una zona e non aver cominciato il percorso
@@ -318,6 +320,8 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
                       currentNonPersistentPointIndex = 0
                       if(getMyLength() == pedestrian_length) {
                         interestedInVelocityTick = true
+                        // sendToMovable(id, self, self, VelocityTick)
+                        self ! VelocityTick
                       }
                       else {
                         if(state.toCrossroad()) {
@@ -330,15 +334,10 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
                           sendToImmovable(id, self, target.id, envelope(id, target.id, Vehicle_In(previousId)))
                         }
                         else {
-                          if(crossroad.category == `nil` || crossroad.category == `angle`) {
-                            interestedInVelocityTick = true
-                          }
-                          else {
-                            // recupera l'id della lane precedente
-                            val previousId = state.getPreviousStepId
-                            // richiesta all'incrocio
-                            sendToImmovable(id, self, crossroad.id, envelope(id, crossroad.id, Vehicle_In(previousId)))
-                          }
+                          // recupera l'id della lane precedente
+                          val previousId = state.getPreviousStepId
+                          // richiesta all'incrocio
+                          sendToImmovable(id, self, crossroad.id, envelope(id, crossroad.id, Vehicle_In(previousId)))
                         }
                       }
                     }
@@ -355,6 +354,8 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
                       // siamo sicuramente un pedone che deve affrontare le strisce
                       // possiamo avanzare liberamente fino alla fine della prima sequenza di punti
                       interestedInVelocityTick = true
+                      // sendToMovable(id, self, self, VelocityTick)
+                      self ! VelocityTick
                     }
                     else {
                       // possiamo essere un pedone che ignora o un veicolo
@@ -362,6 +363,8 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
                       if(getMyLength() == pedestrian_length) {
                         // attiva semplicemente l'interesse per i velocity tick
                         interestedInVelocityTick = true
+                        // sendToMovable(id, self, self, VelocityTick)
+                        self ! VelocityTick
                       }
                       else {
                         // recupera l'id della lane precedente
@@ -380,6 +383,8 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
                     // test balordo per capire se siamo un pedone o no
                     if(getMyLength() == pedestrian_length) {
                       interestedInVelocityTick = true
+                      // sendToMovable(id, self, self, VelocityTick)
+                      self ! VelocityTick
                     }
                     else {
                       // recupera l'id della lane precedente
@@ -397,6 +402,8 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
                     // test balordo per capire se siamo un pedone o no
                     if(getMyLength() == pedestrian_length) {
                       interestedInVelocityTick = true
+                      // sendToMovable(id, self, self, VelocityTick)
+                      self ! VelocityTick
                     }
                     else {
                       // recupera l'id della lane precedente
@@ -491,45 +498,10 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
         //
     }
     
-    // PERSISTENCE
-    case SaveSnapshot =>
-      //state.deliveryState = getDeliverySnapshot
-      //saveSnapshot(state)
-    case SaveSnapshotSuccess(metadata) =>
-      println("Snapshot stored successfully")
-      val prevS = previousSequenceNr
-      val prevT = previousTimestamp
-      previousSequenceNr = metadata.sequenceNr
-      previousTimestamp = metadata.timestamp
-      if(prevS != -1 && prevT != -1) {
-        self ! DeleteSnapshot(prevS, prevT)
-      }
-    case SaveSnapshotFailure(metadata, reason) =>
-      println("Failed to store snapshot")
-    case DeleteSnapshot(sequenceNr, timestamp) =>
-      //deleteSnapshot(sequenceNr, timestamp)
-      
-    case PersistenceFailure(payload, sequenceNr, cause) =>
-      println("Failed to persist an event!")
-      
-    // TIME
-    case SubscribeAck =>
-      println("Successfully subscribed to time events")
-    case UnsubscribeAck =>
-      println("Successfully unsubscribed from time events")
-    case TimeCommand(timeValue) =>
-      persist(TimeEvent(timeValue)) { evt => }
-      // persist body begin
-      state.currentTime = timeValue
-      // persist body end
-      
-    // SHUTDOWN
-    case Shutdown =>
-      context.stop(self)
-      
     // VELOCITY
     case VelocityTick =>
       if(interestedInVelocityTick) {
+        val timestamp = java.lang.System.currentTimeMillis()
         state.currentRoute(state.index) match {
           case road_step(road, direction) =>
             // LANCIA EVENTO LEGATO AL PUNTO CORRENTE
@@ -573,23 +545,9 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
             // qualora sia stata raggiunta la vehicle length + 1, manda all'entità precedente un messaggio vehicle free
             // per approccio conservativo, utilizziamo la bus_length (nella tratta del tram gira un solo tram sempre)
             // attenzione: se partivamo da una zona, NON dobbiamo mandare la vehicle free
-            // attenzione: se siamo usciti da un incrocio nil o angle, NON dobbiamo mandare la vehicle free
-            // attenzione: se l'incrocio angle era parte di un incrocio doppio, la regola fa eccezione :)
-            var nilOrAngleCrossroad = false
-            if(state.fromCrossroad()) {
-              val crossroad = JSONReader.getCrossroad(current_map, state.getPreviousStepId).get
-              if(crossroad.category == `nil` || crossroad.category == `angle`) {
-                nilOrAngleCrossroad = true
-                // controlla se confinava con un'altro incrocio
-                val potentialCrossroad = JSONReader.getCrossroad(current_map, state.getStepIdAt(-2))
-                if(potentialCrossroad.isDefined) {
-                  // significa che il nostro incrocio angle onfina con un'altro incrocio, che deve essere classic
-                  // in questo caso abbiamo bisogno che venga mandata la vehiclefree
-                  nilOrAngleCrossroad = false
-                }
-              }
-            }
-            if(state.fromZone() == false && nilOrAngleCrossroad == false && state.currentPointIndex == bus_length + 1) {
+            // attenzione: se siamo usciti da un incrocio nil o angle, dobbiamo mandare la vehicle free come in tutti gli altri casi
+            // attenzione: se l'incrocio angle era parte di un incrocio doppio, anche
+            if(state.fromZone() == false && state.currentPointIndex == bus_length + 1) {
               var previousStepId = state.getPreviousStepId
               // recupera anche l'id della lane da cui provenivamo
               var previousLaneId : String = null
@@ -1081,7 +1039,60 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
           case zone_step(zone, direction) =>
             println("We should not be here!")
         }
+        // controllo sul prossimo messaggio
+        if(interestedInVelocityTick) {
+          val currentTime = java.lang.System.currentTimeMillis()
+          val nextVelocityTick = timestamp + getVelocityTickInterval(id)
+          if(nextVelocityTick <= currentTime){
+            // sendToMovable(id, self, self, VelocityTick)
+            self ! VelocityTick
+          }
+          else {
+            val delay = nextVelocityTick - currentTime
+            val cancellable = context.system.scheduler.scheduleOnce(Duration(delay, "millis")) {
+              //sendToMovable(id, self, self, VelocityTick)
+              self ! VelocityTick
+            }
+          }
+        }
       }
+    
+    // PERSISTENCE
+    case SaveSnapshot =>
+      //state.deliveryState = getDeliverySnapshot
+      //saveSnapshot(state)
+    case SaveSnapshotSuccess(metadata) =>
+      println("Snapshot stored successfully")
+      val prevS = previousSequenceNr
+      val prevT = previousTimestamp
+      previousSequenceNr = metadata.sequenceNr
+      previousTimestamp = metadata.timestamp
+      if(prevS != -1 && prevT != -1) {
+        self ! DeleteSnapshot(prevS, prevT)
+      }
+    case SaveSnapshotFailure(metadata, reason) =>
+      println("Failed to store snapshot")
+    case DeleteSnapshot(sequenceNr, timestamp) =>
+      //deleteSnapshot(sequenceNr, timestamp)
+      
+    case PersistenceFailure(payload, sequenceNr, cause) =>
+      println("Failed to persist an event!")
+      
+    // TIME
+    case SubscribeAck =>
+      println("Successfully subscribed to time events")
+    case UnsubscribeAck =>
+      println("Successfully unsubscribed from time events")
+    case TimeCommand(timeValue) =>
+      persist(TimeEvent(timeValue)) { evt => }
+      // persist body begin
+      state.currentTime = timeValue
+      // persist body end
+      
+    // SHUTDOWN
+    case Shutdown =>
+      context.stop(self)
+      
   }
   
   override def receiveRecover: Receive = {
@@ -1202,9 +1213,9 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
     // disiscriviti dai messaggi temporali generali
     mediator ! Unsubscribe(timeMessage, self)
     // smetti di mandarti messaggi per la regolazione della velocità
-    velocityTimer.cancel()
+    // velocityTimer.cancel()
     // smetti di mandarti messaggi per l'esecuzione di snapshot
-    snapshotTimer.cancel()
+    // snapshotTimer.cancel()
     // ammazzati
     self ! Shutdown
   }

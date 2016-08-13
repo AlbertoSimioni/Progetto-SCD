@@ -6,6 +6,7 @@ import modelActors.Messages._
 import map.PointsSequence._
 import MovableState._
 import common.CommonMessages._
+import MovableActor.VelocityTick
 
 /**
  * @author pocia
@@ -26,12 +27,16 @@ object Tram {
           case Vehicle_Out =>
             // possiamo procedere nell'avanzamento
             myRef.interestedInVelocityTick = true
+            // myRef.sendToMovable(myId, myRef.self, myRef.self, VelocityTick)
+            myRef.self ! VelocityTick
         }
       case FromCrossroad(message) =>
         message match {
           case Vehicle_Out =>
             // possiamo procedere nell'avanzamento
             myRef.interestedInVelocityTick = true
+            // myRef.sendToMovable(myId, myRef.self, myRef.self, VelocityTick)
+            myRef.self ! VelocityTick
         }
       case FromLane(message) =>
         message match {
@@ -43,6 +48,8 @@ object Tram {
           case Vehicle_Out =>
             // possiamo procedere nell'avanzamento
             myRef.interestedInVelocityTick = true
+            // myRef.sendToMovable(myId, myRef.self, myRef.self, VelocityTick)
+            myRef.self ! VelocityTick
         }
       case FromRoad(message) =>
         
@@ -51,6 +58,8 @@ object Tram {
           case Vehicle_Out =>
             // possiamo procedere nell'avanzamento
             myRef.interestedInVelocityTick = true
+            // myRef.sendToMovable(myId, myRef.self, myRef.self, VelocityTick)
+            myRef.self ! VelocityTick
           case GetIn(goingOn) =>
             // per prima cosa, rendi persistente l'arrivo dei passeggeri
             myRef.persist(TramEvent(TravellersGoneOn(goingOn))) { evt => }
@@ -63,6 +72,8 @@ object Tram {
             myRef.pathPhase = myRef.pathPhase + 1
             myRef.currentNonPersistentPointIndex = 0
             myRef.interestedInVelocityTick = true
+            // myRef.sendToMovable(myId, myRef.self, myRef.self, VelocityTick)
+            myRef.self ! VelocityTick
         }
       case FromZone(message) =>
         

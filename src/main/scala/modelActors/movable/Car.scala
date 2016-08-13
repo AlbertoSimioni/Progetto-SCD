@@ -7,6 +7,7 @@ import modelActors.Messages._
 import map.PointsSequence._
 import MovableState._
 import common.CommonMessages._
+import MovableActor.VelocityTick
 
 /**
  * @author pocia
@@ -24,12 +25,16 @@ object Car {
           case Vehicle_Out =>
             // possiamo procedere nell'avanzamento
             myRef.interestedInVelocityTick = true
+            // myRef.sendToMovable(myId, myRef.self, myRef.self, VelocityTick)
+            myRef.self ! VelocityTick
         }
       case FromCrossroad(message) =>
         message match {
           case Vehicle_Out =>
             // possiamo procedere nell'avanzamento
             myRef.interestedInVelocityTick = true
+            // myRef.sendToMovable(myId, myRef.self, myRef.self, VelocityTick)
+            myRef.self ! VelocityTick
         }
       case FromLane(message) =>
         message match {
@@ -83,12 +88,16 @@ object Car {
             // lo facciamo a prescindere, perchè vogliamo inviare quantomeno la nostra posizione iniziale alla lane e all'eventuale predecessore
             // dunque un giro di velocity tick ci è necessario
             myRef.interestedInVelocityTick = true
+            // myRef.sendToMovable(myId, myRef.self, myRef.self, VelocityTick)
+            myRef.self ! VelocityTick
         }
       case FromPedestrianCrossroad(message) =>
         message match {
           case Vehicle_Out =>
             // possiamo procedere nell'avanzamento
             myRef.interestedInVelocityTick = true
+            // myRef.sendToMovable(myId, myRef.self, myRef.self, VelocityTick)
+            myRef.self ! VelocityTick
         }
       case FromRoad(message) =>
         
@@ -97,6 +106,8 @@ object Car {
           case Vehicle_Out =>
             // possiamo procedere nell'avanzamento
             myRef.interestedInVelocityTick = true
+            // myRef.sendToMovable(myId, myRef.self, myRef.self, VelocityTick)
+            myRef.self ! VelocityTick
         }
       case FromZone(message) =>
         

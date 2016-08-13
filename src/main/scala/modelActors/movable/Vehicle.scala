@@ -7,6 +7,7 @@ import map.PointsSequence._
 import MovableState._
 import common.CommonMessages._
 import map.Domain._
+import MovableActor.VelocityTick
 
 /**
  * @author Matteo Pozza
@@ -71,6 +72,8 @@ object Vehicle {
           // se è la prima volta che ricevi questo messaggio, attiva l'interruttore di interessamento ai velocity tick
           if(myRef.interestedInVelocityTick == false) {
             myRef.interestedInVelocityTick = true
+            // myRef.sendToMovable(myId, myRef.self, myRef.self, VelocityTick)
+            myRef.self ! VelocityTick
           }
         }
       case PredecessorGone =>
@@ -95,6 +98,8 @@ object Vehicle {
           myRef.nextVehicleLastPosition = null
           if(myRef.interestedInVelocityTick == false) {
             myRef.interestedInVelocityTick = true
+            // myRef.sendToMovable(myId, myRef.self, myRef.self, VelocityTick)
+            myRef.self ! VelocityTick
           }
         }
       case SuccessorGone =>
@@ -199,6 +204,8 @@ object Vehicle {
         // lo facciamo a prescindere, perchè vogliamo inviare quantomeno la nostra posizione iniziale alla lane e all'eventuale predecessore
         // dunque un giro di velocity tick ci è necessario
         myRef.interestedInVelocityTick = true
+        // myRef.sendToMovable(myId, myRef.self, myRef.self, VelocityTick)
+        myRef.self ! VelocityTick
     }
   }
   

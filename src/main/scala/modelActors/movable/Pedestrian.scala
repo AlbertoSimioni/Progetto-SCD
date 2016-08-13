@@ -3,6 +3,7 @@ package modelActors.movable
 import akka.actor.ActorRef
 
 import modelActors.Messages._
+import MovableActor.VelocityTick
 
 /**
  * @author pocia
@@ -26,6 +27,8 @@ object Pedestrian {
           case Cross_Out =>
             // possiamo procedere nell'avanzamento
             myRef.interestedInVelocityTick = true
+            // myRef.sendToMovable(myId, myRef.self, myRef.self, VelocityTick)
+            myRef.self ! VelocityTick
         }
       case FromRoad(message) =>
         

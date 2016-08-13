@@ -200,7 +200,7 @@ object Domain {
    // UTILITY
    // Distanza euclidea tra due punti
    def getDistance(start : point, end : point) : Double = {
-     return Math.sqrt((start.x - end.x)^2 + (start.y - end.y)^2)
+     return Math.sqrt((start.x - end.x)*(start.x - end.x) + (start.y - end.y)*(start.y - end.y))
    }
    
    // UTILITY
@@ -209,7 +209,8 @@ object Domain {
    // - key = id lane entrante
    // - value = (flag se è del tram, up/down/left/right, lista delle lanes a cui dare precedenza)
    def getCrossroadConfiguration(crossroadId : String) : Map[String, (Boolean, position, List[String])] = {
-     // PRECONDIZIONE: ad invocare il metodo è un angolo classic, semaphore o roundabout
+     // se l'angolo è nil, ha due vertici con due corsie entranti e un terzo nil
+     // se l'angolo è angle, ha due vertici con due corsie entranti e un terzo nil
      // se l'angolo è classic, ha tre vertici, tutti e tre corrispondenti a strade
      // se l'angolo è semaphore o roundabout, ha quattro vertici, tutti corrispondenti a strade
      var finalMap = Map[String, (Boolean, position, List[String])]()
@@ -222,224 +223,333 @@ object Domain {
      val leftVertex = getMostXVertex(crossroad.vertexes, `left`)
      // right
      val rightVertex = getMostXVertex(crossroad.vertexes, `right`)
-     // capiamo per prima cosa se l'angolo è a 3 o a 4
-     if(crossroad.vertexes.length == 3) {
-       // siamo sicuramente in un incrocio classic
-       // capiamo qual'è il vertice null
-       if(upVertex == null) {
-         // sinistra e destra sono la strada principale, sotto è la strada che si immette
-         var priority = List[String]()
-         val leftLanes = getEnteringLanes(leftVertex, `left`)
-         for(lane <- leftLanes) {
-           priority = priority :+ lane._1
-           val tuple = (lane._2, `left`, List[String]())
-           finalMap = finalMap + (lane._1 -> tuple)
-         }
-         val rightLanes = getEnteringLanes(rightVertex, `right`)
-         for(lane <- rightLanes) {
-           priority = priority :+ lane._1
-           val tuple = (lane._2, `right`, List[String]())
-           finalMap = finalMap + (lane._1 -> tuple)
-         }
-         val downLanes = getEnteringLanes(downVertex, `down`)
-         for(lane <- downLanes) {
-           val tuple = (lane._2, `down`, priority)
-           finalMap = finalMap + (lane._1 -> tuple)
-         }
-       }
-       else if(downVertex == null){
-         // sinistra e destra sono la strada principale, sopra c'è la strada che si immette
-         var priority = List[String]()
-         val leftLanes = getEnteringLanes(leftVertex, `left`)
-         for(lane <- leftLanes) {
-           priority = priority :+ lane._1
-           val tuple = (lane._2, `left`, List[String]())
-           finalMap = finalMap + (lane._1 -> tuple)
-         }
-         val rightLanes = getEnteringLanes(rightVertex, `right`)
-         for(lane <- rightLanes) {
-           priority = priority :+ lane._1
-           val tuple = (lane._2, `right`, List[String]())
-           finalMap = finalMap + (lane._1 -> tuple)
-         }
-         val upLanes = getEnteringLanes(upVertex, `up`)
-         for(lane <- upLanes) {
-           val tuple = (lane._2, `up`, priority)
-           finalMap = finalMap + (lane._1 -> tuple)
-         }
-       }
-       else if(leftVertex == null) {
-         // sopra e sotto sono la strada principale, destra c'è la strada che si immette
-         var priority = List[String]()
-         val upLanes = getEnteringLanes(upVertex, `up`)
-         for(lane <- upLanes) {
-           priority = priority :+ lane._1
-           val tuple = (lane._2, `up`, List[String]())
-           finalMap = finalMap + (lane._1 -> tuple)
-         }
-         val downLanes = getEnteringLanes(downVertex, `down`)
-         for(lane <- downLanes) {
-           priority = priority :+ lane._1
-           val tuple = (lane._2, `down`, List[String]())
-           finalMap = finalMap + (lane._1 -> tuple)
-         }
-         val rightLanes = getEnteringLanes(rightVertex, `right`)
-         for(lane <- rightLanes) {
-           val tuple = (lane._2, `right`, priority)
-           finalMap = finalMap + (lane._1 -> tuple)
-         }
-       }
-       else {
-         // sopra e sotto sono la strada principale, sinistra c'è la strada che si immette
-         var priority = List[String]()
-         val upLanes = getEnteringLanes(upVertex, `up`)
-         for(lane <- upLanes) {
-           priority = priority :+ lane._1
-           val tuple = (lane._2, `up`, List[String]())
-           finalMap = finalMap + (lane._1 -> tuple)
-         }
-         val downLanes = getEnteringLanes(downVertex, `down`)
-         for(lane <- downLanes) {
-           priority = priority :+ lane._1
-           val tuple = (lane._2, `down`, List[String]())
-           finalMap = finalMap + (lane._1 -> tuple)
-         }
-         val leftLanes = getEnteringLanes(leftVertex, `left`)
-         for(lane <- leftLanes) {
-           val tuple = (lane._2, `left`, priority)
-           finalMap = finalMap + (lane._1 -> tuple)
-         }
-       }
-     }
-     else {
-       crossroad.category match {
-         case `semaphore` =>
-           // il semaforo si regola sulla base della catena di corsie scritta qui
-           val downLanes = getEnteringLanes(downVertex, `down`)
-           var previousLane = downLanes(downLanes.length - 1)._1
+     crossroad.category match {
+       case `nil` =>
+         // come gli incroci classic, uno dei quattro vertici deve essere null
+         if(upVertex == null) {
+           assert(downVertex.id == "nil")
            val leftLanes = getEnteringLanes(leftVertex, `left`)
            for(lane <- leftLanes) {
-             val tuple = (lane._2, `left`, List[String](previousLane))
+             val tuple = (lane._2, `left`, List[String]())
              finalMap = finalMap + (lane._1 -> tuple)
-             previousLane = lane._1
-           }
-           val upLanes = getEnteringLanes(upVertex, `up`)
-           for(lane <- upLanes) {
-             val tuple = (lane._2, `up`, List[String](previousLane))
-             finalMap = finalMap + (lane._1 -> tuple)
-             previousLane = lane._1
            }
            val rightLanes = getEnteringLanes(rightVertex, `right`)
            for(lane <- rightLanes) {
-             val tuple = (lane._2, `right`, List[String](previousLane))
+             val tuple = (lane._2, `right`, List[String]())
              finalMap = finalMap + (lane._1 -> tuple)
-             previousLane = lane._1
            }
-           for(lane <- downLanes) {
-             val tuple = (lane._2, `down`, List[String](previousLane))
-             finalMap = finalMap + (lane._1 -> tuple)
-             previousLane = lane._1
-           }
-           
-         case `roundabout` =>
-           // ciascuno ha la lane alla propria sinistra come precedenza
-           // dobbiamo capire se abbiamo una lane del tram oppure no (al massimo ve ne è una)
+         }
+         else if(downVertex == null) {
+           assert(upVertex.id == "nil")
            val leftLanes = getEnteringLanes(leftVertex, `left`)
+           for(lane <- leftLanes) {
+             val tuple = (lane._2, `left`, List[String]())
+             finalMap = finalMap + (lane._1 -> tuple)
+           }
            val rightLanes = getEnteringLanes(rightVertex, `right`)
+           for(lane <- rightLanes) {
+             val tuple = (lane._2, `right`, List[String]())
+             finalMap = finalMap + (lane._1 -> tuple)
+           }
+         }
+         else if(rightVertex == null) {
+           assert(leftVertex.id == "nil")
            val upLanes = getEnteringLanes(upVertex, `up`)
+           for(lane <- upLanes) {
+             val tuple = (lane._2, `up`, List[String]())
+             finalMap = finalMap + (lane._1 -> tuple)
+           }
            val downLanes = getEnteringLanes(downVertex, `down`)
-           if(leftLanes.length > 1) {
-             // due corsie a sinistra, quella del tram è la più bassa
-             var normal = 0
-             var tram = 1
-             if(leftLanes(0)._2 == true) {
-               // la prima è del tram, la seconda è normale
-               normal = 1
-               tram = 0
-             }
-             val leftTupleUp = (leftLanes(normal)._2, `left`, List[String](upLanes(0)._1))
-             finalMap = finalMap + (leftLanes(normal)._1 -> leftTupleUp)
-             val leftTupleLow = (leftLanes(tram)._2, `left`, List[String](leftLanes(normal)._1))
-             finalMap = finalMap + (leftLanes(tram)._1 -> leftTupleLow)
-             val upTuple = (upLanes(0)._2, `up`, List[String](rightLanes(0)._1))
-             finalMap = finalMap + (upLanes(0)._1 -> upTuple)
-             val rightTuple = (rightLanes(0)._2, `right`, List[String](downLanes(0)._1))
-             finalMap = finalMap + (rightLanes(0)._1 -> rightTuple)
-             val downTuple = (downLanes(0)._2, `down`, List[String](leftLanes(tram)._1))
-             finalMap = finalMap + (downLanes(0)._1 -> downTuple)
+           for(lane <- downLanes) {
+             val tuple = (lane._2, `down`, List[String]())
+             finalMap = finalMap + (lane._1 -> tuple)
            }
-           else if(rightLanes.length > 1) {
-             // due corsie a destra, quella del tram è la più alta
-             var normal = 0
-             var tram = 1
-             if(rightLanes(0)._2 == true) {
-               // la prima è del tram, la seconda è normale
-               normal = 1
-               tram = 0
-             }
-             val leftTuple = (leftLanes(0)._2, `left`, List[String](upLanes(0)._1))
-             finalMap = finalMap + (leftLanes(0)._1 -> leftTuple)
-             val upTuple = (upLanes(0)._2, `up`, List[String](rightLanes(tram)._1))
-             finalMap = finalMap + (upLanes(0)._1 -> upTuple)
-             val rightTupleUp = (rightLanes(tram)._2, `right`, List[String](rightLanes(normal)._1))
-             finalMap = finalMap + (rightLanes(tram)._1 -> rightTupleUp)
-             val rightTupleDown = (rightLanes(normal)._2, `right`, List[String](downLanes(0)._1))
-             finalMap = finalMap + (rightLanes(normal)._1 -> rightTupleDown)
-             val downTuple = (downLanes(0)._2, `down`, List[String](leftLanes(0)._1))
-             finalMap = finalMap + (downLanes(0)._1 -> downTuple)
+         }
+         else if(leftVertex == null) {
+           assert(rightVertex.id == "nil")
+           val upLanes = getEnteringLanes(upVertex, `up`)
+           for(lane <- upLanes) {
+             val tuple = (lane._2, `up`, List[String]())
+             finalMap = finalMap + (lane._1 -> tuple)
            }
-           else if(upLanes.length > 1) {
-             // due corsie in alto, quella del tram è la più a sx
-             var normal = 0
-             var tram = 1
-             if(upLanes(0)._2 == true) {
-               // la prima è del tram, la seconda è normale
-               normal = 1
-               tram = 0
-             }
-             val leftTuple = (leftLanes(0)._2, `left`, List[String](upLanes(tram)._1))
-             finalMap = finalMap + (leftLanes(0)._1 -> leftTuple)
-             val upTupleLeft = (upLanes(tram)._2, `up`, List[String](upLanes(normal)._1))
-             finalMap = finalMap + (upLanes(tram)._1 -> upTupleLeft)
-             val upTupleRight = (upLanes(normal)._2, `up`, List[String](rightLanes(0)._1))
-             finalMap = finalMap + (upLanes(normal)._1 -> upTupleRight)
-             val rightTuple = (rightLanes(0)._2, `right`, List[String](downLanes(0)._1))
-             finalMap = finalMap + (rightLanes(0)._1 -> rightTuple)
-             val downTuple = (downLanes(0)._2, `down`, List[String](leftLanes(0)._1))
-             finalMap = finalMap + (downLanes(0)._1 -> downTuple)
+           val downLanes = getEnteringLanes(downVertex, `down`)
+           for(lane <- downLanes) {
+             val tuple = (lane._2, `down`, List[String]())
+             finalMap = finalMap + (lane._1 -> tuple)
            }
-           else if(downLanes.length > 1) {
-             // due corsie in basso, quella del tram è la più a dx
-             var normal = 0
-             var tram = 1
-             if(downLanes(0)._2 == true) {
-               // la prima è del tram, la seconda è normale
-               normal = 1
-               tram = 0
-             }
-             val leftTuple = (leftLanes(0)._2, `left`, List[String](upLanes(0)._1))
-             finalMap = finalMap + (leftLanes(0)._1 -> leftTuple)
-             val upTuple = (upLanes(0)._2, `up`, List[String](rightLanes(0)._1))
-             finalMap = finalMap + (upLanes(0)._1 -> upTuple)
-             val rightTuple = (rightLanes(0)._2, `right`, List[String](downLanes(tram)._1))
-             finalMap = finalMap + (rightLanes(0)._1 -> rightTuple)
-             val downTupleRight = (downLanes(tram)._2, `down`, List[String](downLanes(normal)._1))
-             finalMap = finalMap + (downLanes(tram)._1 -> downTupleRight)
-             val downTupleLeft = (downLanes(normal)._2, `down`, List[String](leftLanes(0)._1))
-             finalMap = finalMap + (downLanes(normal)._1 -> downTupleLeft)
+         }
+         else {
+           println("We should not be here!")
+         }
+       case `angle` =>
+         // due most vertex consecutivi devono essere null
+         if(leftVertex == null && upVertex == null) {
+           // right e down
+           val rightLanes = getEnteringLanes(rightVertex, `right`)
+           for(lane <- rightLanes) {
+             val tuple = (lane._2, `right`, List[String]())
+             finalMap = finalMap + (lane._1 -> tuple)
            }
-           else {
-             // non ci sono corsie del tram, quindi ogni sequenza di lanes è in realtà una singola lane
-             val leftTuple = (leftLanes(0)._2, `left`, List[String](upLanes(0)._1))
-             finalMap = finalMap + (leftLanes(0)._1 -> leftTuple)
-             val upTuple = (upLanes(0)._2, `up`, List[String](rightLanes(0)._1))
-             finalMap = finalMap + (upLanes(0)._1 -> upTuple)
-             val rightTuple = (rightLanes(0)._2, `right`, List[String](downLanes(0)._1))
-             finalMap = finalMap + (rightLanes(0)._1 -> rightTuple)
-             val downTuple = (downLanes(0)._2, `down`, List[String](leftLanes(0)._1))
-             finalMap = finalMap + (downLanes(0)._1 -> downTuple)
+           val downLanes = getEnteringLanes(downVertex, `down`)
+           for(lane <- downLanes) {
+             val tuple = (lane._2, `down`, List[String]())
+             finalMap = finalMap + (lane._1 -> tuple)
            }
-       }
+         }
+         else if(upVertex == null && rightVertex == null) {
+           // down e left
+           val downLanes = getEnteringLanes(downVertex, `down`)
+           for(lane <- downLanes) {
+             val tuple = (lane._2, `down`, List[String]())
+             finalMap = finalMap + (lane._1 -> tuple)
+           }
+           val leftLanes = getEnteringLanes(leftVertex, `left`)
+           for(lane <- leftLanes) {
+             val tuple = (lane._2, `left`, List[String]())
+             finalMap = finalMap + (lane._1 -> tuple)
+           }
+         }
+         else if(rightVertex == null && downVertex == null) {
+           // left e up
+           val leftLanes = getEnteringLanes(leftVertex, `left`)
+           for(lane <- leftLanes) {
+             val tuple = (lane._2, `left`, List[String]())
+             finalMap = finalMap + (lane._1 -> tuple)
+           }
+           val upLanes = getEnteringLanes(upVertex, `up`)
+           for(lane <- upLanes) {
+             val tuple = (lane._2, `up`, List[String]())
+             finalMap = finalMap + (lane._1 -> tuple)
+           }
+         }
+         else if(downVertex == null && leftVertex == null) {
+           // up e right
+           val upLanes = getEnteringLanes(upVertex, `up`)
+           for(lane <- upLanes) {
+             val tuple = (lane._2, `up`, List[String]())
+             finalMap = finalMap + (lane._1 -> tuple)
+           }
+           val rightLanes = getEnteringLanes(rightVertex, `right`)
+           for(lane <- rightLanes) {
+             val tuple = (lane._2, `right`, List[String]())
+             finalMap = finalMap + (lane._1 -> tuple)
+           }
+         }
+         else {
+           println("We should not be here!")
+         }
+       case `classic` =>
+         // capiamo qual'è il vertice null
+         if(upVertex == null) {
+           // sinistra e destra sono la strada principale, sotto è la strada che si immette
+           var priority = List[String]()
+           val leftLanes = getEnteringLanes(leftVertex, `left`)
+           for(lane <- leftLanes) {
+             priority = priority :+ lane._1
+             val tuple = (lane._2, `left`, List[String]())
+             finalMap = finalMap + (lane._1 -> tuple)
+           }
+           val rightLanes = getEnteringLanes(rightVertex, `right`)
+           for(lane <- rightLanes) {
+             priority = priority :+ lane._1
+             val tuple = (lane._2, `right`, List[String]())
+             finalMap = finalMap + (lane._1 -> tuple)
+           }
+           val downLanes = getEnteringLanes(downVertex, `down`)
+           for(lane <- downLanes) {
+             val tuple = (lane._2, `down`, priority)
+             finalMap = finalMap + (lane._1 -> tuple)
+           }
+         }
+         else if(downVertex == null){
+           // sinistra e destra sono la strada principale, sopra c'è la strada che si immette
+           var priority = List[String]()
+           val leftLanes = getEnteringLanes(leftVertex, `left`)
+           for(lane <- leftLanes) {
+             priority = priority :+ lane._1
+             val tuple = (lane._2, `left`, List[String]())
+             finalMap = finalMap + (lane._1 -> tuple)
+           }
+           val rightLanes = getEnteringLanes(rightVertex, `right`)
+           for(lane <- rightLanes) {
+             priority = priority :+ lane._1
+             val tuple = (lane._2, `right`, List[String]())
+             finalMap = finalMap + (lane._1 -> tuple)
+           }
+           val upLanes = getEnteringLanes(upVertex, `up`)
+           for(lane <- upLanes) {
+             val tuple = (lane._2, `up`, priority)
+             finalMap = finalMap + (lane._1 -> tuple)
+           }
+         }
+         else if(leftVertex == null) {
+           // sopra e sotto sono la strada principale, destra c'è la strada che si immette
+           var priority = List[String]()
+           val upLanes = getEnteringLanes(upVertex, `up`)
+           for(lane <- upLanes) {
+             priority = priority :+ lane._1
+             val tuple = (lane._2, `up`, List[String]())
+             finalMap = finalMap + (lane._1 -> tuple)
+           }
+           val downLanes = getEnteringLanes(downVertex, `down`)
+           for(lane <- downLanes) {
+             priority = priority :+ lane._1
+             val tuple = (lane._2, `down`, List[String]())
+             finalMap = finalMap + (lane._1 -> tuple)
+           }
+           val rightLanes = getEnteringLanes(rightVertex, `right`)
+           for(lane <- rightLanes) {
+             val tuple = (lane._2, `right`, priority)
+             finalMap = finalMap + (lane._1 -> tuple)
+           }
+         }
+         else {
+           // sopra e sotto sono la strada principale, sinistra c'è la strada che si immette
+           var priority = List[String]()
+           val upLanes = getEnteringLanes(upVertex, `up`)
+           for(lane <- upLanes) {
+             priority = priority :+ lane._1
+             val tuple = (lane._2, `up`, List[String]())
+             finalMap = finalMap + (lane._1 -> tuple)
+           }
+           val downLanes = getEnteringLanes(downVertex, `down`)
+           for(lane <- downLanes) {
+             priority = priority :+ lane._1
+             val tuple = (lane._2, `down`, List[String]())
+             finalMap = finalMap + (lane._1 -> tuple)
+           }
+           val leftLanes = getEnteringLanes(leftVertex, `left`)
+           for(lane <- leftLanes) {
+             val tuple = (lane._2, `left`, priority)
+             finalMap = finalMap + (lane._1 -> tuple)
+           }
+         }
+       case `semaphore` =>
+         // il semaforo si regola sulla base della catena di corsie scritta qui
+         val downLanes = getEnteringLanes(downVertex, `down`)
+         var previousLane = downLanes(downLanes.length - 1)._1
+         val leftLanes = getEnteringLanes(leftVertex, `left`)
+         for(lane <- leftLanes) {
+           val tuple = (lane._2, `left`, List[String](previousLane))
+           finalMap = finalMap + (lane._1 -> tuple)
+           previousLane = lane._1
+         }
+         val upLanes = getEnteringLanes(upVertex, `up`)
+         for(lane <- upLanes) {
+           val tuple = (lane._2, `up`, List[String](previousLane))
+           finalMap = finalMap + (lane._1 -> tuple)
+           previousLane = lane._1
+         }
+         val rightLanes = getEnteringLanes(rightVertex, `right`)
+         for(lane <- rightLanes) {
+           val tuple = (lane._2, `right`, List[String](previousLane))
+           finalMap = finalMap + (lane._1 -> tuple)
+           previousLane = lane._1
+         }
+         for(lane <- downLanes) {
+           val tuple = (lane._2, `down`, List[String](previousLane))
+           finalMap = finalMap + (lane._1 -> tuple)
+           previousLane = lane._1
+         }
+         
+       case `roundabout` =>
+         // ciascuno ha la lane alla propria sinistra come precedenza
+         // dobbiamo capire se abbiamo una lane del tram oppure no (al massimo ve ne è una)
+         val leftLanes = getEnteringLanes(leftVertex, `left`)
+         val rightLanes = getEnteringLanes(rightVertex, `right`)
+         val upLanes = getEnteringLanes(upVertex, `up`)
+         val downLanes = getEnteringLanes(downVertex, `down`)
+         if(leftLanes.length > 1) {
+           // due corsie a sinistra, quella del tram è la più bassa
+           var normal = 0
+           var tram = 1
+           if(leftLanes(0)._2 == true) {
+             // la prima è del tram, la seconda è normale
+             normal = 1
+             tram = 0
+           }
+           val leftTupleUp = (leftLanes(normal)._2, `left`, List[String](upLanes(0)._1))
+           finalMap = finalMap + (leftLanes(normal)._1 -> leftTupleUp)
+           val leftTupleLow = (leftLanes(tram)._2, `left`, List[String](leftLanes(normal)._1))
+           finalMap = finalMap + (leftLanes(tram)._1 -> leftTupleLow)
+           val upTuple = (upLanes(0)._2, `up`, List[String](rightLanes(0)._1))
+           finalMap = finalMap + (upLanes(0)._1 -> upTuple)
+           val rightTuple = (rightLanes(0)._2, `right`, List[String](downLanes(0)._1))
+           finalMap = finalMap + (rightLanes(0)._1 -> rightTuple)
+           val downTuple = (downLanes(0)._2, `down`, List[String](leftLanes(tram)._1))
+           finalMap = finalMap + (downLanes(0)._1 -> downTuple)
+         }
+         else if(rightLanes.length > 1) {
+           // due corsie a destra, quella del tram è la più alta
+           var normal = 0
+           var tram = 1
+           if(rightLanes(0)._2 == true) {
+             // la prima è del tram, la seconda è normale
+             normal = 1
+             tram = 0
+           }
+           val leftTuple = (leftLanes(0)._2, `left`, List[String](upLanes(0)._1))
+           finalMap = finalMap + (leftLanes(0)._1 -> leftTuple)
+           val upTuple = (upLanes(0)._2, `up`, List[String](rightLanes(tram)._1))
+           finalMap = finalMap + (upLanes(0)._1 -> upTuple)
+           val rightTupleUp = (rightLanes(tram)._2, `right`, List[String](rightLanes(normal)._1))
+           finalMap = finalMap + (rightLanes(tram)._1 -> rightTupleUp)
+           val rightTupleDown = (rightLanes(normal)._2, `right`, List[String](downLanes(0)._1))
+           finalMap = finalMap + (rightLanes(normal)._1 -> rightTupleDown)
+           val downTuple = (downLanes(0)._2, `down`, List[String](leftLanes(0)._1))
+           finalMap = finalMap + (downLanes(0)._1 -> downTuple)
+         }
+         else if(upLanes.length > 1) {
+           // due corsie in alto, quella del tram è la più a sx
+           var normal = 0
+           var tram = 1
+           if(upLanes(0)._2 == true) {
+             // la prima è del tram, la seconda è normale
+             normal = 1
+             tram = 0
+           }
+           val leftTuple = (leftLanes(0)._2, `left`, List[String](upLanes(tram)._1))
+           finalMap = finalMap + (leftLanes(0)._1 -> leftTuple)
+           val upTupleLeft = (upLanes(tram)._2, `up`, List[String](upLanes(normal)._1))
+           finalMap = finalMap + (upLanes(tram)._1 -> upTupleLeft)
+           val upTupleRight = (upLanes(normal)._2, `up`, List[String](rightLanes(0)._1))
+           finalMap = finalMap + (upLanes(normal)._1 -> upTupleRight)
+           val rightTuple = (rightLanes(0)._2, `right`, List[String](downLanes(0)._1))
+           finalMap = finalMap + (rightLanes(0)._1 -> rightTuple)
+           val downTuple = (downLanes(0)._2, `down`, List[String](leftLanes(0)._1))
+           finalMap = finalMap + (downLanes(0)._1 -> downTuple)
+         }
+         else if(downLanes.length > 1) {
+           // due corsie in basso, quella del tram è la più a dx
+           var normal = 0
+           var tram = 1
+           if(downLanes(0)._2 == true) {
+             // la prima è del tram, la seconda è normale
+             normal = 1
+             tram = 0
+           }
+           val leftTuple = (leftLanes(0)._2, `left`, List[String](upLanes(0)._1))
+           finalMap = finalMap + (leftLanes(0)._1 -> leftTuple)
+           val upTuple = (upLanes(0)._2, `up`, List[String](rightLanes(0)._1))
+           finalMap = finalMap + (upLanes(0)._1 -> upTuple)
+           val rightTuple = (rightLanes(0)._2, `right`, List[String](downLanes(tram)._1))
+           finalMap = finalMap + (rightLanes(0)._1 -> rightTuple)
+           val downTupleRight = (downLanes(tram)._2, `down`, List[String](downLanes(normal)._1))
+           finalMap = finalMap + (downLanes(tram)._1 -> downTupleRight)
+           val downTupleLeft = (downLanes(normal)._2, `down`, List[String](leftLanes(0)._1))
+           finalMap = finalMap + (downLanes(normal)._1 -> downTupleLeft)
+         }
+         else {
+           // non ci sono corsie del tram, quindi ogni sequenza di lanes è in realtà una singola lane
+           val leftTuple = (leftLanes(0)._2, `left`, List[String](upLanes(0)._1))
+           finalMap = finalMap + (leftLanes(0)._1 -> leftTuple)
+           val upTuple = (upLanes(0)._2, `up`, List[String](rightLanes(0)._1))
+           finalMap = finalMap + (upLanes(0)._1 -> upTuple)
+           val rightTuple = (rightLanes(0)._2, `right`, List[String](downLanes(0)._1))
+           finalMap = finalMap + (rightLanes(0)._1 -> rightTuple)
+           val downTuple = (downLanes(0)._2, `down`, List[String](leftLanes(0)._1))
+           finalMap = finalMap + (downLanes(0)._1 -> downTuple)
+         }
      }
      return finalMap
    }
@@ -567,6 +677,12 @@ object Domain {
        // il vicino deve essere un incrocio, e deve essere angle
        assert(JSONReader.getCrossroad(current_map, vertex.id).isEmpty == false)
        val crossroad = JSONReader.getCrossroad(current_map, vertex.id).get
+       if(crossroad.category == `classic`) {
+         // potremmo essere nel caso in cui l'incrocio in questione è un angle e confina con un classic
+         // in questo caso, la configurazione dell'incrocio angle non ci interessa, perchè tanto non verrà mai consultata
+         // ci è sufficiente restituire una lista vuota
+         return List[(String, Boolean)]()
+       }
        assert(crossroad.category == `angle`)
        // guarda il vertice nil per capire la direzione del lato
        var nilVertex : vertex = null

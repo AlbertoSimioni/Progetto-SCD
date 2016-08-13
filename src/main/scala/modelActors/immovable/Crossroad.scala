@@ -142,6 +142,19 @@ object Crossroad {
   def crossroadLogic(myRef : ImmovableActor) : (String, ActorRef) = {
     // prima cosa: capisco che incrocio sono
     myRef.state.crossroadData.category match {
+      case `nil` | `angle` =>
+        // tra tutte le richieste pendenti, soddisfane una a caso
+        // la maggior parte delle volte ce ne sarà solamente una, e dunque la scelta sarà univoca
+        if(myRef.vehicleRequests.size > 0) {
+          val toBeSatisfied = Random.shuffle(myRef.vehicleRequests.keys).head
+          val tuple = myRef.vehicleRequests.get(toBeSatisfied).get
+          myRef.vehicleRequests = myRef.vehicleRequests - toBeSatisfied
+          return tuple
+        }
+        else {
+          // nessuna richiesta da soddisfare
+          return (null, null)
+        }
       case `classic` =>
         // se abbiamo delle richieste pendenti da una delle corsie senza obbligo di precedenza, soddisfane una
         val precedenceKeys = myRef.crossroadConfiguration.filter(tuple => tuple._2._3.length == 0).keys
