@@ -102,7 +102,7 @@ object Messages {
   // inviato da un veicolo al successivo per segnalare di non dover più mandare update della posizione
   case object SuccessorGone
   // inviato per notificare un cambio di successore
-  case class SuccessorChanged(successorId : String, successorRef : ActorRef)
+  case class SuccessorChanged(laneId : String, successorId : String, successorRef : ActorRef)
   // inviato per notificare un cambio di predecessore
   case class PredecessorChanged(predecessorId : String, predecessorRef : ActorRef)
   

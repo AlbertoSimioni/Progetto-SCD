@@ -37,6 +37,11 @@ object Vehicle {
           // persist body begin
           myRef.state.predecessorGoneSent = false
           // persist body end
+          // nel frattempo, posso lanciare la mia ultima posizione valida, che è rappresentata dall'ultima posizione persistente
+          // ricorda che la posizione nei crossroad/bus stop/etc. è gestita da variabili non persistenti
+          // le variabili persistenti sono solo per lane e road
+          val lastValidPosition = myRef.state.currentPointsSequence(0)(myRef.state.currentPointIndex)
+          myRef.sendToMovable(myId, myRef.self, senderRef, envelope(myId, senderId, Advanced(lastValidPosition)))
         }
         else {
           // ci è arrivato un messaggio probabilmente troppo tardi
@@ -144,13 +149,36 @@ object Vehicle {
           // aspettiamo l'arrivo di una posizione valida
           myRef.interestedInVelocityTick = false
         }
-      case SuccessorChanged(successorId, successorRef) =>
+      case SuccessorChanged(laneId, successorId, successorRef) =>
         if(senderId == myRef.state.previousVehicleId) {
-          myRef.persist(PredecessorArrived(successorId)) { evt => }
-          // persist body begin
-          myRef.state.previousVehicleId = successorId
-          // persist body end
-          myRef.previousVehicle = successorRef
+          // controlla se la lane dichiarata dal messaggio corrisponde a dove sei o meno
+          // se la lane corrisponde allo step immediatamente precedente o attuale, comportamento normale
+          // se la lane corrisponde a step ancor più precedenti, inviamo un predecessorgone
+          // attenzione all'eccezione degli incroci doppi
+          if((myRef.state.getCurrentStepId == laneId) || (myRef.state.getPreviousStepId == laneId) || (myRef.state.getStepIdAt(-2) == laneId && myRef.state.fromCrossroad() && myRef.state.getCurrentStepId.startsWith("C"))) {
+            // situazione normale, invio gli advanced o comunque il predecessorgone quando raggiungo la prossima lane
+            myRef.persist(PredecessorArrived(successorId)) { evt => }
+            // persist body begin
+            myRef.state.previousVehicleId = successorId
+            // persist body end
+            // ogni volta che effettuo uno spostamento, devo notificarlo al predecessore
+            myRef.previousVehicle = successorRef
+            // ora so di dover inviare un predecessorgone prima o poi
+            myRef.persist(PredecessorGoneNotSentYet) { evt => }
+            // persist body begin
+            myRef.state.predecessorGoneSent = false
+            // persist body end
+            // nel frattempo, posso lanciare la mia ultima posizione valida, che è rappresentata dall'ultima posizione persistente
+            // ricorda che la posizione nei crossroad/bus stop/etc. è gestita da variabili non persistenti
+            // le variabili persistenti sono solo per lane e road
+            val lastValidPosition = myRef.state.currentPointsSequence(0)(myRef.state.currentPointIndex)
+            myRef.sendToMovable(myId, myRef.self, successorRef, envelope(myId, successorId, Advanced(lastValidPosition)))
+          }
+          else {
+            // ci è arrivato un messaggio probabilmente troppo tardi
+            // sblocchiamo la situazione di chi aspetta mandandogli un predecessorgone
+            myRef.sendToMovable(myId, myRef.self, successorRef, envelope(myId, successorId, PredecessorGone))
+          }
         }
     }
   }

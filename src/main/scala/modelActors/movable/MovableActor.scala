@@ -685,7 +685,7 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
                     // avvisa il predecessore di aspettarsi gli update dal nuovo successore
                     sendToMovable(id, self, previousVehicle, envelope(id, state.previousVehicleId, PredecessorChanged(state.nextVehicleId, nextVehicle)))
                     // avvisa il successore di mandare gli update al nuovo predecessore
-                    sendToMovable(id, self, nextVehicle, envelope(id, state.nextVehicleId, SuccessorChanged(state.previousVehicleId, previousVehicle)))
+                    sendToMovable(id, self, nextVehicle, envelope(id, state.nextVehicleId, SuccessorChanged(lane.id, state.previousVehicleId, previousVehicle)))
                   }
                   else if(previousVehicle != null && nextVehicle == null) {
                     // avvisa il predecessore che può procedere liberamente

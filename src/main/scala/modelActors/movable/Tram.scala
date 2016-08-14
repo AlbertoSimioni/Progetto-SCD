@@ -98,7 +98,7 @@ object Tram {
             Vehicle.FromVehicle(myRef, myId, senderId, senderRef, message)
           case PredecessorChanged(predecessorId, predecessorRef) =>
             Vehicle.FromVehicle(myRef, myId, senderId, senderRef, message)
-          case SuccessorChanged(successorId, successorRef) =>
+          case SuccessorChanged(laneId, successorId, successorRef) =>
             Vehicle.FromVehicle(myRef, myId, senderId, senderRef, message)
         }
       case FromBus(message) =>
@@ -115,7 +115,7 @@ object Tram {
             Vehicle.FromVehicle(myRef, myId, senderId, senderRef, message)
           case PredecessorChanged(predecessorId, predecessorRef) =>
             Vehicle.FromVehicle(myRef, myId, senderId, senderRef, message)
-          case SuccessorChanged(successorId, successorRef) =>
+          case SuccessorChanged(laneId, successorId, successorRef) =>
             Vehicle.FromVehicle(myRef, myId, senderId, senderRef, message)
         }
       case FromTram(message) =>
@@ -132,7 +132,7 @@ object Tram {
             Vehicle.FromVehicle(myRef, myId, senderId, senderRef, message)
           case PredecessorChanged(predecessorId, predecessorRef) =>
             Vehicle.FromVehicle(myRef, myId, senderId, senderRef, message)
-          case SuccessorChanged(successorId, successorRef) =>
+          case SuccessorChanged(laneId, successorId, successorRef) =>
             Vehicle.FromVehicle(myRef, myId, senderId, senderRef, message)
         }
         
