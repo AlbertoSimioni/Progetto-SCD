@@ -402,4 +402,8 @@ class MovableState {
   // ultima delivery id utilizzata, per ripristino
   var deliveryId = MinValue
   
+  // DORMI/VEGLIA
+  // serve per garantire un solo evento di dormita e un solo evento di risveglio verso l'interfaccia grafica
+  var alreadyHidden = false
+  
 }

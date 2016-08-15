@@ -417,12 +417,18 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
                     //
                     // per quanto riguarda l'interfaccia grafica, noi siamo scomparsi, a prescindere se siamo in ritardo o in anticipo
                     // lancia evento per l'interfaccia grafica
-                    if(getMyLength() == pedestrian_length) {
-                      publisherGuiHandler ! hidePedestrian(id, zone.id, false)
-                    }
-                    else {
-                      assert(getMyLength() == car_length)
-                      publisherGuiHandler ! hideCar(id, zone.id)
+                    if(state.alreadyHidden == false) {
+                      if(getMyLength() == pedestrian_length) {
+                        publisherGuiHandler ! hidePedestrian(id, zone.id, false)
+                      }
+                      else {
+                        assert(getMyLength() == car_length)
+                        publisherGuiHandler ! hideCar(id, zone.id)
+                      }
+                      persist(SleepingStatusChange(true)) { evt => }
+                      // persist body begin
+                      state.alreadyHidden = true
+                      // persist body end
                     }
                     // prima cosa: capisci di che zona si tratta
                     var comparedTime : TimeValue = null
@@ -454,7 +460,13 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
                       // se in ritardo, vai al prossimo step
                       sendToMovable(id, self, self, PersistAndNextStep)
                       // evento grafico associato
-                      publisherGuiHandler ! entityAwaked(id, zone.id)
+                      if(state.alreadyHidden == true) {
+                        publisherGuiHandler ! entityAwaked(id, zone.id)
+                        persist(SleepingStatusChange(false)) { evt => }
+                        // persist body begin
+                        state.alreadyHidden = false
+                        // persist body end
+                      }
                     }
                     else {
                       // se in anticipo, vai a dormire
@@ -1132,6 +1144,10 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
       // AT LEAST ONCE
       case PersistDeliveryId(deliveryId) =>
         state.deliveryId = deliveryId
+        
+      // DORMI/VEGLIA
+      case SleepingStatusChange(alreadyHidden) =>
+        state.alreadyHidden = alreadyHidden
         
       case PedestrianEvent(event) =>
         Pedestrian.eventHandler(event, state)

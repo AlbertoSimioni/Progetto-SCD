@@ -182,6 +182,8 @@ object Messages {
   
   case class PreviousLaneChanged(laneId : String) extends Event
   
+  case class SleepingStatusChange(alreadyHidden : Boolean) extends Event
+  
   // stampa una stringa di logging del messaggio
   def printMessage(senderId : String, destinationId : String, message : Command) : Unit = {
     var log : String = senderId + " => " + destinationId + ": "
