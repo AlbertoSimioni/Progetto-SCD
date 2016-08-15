@@ -740,4 +740,84 @@ object Routes {
     }
   }
   
+  /*
+   * Funzione per la creazione di un percorso per pedone con utilizzo del tram forzoso
+   * Sceglie le tre destinazioni (home, work e fun) casualmente e genera i percorsi per raggiungerli
+   * Quando possibile, prende un mezzo pubblico (al massimo una volta per ogni pezzo, home->work, work->fun, fun->home)
+   */
+  def createPedestrianRouteWithTram() : (pedestrian_route, Boolean) = {
+    // oltre al percorso, restituisce un flag
+    // se il flag è a true, allora il percorso include l'utilizzo di un mezzo pubblico in uno dei tre pezzi
+    // crea i tempi
+    val times = createTimes()
+    // crea le destinazioni
+    val places = createPlaces()
+    return createPedestrianRouteWithTram(places, times)
+  }
+  
+  def createPedestrianRouteWithTram(places : (String, String, String), times : (TimeValue, TimeValue, TimeValue)) : (pedestrian_route, Boolean) = {
+    var firstRoute : List[step] = null
+    var secondRoute : List[step] = null
+    var thirdRoute : List[step] = null
+    // ottieni due fermate del tram appartenenti alla stessa tratta
+    val targetRoute = (nextInt() % getAllTramRoutes().length) + 1
+    var tramStops = JSONReader.getAllTramStops(map).filter { tramStop => tramStop.route == targetRoute }
+    assert(tramStops.length > 1)
+    var firstTramStop : tram_stop = null
+    var secondTramStop : tram_stop = null
+    // decidi su quale pezzo di percorso effettuare l'inserimento forzoso
+    val index = nextInt() % 3
+    if(index == 0) {
+      // tra casa e lavoro
+      firstTramStop = getClosestTramStop(places._1, tramStops)
+      secondTramStop = getClosestTramStop(places._2, tramStops)
+      val firstSection = fromZoneToTramStop(map, places._1, firstTramStop.id)
+      val previousDirection = getStepDirection(firstSection.last)
+      val intermediateStep = tram_stop_step(firstTramStop, previousDirection, false)
+      val secondSection = fromTramStopToZone(map, secondTramStop.id, places._2)
+      firstRoute = (firstSection :+ intermediateStep) ++ secondSection
+      secondRoute = pedestrianBreadthFirstSearch(map, places._2, places._3)
+      thirdRoute = pedestrianBreadthFirstSearch(map, places._3, places._1)
+    }
+    else if(index == 1) {
+      // tra lavoro e svago
+      firstTramStop = getClosestTramStop(places._2, tramStops)
+      secondTramStop = getClosestTramStop(places._3, tramStops)
+      firstRoute = pedestrianBreadthFirstSearch(map, places._1, places._2)
+      val firstSection = fromZoneToTramStop(map, places._2, firstTramStop.id)
+      val previousDirection = getStepDirection(firstSection.last)
+      val intermediateStep = tram_stop_step(firstTramStop, previousDirection, false)
+      val secondSection = fromTramStopToZone(map, secondTramStop.id, places._3)
+      secondRoute = (firstSection :+ intermediateStep) ++ secondSection
+      thirdRoute = pedestrianBreadthFirstSearch(map, places._3, places._1)
+    }
+    else {
+      // tra svago e casa
+      firstTramStop = getClosestTramStop(places._3, tramStops)
+      secondTramStop = getClosestTramStop(places._1, tramStops)
+      firstRoute = pedestrianBreadthFirstSearch(map, places._1, places._2)
+      secondRoute = pedestrianBreadthFirstSearch(map, places._2, places._3)
+      val firstSection = fromZoneToTramStop(map, places._3, firstTramStop.id)
+      val previousDirection = getStepDirection(firstSection.last)
+      val intermediateStep = tram_stop_step(firstTramStop, previousDirection, false)
+      val secondSection = fromTramStopToZone(map, secondTramStop.id, places._1)
+      thirdRoute = (firstSection :+ intermediateStep) ++ secondSection
+    }
+    return (pedestrian_route(times._1, firstRoute, times._2, secondRoute, times._3, thirdRoute), true)
+  }
+  
+  def getClosestTramStop(zoneId : String, tramStops : List[tram_stop]) : tram_stop = {
+    val (_, zonex, zoney, _) = splitId(zoneId)
+    val zonePoint = point(zonex, zoney)
+    var distance = scala.Double.MaxValue
+    var result : tram_stop = null
+    for(tramStop <- tramStops) {
+      if(getDistance(zonePoint, tramStop.coordinates.begin.point) < distance) {
+        result = tramStop
+        distance = getDistance(zonePoint, tramStop.coordinates.begin.point)
+      }
+    }
+    return result
+  }
+  
 }

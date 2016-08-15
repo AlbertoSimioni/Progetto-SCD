@@ -121,7 +121,18 @@ class Injector extends Actor {
               else {
                 pedestrianRoute = Routes.createPedestrianRoute(carPlaces, deferredTime)._1
               }
-              //val pedestrianRoute = Routes.createPedestrianRoute()._1
+              /*
+              // con probabilità 0.5 genera un percorso che include l'utilzzo del tram
+              var pedestrianRoute : pedestrian_route = null
+              if(scala.util.Random.nextInt() % 2 == 0) {
+                // normale
+                pedestrianRoute = Routes.createPedestrianRoute()._1
+              }
+              else {
+                // con inserimento tram forzoso
+                pedestrianRoute = Routes.createPedestrianRouteWithTram()._1
+              }
+              */
               val firstId = Routes.getStepId(pedestrianRoute.houseToWorkRoute(0))
               sendToImmovable(self, firstId, CreateMobileEntity(id, pedestrianRoute))
               publisherGuiHanlder ! CreateMobileEntity(id, pedestrianRoute)

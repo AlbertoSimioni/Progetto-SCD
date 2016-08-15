@@ -546,7 +546,7 @@ object BreadthFirst {
           //                => se x del vertice aumenta, il lato di percorrenza diventa up
           //                => se x del vertice diminuisce, il lato di percorrenza diventa down
           var newVertex = vertex(point(0, 0), "")
-          var minX = 10000000
+          var minX = scala.Int.MaxValue
           var maxY = -1
           for(vertex <- vertexes) {
             if(vertex.point.x < minX || (vertex.point.x == minX && vertex.point.y > maxY)) {
@@ -595,7 +595,7 @@ object BreadthFirst {
           //                => se y del vertice diminuisce, il lato di percorrenza diventa left
           var newVertex = vertex(point(0, 0), "")
           var maxX = -1
-          var minY = 10000000
+          var minY = scala.Int.MaxValue
           for(vertex <- vertexes) {
             if(vertex.point.y < minY || (vertex.point.y == minY && vertex.point.x > maxX)) {
               maxX = vertex.point.x
@@ -623,7 +623,7 @@ object BreadthFirst {
           //                => se x del vertice diminuisce, il lato di percorrenza diventa down
           var newVertex = vertex(point(0, 0), "")
           var maxX = -1
-          var minY = 10000000
+          var minY = scala.Int.MaxValue
           for(vertex <- vertexes) {
             if(vertex.point.x > maxX || (vertex.point.x == maxX && vertex.point.y < minY)) {
               maxX = vertex.point.x
@@ -646,8 +646,8 @@ object BreadthFirst {
           //                => se x del vertice aumenta, il lato di percorrenza diventa down
           //                => se x del vertice diminuisce, il lato di percorrenza diventa up
           var newVertex = vertex(point(0, 0), "")
-          var minX = 10000000
-          var minY = 10000000
+          var minX = scala.Int.MaxValue
+          var minY = scala.Int.MaxValue
           for(vertex <- vertexes) {
             if(vertex.point.x < minX || (vertex.point.x == minX && vertex.point.y < minY)) {
               minX = vertex.point.x
@@ -670,7 +670,7 @@ object BreadthFirst {
           //                => se y del vertice aumenta, il lato di percorrenza diventa right
           //                => se y del vertice diminuisce, il lato di percorrenza diventa left
           var newVertex = vertex(point(0, 0), "")
-          var minX = 10000000
+          var minX = scala.Int.MaxValue
           var maxY = -1
           for(vertex <- vertexes) {
             if(vertex.point.y > maxY || (vertex.point.y == maxY && vertex.point.x < minX)) {
@@ -694,8 +694,8 @@ object BreadthFirst {
           //                => se y del vertice aumenta, il lato di percorrenza diventa left
           //                => se y del vertice diminuisce, il lato di percorrenza diventa right
           var newVertex = vertex(point(0, 0), "")
-          var minX = 10000000
-          var minY = 10000000
+          var minX = scala.Int.MaxValue
+          var minY = scala.Int.MaxValue
           for(vertex <- vertexes) {
             if(vertex.point.y < minY || (vertex.point.y == minY && vertex.point.x < minX)) {
               minX = vertex.point.x
@@ -835,6 +835,422 @@ object BreadthFirst {
       }
     }
     return directions
+  }
+  
+  def fromZoneToTramStop(map : urban_elements, start : String, end : String) : List[step] = {
+    var whiteNodes = List[String]()
+    var grayNodes = List[String]()
+    var blackNodes = List[String]()
+    // inizializzazione
+    for(pedestrian_crossroad <- map.pedestrian_crossroads) {
+      whiteNodes = whiteNodes :+ pedestrian_crossroad.id
+    }
+    whiteNodes = whiteNodes :+ start
+    whiteNodes = whiteNodes :+ end
+    // prepara la struttura per i padri
+    // mappa con:
+    // - ultimo elemento del percorso
+    // - percorso per raggiungerlo (ultimo elemento escluso)
+    var fatherRoutes = Map[String, List[step]]()
+    // colora di grigio il nodo di partenza
+    whiteNodes = whiteNodes.toSet.diff(Set(start)).toList
+    grayNodes = grayNodes :+ start
+    // aggiungi l'inizio alla pila
+    var stack = new Stack[String]
+    stack = stack.push(start)
+    var exit = false
+    while(stack.isEmpty == false && exit == false) {
+      val id = stack.pop()
+      var adjacencyList = Map[String, List[step]]()
+      // capisco l'entità, che può essere un pedestrian crossroad, una zone o un tram stop
+      val (entity, _, _, _) = splitId(id)
+      entity match {
+        case "pedestrian_crossroad" =>
+          // sicuramente non stiamo partendo da qui
+          assert(fatherRoutes.size > 0)
+          // recupera la direzione dell'ultimo step
+          val prevDirection = getStepDirection(fatherRoutes.get(id).get.last)
+          // crea il percorso fino alle prossime zone o alle prossime strisce pedonali
+          // tre percorsi possibili
+          // 1) ignorando le strisce
+          adjacencyList = adjacencyList +  createPedestrianPartialRouteToTramStop(map, id, prevDirection, end)
+          // 2) attraversandole, con le due possibili diramazioni
+          adjacencyList = adjacencyList + createPedestrianPartialRouteToTramStop(map, id, direction(getOpposite(prevDirection.position), prevDirection.beginToEnd), end)
+          adjacencyList = adjacencyList + createPedestrianPartialRouteToTramStop(map, id, direction(getOpposite(prevDirection.position), !prevDirection.beginToEnd), end)
+        case "zone" =>
+          // dobbiamo essere allo step iniziale
+          assert(start == id)
+          // siamo allo step iniziale
+          // crea i due percorsi (dx-sx oppure up-down) fino alle prossime zone o alle prossime strisce pedonali
+          val zone = getZone(map, id).get
+          adjacencyList = adjacencyList + createPedestrianPartialRouteToTramStop(map, id, direction(zone.position, true), end)
+          adjacencyList = adjacencyList + createPedestrianPartialRouteToTramStop(map, id, direction(zone.position, false), end)
+        case "tram_stop" =>
+          // siamo allo step finale
+          assert(end == id)
+          // puoi uscire dal while
+          exit = true
+      }
+      // per ciascuna delle destinazioni
+      for((end, partialRoute) <- adjacencyList) {
+        // se la destinazione è bianca
+        if(whiteNodes.contains(end) == true) {
+          // rendila grigia
+          val size = whiteNodes.size
+          whiteNodes = whiteNodes.toSet.diff(Set(end)).toList
+          assert(size != whiteNodes.size)
+          grayNodes = grayNodes :+ end
+          // aggiungi alla map il percorso parziale
+          val tuple = (end, partialRoute)
+          fatherRoutes = fatherRoutes + tuple
+          // aggiungi la destinazione alla pila
+          stack = stack.push(end)
+        }
+      }
+      // colora di nero la zona attuale
+      grayNodes = grayNodes.toSet.diff(Set(id)).toList
+      blackNodes = blackNodes :+ id
+    }
+    // possiamo costruire a ritroso il percorso finale
+    var id = end
+    var finalRoute = List[step]()
+    while(id != start) {
+      val partialRoute = fatherRoutes(id)
+      finalRoute = partialRoute ++ finalRoute
+      id = getStepId(partialRoute.head)
+    }
+    return finalRoute
+  }
+  
+  def fromTramStopToZone(map : urban_elements, start : String, end : String) : List[step] = {
+    var whiteNodes = List[String]()
+    var grayNodes = List[String]()
+    var blackNodes = List[String]()
+    // inizializzazione
+    for(pedestrian_crossroad <- map.pedestrian_crossroads) {
+      whiteNodes = whiteNodes :+ pedestrian_crossroad.id
+    }
+    whiteNodes = whiteNodes :+ start
+    whiteNodes = whiteNodes :+ end
+    // prepara la struttura per i padri
+    // mappa con:
+    // - ultimo elemento del percorso
+    // - percorso per raggiungerlo (ultimo elemento escluso)
+    var fatherRoutes = Map[String, List[step]]()
+    // colora di grigio il nodo di partenza
+    whiteNodes = whiteNodes.toSet.diff(Set(start)).toList
+    grayNodes = grayNodes :+ start
+    // aggiungi l'inizio alla pila
+    var stack = new Stack[String]
+    stack = stack.push(start)
+    var exit = false
+    while(stack.isEmpty == false && exit == false) {
+      val id = stack.pop()
+      var adjacencyList = Map[String, List[step]]()
+      // capisco l'entità, che può essere un pedestrian crossroad, una zone o un tram stop
+      val (entity, _, _, _) = splitId(id)
+      entity match {
+        case "pedestrian_crossroad" =>
+          // sicuramente non stiamo partendo da qui
+          assert(fatherRoutes.size > 0)
+          // recupera la direzione dell'ultimo step
+          val prevDirection = getStepDirection(fatherRoutes.get(id).get.last)
+          // crea il percorso fino alle prossime zone o alle prossime strisce pedonali
+          // tre percorsi possibili
+          // 1) ignorando le strisce
+          adjacencyList = adjacencyList +  createPedestrianPartialRouteFromTramStop(map, id, prevDirection, end)
+          // 2) attraversandole, con le due possibili diramazioni
+          adjacencyList = adjacencyList + createPedestrianPartialRouteFromTramStop(map, id, direction(getOpposite(prevDirection.position), prevDirection.beginToEnd), end)
+          adjacencyList = adjacencyList + createPedestrianPartialRouteFromTramStop(map, id, direction(getOpposite(prevDirection.position), !prevDirection.beginToEnd), end)
+        case "tram_stop" =>
+          // dobbiamo essere allo step iniziale
+          assert(start == id)
+          // siamo allo step iniziale
+          // crea i due percorsi (dx-sx oppure up-down) fino alle prossime zone o alle prossime strisce pedonali
+          val tramStop = getTramStop(map, id).get
+          adjacencyList = adjacencyList + createPedestrianPartialRouteFromTramStop(map, id, direction(tramStop.position, true), end)
+          adjacencyList = adjacencyList + createPedestrianPartialRouteFromTramStop(map, id, direction(tramStop.position, false), end)
+        case "zone" =>
+          // siamo allo step finale
+          assert(end == id)
+          // puoi uscire dal while
+          exit = true
+      }
+      // per ciascuna delle destinazioni
+      for((end, partialRoute) <- adjacencyList) {
+        // se la destinazione è bianca
+        if(whiteNodes.contains(end) == true) {
+          // rendila grigia
+          val size = whiteNodes.size
+          whiteNodes = whiteNodes.toSet.diff(Set(end)).toList
+          assert(size != whiteNodes.size)
+          grayNodes = grayNodes :+ end
+          // aggiungi alla map il percorso parziale
+          val tuple = (end, partialRoute)
+          fatherRoutes = fatherRoutes + tuple
+          // aggiungi la destinazione alla pila
+          stack = stack.push(end)
+        }
+      }
+      // colora di nero la zona attuale
+      grayNodes = grayNodes.toSet.diff(Set(id)).toList
+      blackNodes = blackNodes :+ id
+    }
+    // possiamo costruire a ritroso il percorso finale
+    var id = end
+    var finalRoute = List[step]()
+    while(id != start) {
+      val partialRoute = fatherRoutes(id)
+      finalRoute = partialRoute ++ finalRoute
+      id = getStepId(partialRoute.head)
+    }
+    return finalRoute
+  }
+  
+  def createPedestrianPartialRouteFromTramStop(map : urban_elements, startEntity : String, direction : direction, target : String) : (String, List[step]) = {
+    var steps = List[step]()
+    var neighbor = ""
+    // la startEntity può essere una tram stop o un pedestrian_crossroad
+    if(getTramStop(map, startEntity).equals(None)) {
+      // pedestrian_crossroad
+      val pedestrian_crossroad = getPedestrianCrossroad(map, startEntity).get
+      // crea lo step
+      steps = steps :+ pedestrian_crossroad_step(pedestrian_crossroad, direction)
+      // in base al verso di percorrenza si decide il vicino
+      if(direction.beginToEnd == true) {
+        // bisogna prendere il vicino su end
+        neighbor = pedestrian_crossroad.coordinates.end.id
+      }
+      else {
+        // bisogna prendere il vicino su begin
+        neighbor = pedestrian_crossroad.coordinates.begin.id
+      }
+    }
+    else {
+      // tram stop
+      val tramStop = getTramStop(map, startEntity).get
+      // il lato di percorrenza della direzione è concorde con quello della zona
+      assert(direction.position == tramStop.position)
+      // crea lo step
+      steps = steps :+ tram_stop_step(tramStop, direction, false)
+      // in base al verso di percorrenza si decide il vicino
+      if(direction.beginToEnd == true) {
+        // bisogna prendere il vicino su end
+        neighbor = tramStop.coordinates.end.id
+      }
+      else {
+        // bisogna prendere il vicino su begin
+        neighbor = tramStop.coordinates.begin.id
+      }
+    }
+    var finished = false
+    while(finished == false) {
+      val (entity, x, y, z) = splitId(neighbor)
+      // recupera l'id dello step precedente
+      val previousId = getStepId(steps.last)
+      // recupera la direction dello step precedente
+      val previousDirection = getStepDirection(steps.last)
+      entity match {
+        case "road" =>
+          // si crea lo step della strada con la stessa direzione precedente
+          val road = getRoad(map, neighbor).get
+          steps = steps :+ road_step(road, previousDirection)
+          if(road.zonesIDs.contains(target) == true && previousDirection.position == getZone(map, target).get.position) {
+            // è stata trovata la fine del percorso
+            neighbor = target
+          }
+          // per decretare il vicino, basta guardare il beginToEnd della previousDirection
+          else if(previousDirection.beginToEnd == true) {
+            // restituisco il vicino end
+            neighbor = road.coordinates.end.id
+          }
+          else {
+            // restituisco il vicino begin
+            neighbor = road.coordinates.begin.id
+          }
+        case "crossroad" =>
+          // si applicano le regole per creare il nuovo step
+          val crossroad = getCrossroad(map, neighbor).get
+          var availableVertexes = crossroad.vertexes.filter { vertex => vertex.id != previousId && vertex.id != "nil"}
+          // se la tipologia dell'incrocio è nil, allora ignoralo
+          if(crossroad.category == category.nil) {
+            // crea lo step in cui la direction è invariata
+            steps = steps :+ crossroad_step(crossroad, previousDirection)
+            // trova il vertice concorde alla direzione
+            val previousVertex = getCorrespondingVertex(previousId, map, crossroad)
+            availableVertexes = availableVertexes.toSet.diff(Set(previousVertex)).toList
+            val (id, _) = getPedestrianCrossroadNeighbor(previousVertex, previousDirection, availableVertexes)
+            neighbor = id
+          }
+          else {
+            val previousVertex = getCorrespondingVertex(previousId, map, crossroad)
+            availableVertexes = availableVertexes.toSet.diff(Set(previousVertex)).toList
+            val (id, direction) = getPedestrianCrossroadNeighbor(previousVertex, previousDirection, availableVertexes)
+            steps = steps :+ crossroad_step(crossroad, direction)
+            neighbor = id
+          }
+        case "pedestrian_crossroad" =>
+          // il percorso parziale termina qui
+          // non include l'ultima entità
+          finished = true
+        case "bus_stop" =>
+          // il bus stop viene ignorato momentaneamente
+          val bus_stop = getBusStop(map, neighbor).get
+          steps = steps :+ bus_stop_step(bus_stop, previousDirection, true)
+          // per decretare il vicino, basta guardare il beginToEnd della previousDirection
+          if(previousDirection.beginToEnd == true) {
+            // restituisco il vicino end
+            neighbor = bus_stop.coordinates.end.id
+          }
+          else {
+            // restituisco il vicino begin
+            neighbor = bus_stop.coordinates.begin.id
+          }
+        case "tram_stop" =>
+          // il tram stop viene ignorato momentaneamente
+          val tram_stop = getTramStop(map, neighbor).get
+          steps = steps :+ tram_stop_step(tram_stop, previousDirection, true)
+          // per decretare il vicino, basta guardare il beginToEnd della previousDirection
+          if(previousDirection.beginToEnd == true) {
+            // restituisco il vicino end
+            neighbor = tram_stop.coordinates.end.id
+          }
+          else {
+            // restituisco il vicino begin
+            neighbor = tram_stop.coordinates.begin.id
+          }
+        case "zone" =>
+          // il percorso parziale termina qui
+          // non include l'ultima entità
+          finished = true
+      }
+    }
+    // neighbor contiene l'id dell'ultima entità, che è una pedestrian_crossroad o una zone
+    return (neighbor, steps)
+  }
+  
+  def createPedestrianPartialRouteToTramStop(map : urban_elements, startEntity : String, direction : direction, target : String) : (String, List[step]) = {
+    var steps = List[step]()
+    var neighbor = ""
+    // la startEntity può essere una zone o un pedestrian_crossroad
+    if(getZone(map, startEntity).equals(None)) {
+      // pedestrian_crossroad
+      val pedestrian_crossroad = getPedestrianCrossroad(map, startEntity).get
+      // crea lo step
+      steps = steps :+ pedestrian_crossroad_step(pedestrian_crossroad, direction)
+      // in base al verso di percorrenza si decide il vicino
+      if(direction.beginToEnd == true) {
+        // bisogna prendere il vicino su end
+        neighbor = pedestrian_crossroad.coordinates.end.id
+      }
+      else {
+        // bisogna prendere il vicino su begin
+        neighbor = pedestrian_crossroad.coordinates.begin.id
+      }
+    }
+    else {
+      // zone
+      val zone = getZone(map, startEntity).get
+      // il lato di percorrenza della direzione è concorde con quello della zona
+      assert(direction.position == zone.position)
+      // crea lo step
+      steps = steps :+ zone_step(zone, direction)
+      // in base al verso di percorrenza si decide il vicino
+      if(direction.beginToEnd == true) {
+        // bisogna prendere il vicino su end
+        neighbor = zone.coordinates.end.id
+      }
+      else {
+        // bisogna prendere il vicino su begin
+        neighbor = zone.coordinates.begin.id
+      }
+    }
+    var finished = false
+    while(finished == false) {
+      val (entity, x, y, z) = splitId(neighbor)
+      // recupera l'id dello step precedente
+      val previousId = getStepId(steps.last)
+      // recupera la direction dello step precedente
+      val previousDirection = getStepDirection(steps.last)
+      entity match {
+        case "road" =>
+          // si crea lo step della strada con la stessa direzione precedente
+          val road = getRoad(map, neighbor).get
+          steps = steps :+ road_step(road, previousDirection)
+          // per decretare il vicino, basta guardare il beginToEnd della previousDirection
+          if(previousDirection.beginToEnd == true) {
+            // restituisco il vicino end
+            neighbor = road.coordinates.end.id
+          }
+          else {
+            // restituisco il vicino begin
+            neighbor = road.coordinates.begin.id
+          }
+        case "crossroad" =>
+          // si applicano le regole per creare il nuovo step
+          val crossroad = getCrossroad(map, neighbor).get
+          var availableVertexes = crossroad.vertexes.filter { vertex => vertex.id != previousId && vertex.id != "nil"}
+          // se la tipologia dell'incrocio è nil, allora ignoralo
+          if(crossroad.category == category.nil) {
+            // crea lo step in cui la direction è invariata
+            steps = steps :+ crossroad_step(crossroad, previousDirection)
+            // trova il vertice concorde alla direzione
+            val previousVertex = getCorrespondingVertex(previousId, map, crossroad)
+            availableVertexes = availableVertexes.toSet.diff(Set(previousVertex)).toList
+            val (id, _) = getPedestrianCrossroadNeighbor(previousVertex, previousDirection, availableVertexes)
+            neighbor = id
+          }
+          else {
+            val previousVertex = getCorrespondingVertex(previousId, map, crossroad)
+            availableVertexes = availableVertexes.toSet.diff(Set(previousVertex)).toList
+            val (id, direction) = getPedestrianCrossroadNeighbor(previousVertex, previousDirection, availableVertexes)
+            steps = steps :+ crossroad_step(crossroad, direction)
+            neighbor = id
+          }
+        case "pedestrian_crossroad" =>
+          // il percorso parziale termina qui
+          // non include l'ultima entità
+          finished = true
+        case "bus_stop" =>
+          // il bus stop viene ignorato momentaneamente
+          val bus_stop = getBusStop(map, neighbor).get
+          steps = steps :+ bus_stop_step(bus_stop, previousDirection, true)
+          // per decretare il vicino, basta guardare il beginToEnd della previousDirection
+          if(previousDirection.beginToEnd == true) {
+            // restituisco il vicino end
+            neighbor = bus_stop.coordinates.end.id
+          }
+          else {
+            // restituisco il vicino begin
+            neighbor = bus_stop.coordinates.begin.id
+          }
+        case "tram_stop" =>
+          val tram_stop = getTramStop(map, neighbor).get
+          if(tram_stop.id == target && previousDirection.position == getTramStop(map, target).get.position) {
+            // abbiamo finito
+            // non includiamo l'ultima entità, come da norma
+            finished = true
+          }
+          else {
+            // il tram stop viene ignorato
+            steps = steps :+ tram_stop_step(tram_stop, previousDirection, true)
+            // per decretare il vicino, basta guardare il beginToEnd della previousDirection
+            if(previousDirection.beginToEnd == true) {
+              // restituisco il vicino end
+              neighbor = tram_stop.coordinates.end.id
+            }
+            else {
+              // restituisco il vicino begin
+              neighbor = tram_stop.coordinates.begin.id
+            }
+          }
+        case "zone" =>
+          // non finiremo mai qui
+          println("We should not be here!")
+      }
+    }
+    // neighbor contiene l'id dell'ultima entità, che è un pedestrian crossroad o un tram stop
+    return (neighbor, steps)
   }
 
 }
