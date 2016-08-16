@@ -31,7 +31,9 @@ class DBEraser extends Actor {
             case EraseDB =>
               val server = new ServerAddress("ds037611.mlab.com", 37611)
               // val server = new ServerAddress("ds029565.mlab.com", 29565)
+              val server = new ServerAddress("54.164.61.188", 27017)
               val credentials = MongoCredential.createScramSha1Credential("mpozza", "scd", Array('0','1','1','0','9','2'))
+              //val credentials = MongoCredential.createCredential("myUserAdmin", "scd", Array('a','b','c','1','2','3'))
               val mongoClient = MongoClient(server, List(credentials))
               val db = mongoClient.getDB("scd")
               // carica i nomi delle collection

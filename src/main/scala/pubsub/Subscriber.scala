@@ -30,33 +30,30 @@ class Subscriber(contentType : String) extends Actor with ActorLogging {
   def readyModel: Actor.Receive = {
     case m @ carPosition(id,lat,long,dir) =>   context.actorSelection("/user/activeConnections") !
       ActiveConnections.SendMessageToClients(BrowserMessagesFormatter.CarPositionToJson(m),true)
-      println("carPosition")
+      //println("carPosition")
     case m @ busPosition(id,lat,long,dir) =>   context.actorSelection("/user/activeConnections") !
       ActiveConnections.SendMessageToClients(BrowserMessagesFormatter.BusPositionToJson(m),true)
-      println("busPosition")
+      //println("busPosition")
     case m @ tramPosition(id,lat,long,dir) =>   context.actorSelection("/user/activeConnections") !
       ActiveConnections.SendMessageToClients(BrowserMessagesFormatter.TramPositionToJson(m),true)
-      println("tramPosition")
+      //println("tramPosition")
     case m @ pedestrianPosition(id,lat,long,dir) =>   context.actorSelection("/user/activeConnections") !
       ActiveConnections.SendMessageToClients(BrowserMessagesFormatter.PedestrianPositionToJson(m),true)
-      println("PedestrianPosition")
+      //println("PedestrianPosition")
     case m @ hideCar(id,zoneID) =>   context.actorSelection("/user/activeConnections") !
       hideCar(id,zoneID)
       println("hideCar")
     case m @ hideBus(id) =>   context.actorSelection("/user/activeConnections") !
       ActiveConnections.SendMessageToClients(BrowserMessagesFormatter.HideBusToJson(m),false)
-      println("hideBus")
+      //println("hideBus")
     case m @ hidePedestrian(id,zoneID,inVehicle) =>   context.actorSelection("/user/activeConnections") !
       hidePedestrian(id,zoneID,inVehicle)
       println("hidePedestrian")
     case m @ hideTram(id) =>   context.actorSelection("/user/activeConnections") !
       ActiveConnections.SendMessageToClients(BrowserMessagesFormatter.HideTramToJson(m),false)
-      println("hideTram");
+      //println("hideTram");
     case m @ semaphoreState(id,upGreen,rightGreen,downGreen,leftGreen,tramGreen) =>  context.actorSelection("/user/activeConnections") !
       ActiveConnections.updateSemaphoreState(id,BrowserMessagesFormatter.SemaphoreStateToJson(m))
-      if(id == "C000050400003960"){
-        println("semaforo C000050400003960 stato")
-      }
     case TimeCommand(time) =>    context.actorSelection("/user/activeConnections") !
       ActiveConnections.SendMessageToClients(BrowserMessagesFormatter.TimeToJson(time.hours,time.minutes),false)
     case CreateMobileEntity(id,route) =>  context.actorSelection("/user/activeConnections") !
