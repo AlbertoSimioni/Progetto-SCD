@@ -91,38 +91,14 @@ window.onload = function() {
             //paper.view.draw();
             fitMap();
         }
-        if(msg.type == "positions"){
+        else if(msg.type == "positions"){
             var positions = msg.positions;
             for(var pos in positions){
                 showPosition(positions[pos]);
             }
         }
 
-        if(msg.type == "HideCar"){
-            var car = registry.findCar(msg.info.id);
-            if(car != null){
-                car.hide();
-            }
-        }
-        if(msg.type == "HideBus"){
-            var bus = registry.findBus(msg.info.id);
-            if(bus != null){
-                bus.hide();
-            }
-        }
-        if(msg.type == "HideTram"){
-            var tram = registry.findTram(msg.info.id);
-            if(tram != null){
-                tram.hide();
-            }
-        }
-        if(msg.type == "HidePedestrian"){
-            var pedestrian = registry.findPedestrian(msg.info.id);
-            if(pedestrian != null){
-                pedestrian.hide();
-            }
-        }
-        if(msg.type == "SemaphoreState"){
+        else if(msg.type == "SemaphoreState"){
             var semaphore = mapRegistry.crossroads[msg.info.id];
             if (semaphore.category == "semaphore"){
                 semaphore.changeLights(msg.info.up,msg.info.right,msg.info.down,msg.info.left,msg.info.tram)
@@ -131,7 +107,7 @@ window.onload = function() {
                 console.log("We shouldn't be here")
             }
         }
-        if(msg.type == "time"){
+        else if(msg.type == "time"){
             var minutes = msg.info.minutes;
             var hours = msg.info.hours;
             minutes = checkTime(minutes);
@@ -140,7 +116,7 @@ window.onload = function() {
             $( "#timeText" ).text(text);
         }
 
-        if(msg.type == "path"){
+        else if(msg.type == "path"){
             var  path = msg.steps;
             pathDrawing = true;
             //colorSteps(lastPath,"oldColor");
@@ -152,7 +128,7 @@ window.onload = function() {
             pathDrawing = false;
         }
 
-        if(msg.type == "zoneState"){
+        else if(msg.type == "zoneState"){
             var zoneID = msg.info.id;
             var pedestrians = msg.info.pedestrians;
             var cars = msg.info.cars;
@@ -197,7 +173,7 @@ function updateView(){
 }
 
 function showPosition(msg){
- if (msg.type == "CarPosition") {
+        if (msg.type == "CarPosition") {
             var lat = msg.info.lat
             var long = mapRegistry.normalizeYCoordinate(msg.info.long)
             var car = registry.findCar(msg.info.id)
@@ -209,7 +185,7 @@ function showPosition(msg){
                 car.show();
             }
         }
-        if (msg.type == "PedestrianPosition") {
+        else if (msg.type == "PedestrianPosition") {
             var lat = msg.info.lat
             var long = mapRegistry.normalizeYCoordinate(msg.info.long)
             var pedestrian = registry.findPedestrian(msg.info.id)
@@ -220,7 +196,7 @@ function showPosition(msg){
                 pedestrian.show();
             }
         }
-        if (msg.type == "TramPosition") {
+        else if (msg.type == "TramPosition") {
             var lat = msg.info.lat
             var long = mapRegistry.normalizeYCoordinate(msg.info.long)
             var tram = registry.findTram(msg.info.id)
@@ -231,7 +207,7 @@ function showPosition(msg){
                 tram.show();
             }
         }
-        if (msg.type == "BusPosition") {
+        else if (msg.type == "BusPosition") {
             var lat = msg.info.lat
             var long = mapRegistry.normalizeYCoordinate(msg.info.long)
             var bus = registry.findBus(msg.info.id)
@@ -240,6 +216,31 @@ function showPosition(msg){
             } else {
                 bus.move(lat,long, msg.info.direction)
                 bus.show();
+            }
+        }
+
+        else if(msg.type == "HideCar"){
+            var car = registry.findCar(msg.info.id);
+            if(car != null){
+                car.hide();
+            }
+        }
+        else if(msg.type == "HideBus"){
+            var bus = registry.findBus(msg.info.id);
+            if(bus != null){
+                bus.hide();
+            }
+        }
+        else if(msg.type == "HideTram"){
+            var tram = registry.findTram(msg.info.id);
+            if(tram != null){
+                tram.hide();
+            }
+        }
+        else if(msg.type == "HidePedestrian"){
+            var pedestrian = registry.findPedestrian(msg.info.id);
+            if(pedestrian != null){
+                pedestrian.hide();
             }
         }
 }
