@@ -136,7 +136,7 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
           // controlla che il messaggio non sia duplicato
           if(state.isNewMessage(senderId, deliveryId) == true) {
             // messaggio nuovo
-            persist(NoDuplicate(senderId, deliveryId)) { msg => }
+            persistAsync(NoDuplicate(senderId, deliveryId)) { msg => }
             // persist body begin
             state.updateFilter(senderId, deliveryId)
             // persist body end
@@ -164,7 +164,7 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
                 }
               case Route(route) =>
                 // è arrivato il percorso
-                persist(RouteArrived(route)) { evt => }
+                persistAsync(RouteArrived(route)) { evt => }
                 // persist body begin
                 state.handleRoute(route)
                 // persist body end
@@ -201,7 +201,7 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
           // controlla che il messaggio non sia duplicato
           if(state.isNewMessage(senderId, deliveryId) == true) {
             // messaggio nuovo
-            persist(NoDuplicate(senderId, deliveryId)) { msg => }
+            persistAsync(NoDuplicate(senderId, deliveryId)) { msg => }
             // persist body begin
             state.updateFilter(senderId, deliveryId)
             // persist body end
@@ -215,7 +215,7 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
                     // solo un pedone può avere road_step
                     if(state.beginOfTheStep) {
                       val currentPointsSequence = getPointsSequence(id, stepSequence)
-                      persist(BeginOfTheStep(currentPointsSequence)) { evt => }
+                      persistAsync(BeginOfTheStep(currentPointsSequence)) { evt => }
                       // persist body begin
                       state.currentPointsSequence = currentPointsSequence
                       state.currentPointIndex = 0
@@ -270,7 +270,7 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
                             }
                             sendToMovable(id, self, previousVehicle, envelope(id, state.previousVehicleId, PredecessorGone(previousLaneId)))
                           }
-                          persist(PredecessorGoneSent) { evt => }
+                          persistAsync(PredecessorGoneSent) { evt => }
                           // persist body begin
                           state.previousVehicleId = null
                           state.predecessorGoneSent = true
@@ -280,7 +280,7 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
                         // se c'è una qualche previousLane, avvisala di modificare i campi lastVehicle (qualora fossimo stati l'unico veicolo)
                         if(state.previousLaneId != null) {
                           sendToImmovable(id, self, state.previousLaneId, envelope(id, state.previousLaneId, HandleLastVehicle))
-                          persist(PreviousLaneChanged(null)) { evt => }
+                          persistAsync(PreviousLaneChanged(null)) { evt => }
                           // persist body begin
                           state.previousLaneId = null
                           // persist body end
@@ -439,7 +439,7 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
                         assert(getMyLength() == car_length)
                         publisherGuiHandler ! hideCar(id, zone.id)
                       }
-                      persist(SleepingStatusChange(true)) { evt => }
+                      persistAsync(SleepingStatusChange(true)) { evt => }
                       // persist body begin
                       state.alreadyHidden = true
                       // persist body end
@@ -476,7 +476,7 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
                       // evento grafico associato
                       if(state.alreadyHidden == true) {
                         publisherGuiHandler ! entityAwaked(id, zone.id)
-                        persist(SleepingStatusChange(false)) { evt => }
+                        persistAsync(SleepingStatusChange(false)) { evt => }
                         // persist body begin
                         state.alreadyHidden = false
                         // persist body end
@@ -492,7 +492,7 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
                 }
               case PersistAndNextStep =>
                 // memorizza
-                persist(NextStepEvent) { evt => }
+                persistAsync(NextStepEvent) { evt => }
                 // persist body begin
                 state.index = state.index + 1
                 if(state.index >= state.currentRoute.length) {
@@ -542,7 +542,7 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
               interestedInVelocityTick = false
             }
             else {
-              persist(IncrementPointIndex) {evt => }
+              persistAsync(IncrementPointIndex) {evt => }
               // persist body begin
               state.currentPointIndex = state.currentPointIndex + 1 
               // persist body end
@@ -712,7 +712,7 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
                 // se non stiamo andando in una zona
                 if(state.toZone() == false) {
                   // la lane corrente diventa la nostra previousLane
-                  persist(PreviousLaneChanged(lane.id)) { evt => }
+                  persistAsync(PreviousLaneChanged(lane.id)) { evt => }
                   // persist body begin
                   state.previousLaneId = lane.id
                   // persist body end
@@ -739,26 +739,26 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
                   }
                   // notifichiamo la lane che gestisca la nostra uscita di scena
                   sendToImmovable(id, self, lane.id, envelope(id, lane.id, HandleLastVehicle))
-                  persist(PreviousLaneChanged(null)) { evt => }
+                  persistAsync(PreviousLaneChanged(null)) { evt => }
                   // persist body begin
                   state.previousLaneId = null
                   // persist body end
                   // dal momento che stiamo andando in una zone, azzeriamo il nostro stato
-                  persist(PredecessorGoneSent) { evt => }
+                  persistAsync(PredecessorGoneSent) { evt => }
                   // persist body begin
                   state.predecessorGoneSent = true
                   state.previousVehicleId = null
                   // persist body end
                   previousVehicle = null
                   if(getMyLength() == car_length) {
-                    persist(CarEvent(NextVehicleGone)) { evt => }
+                    persistAsync(CarEvent(NextVehicleGone)) { evt => }
                   }
                   else if (getMyLength() == bus_length) {
-                    persist(BusEvent(NextVehicleGone)) { evt => }
+                    persistAsync(BusEvent(NextVehicleGone)) { evt => }
                   }
                   else {
                     // tram
-                    persist(TramEvent(NextVehicleGone)) { evt => }
+                    persistAsync(TramEvent(NextVehicleGone)) { evt => }
                   }
                   // persist body begin
                   state.nextVehicleId = null
@@ -771,7 +771,7 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
                 interestedInVelocityTick = false
               }
               else {
-                persist(IncrementPointIndex) {evt => }
+                persistAsync(IncrementPointIndex) {evt => }
                 // persist body begin
                 state.currentPointIndex = state.currentPointIndex + 1
                 // persist body end
@@ -938,7 +938,7 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
                     val nextStop = state.getNextStepId
                     assert(nextStop.charAt(0) == 'B')
                     // passa al prossimo step senza IpRequest
-                    persist(NextStepEvent) { evt => }
+                    persistAsync(NextStepEvent) { evt => }
                     // persist body begin
                     state.index = state.index + 1
                     if(state.index >= state.currentRoute.length) {
@@ -964,7 +964,7 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
                       }
                     }
                     // rendi persistente la rimozione
-                    persist(BusEvent(TravellersGoneOff(goingOff))) { evt => }
+                    persistAsync(BusEvent(TravellersGoneOff(goingOff))) { evt => }
                     // persist body begin
                     for(traveller <- goingOff) {
                       state.travellers = state.travellers - traveller
@@ -1025,7 +1025,7 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
                     val nextStop = state.getNextStepId
                     assert(nextStop.charAt(0) == 'T')
                     // passa al prossimo step senza IpRequest
-                    persist(NextStepEvent) { evt => }
+                    persistAsync(NextStepEvent) { evt => }
                     // persist body begin
                     state.index = state.index + 1
                     if(state.index >= state.currentRoute.length) {
@@ -1051,7 +1051,7 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
                       }
                     }
                     // rendi persistente la rimozione
-                    persist(TramEvent(TravellersGoneOff(goingOff))) { evt => }
+                    persistAsync(TramEvent(TravellersGoneOff(goingOff))) { evt => }
                     // persist body begin
                     for(traveller <- goingOff) {
                       state.travellers = state.travellers - traveller
@@ -1122,7 +1122,7 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
     case UnsubscribeAck =>
       println("Successfully unsubscribed from time events")
     case TimeCommand(timeValue) =>
-      persist(TimeEvent(timeValue)) { evt => }
+      persistAsync(TimeEvent(timeValue)) { evt => }
       // persist body begin
       state.currentTime = timeValue
       // persist body end
@@ -1214,12 +1214,12 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
   def sendToImmovable(senderId : String, senderRef : ActorRef, destinationId : String, command : Command) : Unit = {
     deliver(shardRegion.path, deliveryId => {
       if(deliveryId >= state.deliveryId) {
-        persist(PersistDeliveryId(deliveryId)) { evt => }
+        persistAsync(PersistDeliveryId(deliveryId)) { evt => }
         state.deliveryId = deliveryId
       }
       else {
         // potremmo essere dopo un ripristino
-        persist(PersistDeliveryId(state.deliveryId + deliveryId)) { evt => }
+        persistAsync(PersistDeliveryId(state.deliveryId + deliveryId)) { evt => }
         state.deliveryId = state.deliveryId + deliveryId
       }
       ToImmovable(destinationId, ToPersistentMessages.FromMovable(senderId, senderRef, Request(state.deliveryId, command)))
@@ -1231,12 +1231,12 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
   def sendToMovable(senderId : String, senderRef : ActorRef, destinationRef : ActorRef, command : Command) : Unit = {
     deliver(destinationRef.path, deliveryId => {
       if(deliveryId >= state.deliveryId) {
-        persist(PersistDeliveryId(deliveryId)) { evt => }
+        persistAsync(PersistDeliveryId(deliveryId)) { evt => }
         state.deliveryId = deliveryId
       }
       else {
         // potremmo essere dopo un ripristino
-        persist(PersistDeliveryId(state.deliveryId + deliveryId)) { evt => }
+        persistAsync(PersistDeliveryId(state.deliveryId + deliveryId)) { evt => }
         state.deliveryId = state.deliveryId + deliveryId
       }
       ToMovable(destinationRef, ToPersistentMessages.FromMovable(senderId, senderRef, Request(state.deliveryId, command)))

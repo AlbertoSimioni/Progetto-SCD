@@ -62,7 +62,7 @@ object Tram {
             myRef.self ! VelocityTick
           case GetIn(goingOn) =>
             // per prima cosa, rendi persistente l'arrivo dei passeggeri
-            myRef.persist(TramEvent(TravellersGoneOn(goingOn))) { evt => }
+            myRef.persistAsync(TramEvent(TravellersGoneOn(goingOn))) { evt => }
             // persist body begin
             for(tuple <- goingOn) {
               myRef.state.travellers = myRef.state.travellers + (tuple._1 -> tuple._2)

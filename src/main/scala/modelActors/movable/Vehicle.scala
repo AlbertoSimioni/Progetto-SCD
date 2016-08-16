@@ -26,14 +26,14 @@ object Vehicle {
         // attenzione all'eccezione degli incroci doppi
         if((myRef.state.getCurrentStepId == laneId) || (myRef.state.getPreviousStepId == laneId) || (myRef.state.getStepIdAt(-2) == laneId && myRef.state.fromCrossroad() && myRef.state.getCurrentStepId.startsWith("C"))) {
           // situazione normale, invio gli advanced o comunque il predecessorgone quando raggiungo la prossima lane
-          myRef.persist(PreviousVehicleIdArrived(senderId)) { evt => }
+          myRef.persistAsync(PreviousVehicleIdArrived(senderId)) { evt => }
           // persist body begin
           myRef.state.previousVehicleId = senderId
           // persist body end
           // ogni volta che effettuo uno spostamento, devo notificarlo al predecessore
           myRef.previousVehicle = senderRef
           // ora so di dover inviare un predecessorgone prima o poi
-          myRef.persist(PredecessorGoneNotSentYet) { evt => }
+          myRef.persistAsync(PredecessorGoneNotSentYet) { evt => }
           // persist body begin
           myRef.state.predecessorGoneSent = false
           // persist body end
@@ -63,7 +63,7 @@ object Vehicle {
             // tram
             event = TramEvent(NextVehicleIdArrived(senderId))
           }
-          myRef.persist(event) { evt => }
+          myRef.persistAsync(event) { evt => }
           // persist body begin
           myRef.state.nextVehicleId = senderId
           // persist body end
@@ -103,7 +103,7 @@ object Vehicle {
             // tram
             event = TramEvent(NextVehicleGone)
           }
-          myRef.persist(event) { evt => }
+          myRef.persistAsync(event) { evt => }
           // persist body begin
           myRef.state.nextVehicleId = null
           // persist body end
@@ -130,7 +130,7 @@ object Vehicle {
               // tram
               event = TramEvent(PreviousVehicleGone)
             }
-            myRef.persist(event) { evt => }
+            myRef.persistAsync(event) { evt => }
             // persist body begin
             myRef.state.previousVehicleId = null
             // persist body end
@@ -152,7 +152,7 @@ object Vehicle {
             // tram
             event = TramEvent(NextVehicleIdArrived(predecessorId))
           }
-          myRef.persist(event) { evt => }
+          myRef.persistAsync(event) { evt => }
           // persist body begin
           myRef.state.nextVehicleId = predecessorId
           // persist body end
@@ -169,14 +169,14 @@ object Vehicle {
           // attenzione all'eccezione degli incroci doppi
           if((myRef.state.getCurrentStepId == laneId) || (myRef.state.getPreviousStepId == laneId) || (myRef.state.getStepIdAt(-2) == laneId && myRef.state.fromCrossroad() && myRef.state.getCurrentStepId.startsWith("C"))) {
             // situazione normale, invio gli advanced o comunque il predecessorgone quando raggiungo la prossima lane
-            myRef.persist(PreviousVehicleIdArrived(successorId)) { evt => }
+            myRef.persistAsync(PreviousVehicleIdArrived(successorId)) { evt => }
             // persist body begin
             myRef.state.previousVehicleId = successorId
             // persist body end
             // ogni volta che effettuo uno spostamento, devo notificarlo al predecessore
             myRef.previousVehicle = successorRef
             // ora so di dover inviare un predecessorgone prima o poi
-            myRef.persist(PredecessorGoneNotSentYet) { evt => }
+            myRef.persistAsync(PredecessorGoneNotSentYet) { evt => }
             // persist body begin
             myRef.state.predecessorGoneSent = false
             // persist body end
@@ -213,7 +213,7 @@ object Vehicle {
           // tram
           event = TramEvent(NextVehicleIdArrived(id))
         }
-        myRef.persist(event) { evt =>  }
+        myRef.persistAsync(event) { evt =>  }
         // persist body begin
         myRef.state.nextVehicleId = id
         // persist body end
@@ -222,7 +222,7 @@ object Vehicle {
         if(myRef.state.beginOfTheStep) {
           // recupera la sequenza di punti da percorrere
           val currentPointsSequence = getPointsSequence(myId, stepSequence)
-          myRef.persist(BeginOfTheStep(currentPointsSequence)) { evt => }
+          myRef.persistAsync(BeginOfTheStep(currentPointsSequence)) { evt => }
           // persist body begin
           myRef.state.currentPointsSequence = currentPointsSequence
           myRef.state.currentPointIndex = 0

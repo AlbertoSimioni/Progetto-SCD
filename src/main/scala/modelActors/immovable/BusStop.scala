@@ -61,7 +61,7 @@ object BusStop {
             FromVehicle(myRef, myId, senderId, senderRef, message)
           case GetOut(travellers, numTravellers) =>
             // rendi subito persistente l'arrivo dei viaggiatori
-            myRef.persist(BusStopEvent(TravellersGoneOff(travellers))) { evt => }
+            myRef.persistAsync(BusStopEvent(TravellersGoneOff(travellers))) { evt => }
             // persist body begin
             for(traveller <- travellers) {
               myRef.state.handledMobileEntities = myRef.state.handledMobileEntities :+ traveller
@@ -89,7 +89,7 @@ object BusStop {
               myRef.travellersQueue = myRef.travellersQueue.slice(placesAvailable, myRef.travellersQueue.length)
             }
             // rendi persistente la rimozione
-            myRef.persist(BusStopEvent(TravellersGoneOn(goingOn))) { evt => }
+            myRef.persistAsync(BusStopEvent(TravellersGoneOn(goingOn))) { evt => }
             // persist body begin
             for(traveller <- goingOn) {
               myRef.state.handledMobileEntities = myRef.state.handledMobileEntities.filter { current => current != traveller._1 }
@@ -175,7 +175,7 @@ object BusStop {
           myRef.vehicleFreeTempMap = myRef.vehicleFreeTempMap + (comingFrom -> false)
         }
         // rendi persistente il cambiamento
-        myRef.persist(BusStopEvent(VehicleBusyArrived(comingFrom))) { evt => }
+        myRef.persistAsync(BusStopEvent(VehicleBusyArrived(comingFrom))) { evt => }
         // persist body begin
         if(myRef.state.vehicleFreeMap.contains(comingFrom)) {
           myRef.state.vehicleFreeMap = myRef.state.vehicleFreeMap.updated(comingFrom, false)
@@ -193,7 +193,7 @@ object BusStop {
           myRef.vehicleFreeTempMap = myRef.vehicleFreeTempMap + (comingFrom -> true)
         }
         // rendi persistente il cambiamento
-        myRef.persist(BusStopEvent(VehicleFreeArrived(comingFrom))) { evt => }
+        myRef.persistAsync(BusStopEvent(VehicleFreeArrived(comingFrom))) { evt => }
         // persist body begin
         if(myRef.state.vehicleFreeMap.contains(comingFrom)) {
           myRef.state.vehicleFreeMap = myRef.state.vehicleFreeMap.updated(comingFrom, true)
