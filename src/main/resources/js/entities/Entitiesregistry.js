@@ -1,9 +1,9 @@
 function EntitiesRegistry() {
     "use strict";
-    this.cars = [];
-    this.pedestrians = [];
-    this.trams = [];
-    this.buses = [];
+    this.cars = {};
+    this.pedestrians = {};
+    this.trams = {};
+    this.buses = {};
 }
 
 
@@ -40,14 +40,7 @@ EntitiesRegistry.prototype.addCar = function(id, lat,long, direction) {
 }
 
 EntitiesRegistry.prototype.findCar = function(id) {
-    var car = null
-    for (var i in this.cars) {
-        if (i == id) {
-            car = this.cars[i];
-            break;
-        }
-    }
-    return car
+  return this.cars[id];
 }
 
 EntitiesRegistry.prototype.addPedestrian = function(id, lat,long, direction)
@@ -61,14 +54,7 @@ EntitiesRegistry.prototype.addPedestrian = function(id, lat,long, direction)
 }
 
 EntitiesRegistry.prototype.findPedestrian = function(id) {
-    var pedestrian = null
-    for (var i in this.pedestrians) {
-        if (i == id) {
-            pedestrian = this.pedestrians[i];
-            break;
-        }
-    }
-    return pedestrian;
+  return this.pedestrians[id];
 }
 
 
@@ -83,14 +69,7 @@ EntitiesRegistry.prototype.addBus = function(id, lat,long, direction)
 }
 
 EntitiesRegistry.prototype.findBus = function(id) {
-    var bus = null
-    for (var i in this.buses) {
-        if (i == id) {
-            bus = this.buses[i];
-            break;
-        }
-    }
-    return bus;
+  return this.buses[id];
 }
 
 EntitiesRegistry.prototype.addTram = function(id, lat,long, direction)
@@ -104,12 +83,5 @@ EntitiesRegistry.prototype.addTram = function(id, lat,long, direction)
 }
 
 EntitiesRegistry.prototype.findTram = function(id) {
-    var tram = null
-    for (var i in this.trams) {
-        if (i == id) {
-            tram = this.trams[i];
-            break;
-        }
-    }
-    return tram;
+  return this.trams[id];
 }

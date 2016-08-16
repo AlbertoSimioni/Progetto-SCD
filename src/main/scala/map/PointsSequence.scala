@@ -1894,7 +1894,7 @@ object PointsSequence {
                 val offsetY = beginPoint.y - endPoint.y - entityLength
                 val firstPointsList = calcShift(beginPoint, offsetX, `left`)
                 // seconda parte
-                val newPoint = point(endPoint.x, beginPoint.y + entityLength - 1)
+                val newPoint = point(endPoint.x, beginPoint.y - entityLength + 1)
                 val secondPointsList = calcShift(newPoint, offsetY, `down`)
                 pointsList = pointsList :+ firstPointsList
                 pointsList = pointsList :+ secondPointsList
