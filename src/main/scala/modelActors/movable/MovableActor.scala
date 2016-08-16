@@ -1109,12 +1109,12 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
         self ! DeleteSnapshot(prevS, prevT)
       }
     case SaveSnapshotFailure(metadata, reason) =>
-      println("Failed to store snapshot")
+      println("Failed to store snapshot: " + reason)
     case DeleteSnapshot(sequenceNr, timestamp) =>
       //deleteSnapshot(sequenceNr, timestamp)
       
     case PersistenceFailure(payload, sequenceNr, cause) =>
-      println("Failed to persist an event!")
+      println("Failed to persist an event: " + cause)
       
     // TIME
     case SubscribeAck =>
@@ -1186,7 +1186,7 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
     }
     
     case RecoveryFailure(cause) =>
-      println("Recovery fallita!")
+      println("Recovery fallita: " + cause)
     
     case SnapshotOffer(metadata, offeredSnapshot) =>
       offeredSnapshot match {

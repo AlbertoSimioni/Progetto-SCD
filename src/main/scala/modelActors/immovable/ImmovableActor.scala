@@ -243,7 +243,7 @@ class ImmovableActor extends PersistentActor with AtLeastOnceDelivery with Actor
               case ReCreateMobileEntities =>
                 // messaggio mandato da se stessi per ricreare le entità mobili
                 for(current_id <- state.handledMobileEntities) {
-                  val reCreatedMobileEntity = context.actorOf(MovableActor.props(current_id).withDispatcher("custom-dispatcher"))
+                  val reCreatedMobileEntity = context.actorOf(MovableActor.props(current_id)/*.withDispatcher("custom-dispatcher")*/)
                   // fai partire ciascuna entità
                   sendToMovable(destinationId, reCreatedMobileEntity, ResumeExecution)
                   // aggiungi una entry alla tabella 
@@ -290,7 +290,7 @@ class ImmovableActor extends PersistentActor with AtLeastOnceDelivery with Actor
                 sendToMovable(destinationId, senderRef, IpResponse(getIp()))
               case ReCreateMe(id) =>
                 // ri-creazione di un attore mobile
-                val reCreatedMobileEntity = context.actorOf(MovableActor.props(id).withDispatcher("custom-dispatcher"))
+                val reCreatedMobileEntity = context.actorOf(MovableActor.props(id)/*.withDispatcher("custom-dispatcher")*/)
                 // fai riprendere la sua esecuzione
                 sendToMovable(destinationId, reCreatedMobileEntity, ResumeExecution)
               case MobileEntityAdd(id) =>
@@ -487,7 +487,7 @@ class ImmovableActor extends PersistentActor with AtLeastOnceDelivery with Actor
             state.handledMobileEntities = state.handledMobileEntities :+ id
           }
           // persist body end
-          val createdMobileEntity = context.actorOf(MovableActor.props(id).withDispatcher("custom-dispatcher"))
+          val createdMobileEntity = context.actorOf(MovableActor.props(id)/*.withDispatcher("custom-dispatcher")*/)
           // aggiungi o aggiorna
           if(handledMobileEntitiesMap.contains(id) == true) {
             handledMobileEntitiesMap = handledMobileEntitiesMap.updated(id, createdMobileEntity)
@@ -523,7 +523,7 @@ class ImmovableActor extends PersistentActor with AtLeastOnceDelivery with Actor
       //deleteSnapshot(sequenceNr, timestamp)
       
     case PersistenceFailure(payload, sequenceNr, cause) =>
-      println("Failed to persist an event!")
+      println("Failed to persist an event: " + cause)
     
     // TIME
     case SubscribeAck =>
@@ -536,7 +536,7 @@ class ImmovableActor extends PersistentActor with AtLeastOnceDelivery with Actor
           // persist body begin
           state.removeSleepingActor(id)
           // persist body end
-          val wakenUpEntity = context.actorOf(MovableActor.props(id).withDispatcher("custom-dispatcher"))
+          val wakenUpEntity = context.actorOf(MovableActor.props(id)/*.withDispatcher("custom-dispatcher")*/)
           sendToMovable(state.id, wakenUpEntity, ResumeExecution)
         }
       }
@@ -684,7 +684,7 @@ class ImmovableActor extends PersistentActor with AtLeastOnceDelivery with Actor
       }
       
     case RecoveryFailure(cause) =>
-      println("Recovery fallita!")
+      println("Recovery fallita: " + cause)
       
     case SnapshotOffer(metadata, offeredSnapshot) =>
       offeredSnapshot match {

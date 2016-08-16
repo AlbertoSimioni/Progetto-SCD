@@ -29,6 +29,7 @@ import spray.can.server.UHttp
 import pubsub.Subscriber
 import time.TimeCounter
 import modelActors.immovable.ImmovableActor
+import controllerActors.LocalDBActor
 
 object UrbanSimulatorApp extends App with ReactiveApi with MainActors with ReactiveSecurityConfig {
 
@@ -73,7 +74,7 @@ object UrbanSimulatorApp extends App with ReactiveApi with MainActors with React
   
   val shardRegionActor = ClusterSharding(system).start(
     typeName = ImmovableActor.typeOfEntries,
-    entryProps = Some(ImmovableActor.props().withDispatcher("custom-dispatcher")),
+    entryProps = Some(ImmovableActor.props()/*.withDispatcher("custom-dispatcher")*/),
     idExtractor = ImmovableActor.idExtractor,
     shardResolver = ImmovableActor.shardResolver,
     allocationStrategy = ShardingPolicy)
@@ -82,7 +83,12 @@ object UrbanSimulatorApp extends App with ReactiveApi with MainActors with React
 		// recupero il ruolo
 		val role = system.settings.config.getList("akka.cluster.roles").get(0).unwrapped
     if(role == "worker") {
-      // nulla da fare
+      // se il database è locale, recupera il riferimento ad esso nel seed node
+      val configuration = ConfigFactory.load
+      val database = configuration.getString("domain.database")
+      if(database == "local") {
+        val dbRetriever = system.actorOf(Props(classOf[LocalDBActor]))
+      }
     }
 		// avvio seed node + controller
     else if(role == "controller") {
