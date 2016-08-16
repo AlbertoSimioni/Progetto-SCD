@@ -132,12 +132,16 @@ class UrbanElementActor extends PersistentActor with ActorLogging {
   
   // funzione eseguita al ripristino
   override def receiveRecover: Receive = {
-    case evt @ VehicleEntered =>
-      state = state.updated(evt)
-      log.info("Recovering an entered vehicle, current number: {}", state.numberOfVehicles)
-    case evt @ VehicleExited =>
-      state = state.updated(evt)
-      log.info("Recovering an exited vehicle, current number: {}", state.numberOfVehicles)
+    case evt : Event =>
+      evt match {
+        case VehicleEntered =>
+          state = state.updated(evt)
+          log.info("Recovering an entered vehicle, current number: {}", state.numberOfVehicles)
+        case VehicleExited =>
+          state = state.updated(evt)
+          log.info("Recovering an exited vehicle, current number: {}", state.numberOfVehicles)
+      }
+    
     case SnapshotOffer(metadata, offeredSnapshot : UrbanElement.State) =>
       state = offeredSnapshot
       log.info("Snapshot recovered!")

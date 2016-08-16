@@ -250,12 +250,26 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
                           previousLaneId = state.getStepIdAt(-3)
                         }
                         // manda un messaggio di richiesta del veicolo in questione
-                        sendToImmovable(id, self, previousLaneId, MovableActorRequest(state.previousVehicleId))
+                        sendToImmovable(id, self, state.previousLaneId, MovableActorRequest(state.previousVehicleId))
                       }
                       else {
                         // per prima cosa, qualora vi fosse un veicolo predecessore, informalo che non deve più seguirci
                         if(previousVehicle != null) {
-                          sendToMovable(id, self, previousVehicle, envelope(id, state.previousVehicleId, PredecessorGone))
+                          if(state.previousLaneId != null) {
+                            sendToMovable(id, self, previousVehicle, envelope(id, state.previousVehicleId, PredecessorGone(state.previousLaneId)))
+                          }
+                          else {
+                            // recupera id della lane precedente
+                            var previousLaneId : String = null
+                            if(JSONReader.getLane(current_map, state.getStepIdAt(-2)).isEmpty == false) {
+                              previousLaneId = state.getStepIdAt(-2)
+                            }
+                            else {
+                              // avevamo due incroci prima
+                              previousLaneId = state.getStepIdAt(-3)
+                            }
+                            sendToMovable(id, self, previousVehicle, envelope(id, state.previousVehicleId, PredecessorGone(previousLaneId)))
+                          }
                           persist(PredecessorGoneSent) { evt => }
                           // persist body begin
                           state.previousVehicleId = null
@@ -548,11 +562,11 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
             }
             
             // manda l'update della posizione alla lane
-            sendToImmovable(id, self, lane.id, envelope(id, lane.id, Advanced(currentPoint)))
+            sendToImmovable(id, self, lane.id, envelope(id, lane.id, Advanced(lane.id, currentPoint)))
             // c'è un veicolo dietro?
             if(previousVehicle != null) {
               // c'è qualcuno, manda update della posizione
-              sendToMovable(id, self, previousVehicle, envelope(id, state.previousVehicleId, Advanced(currentPoint)))
+              sendToMovable(id, self, previousVehicle, envelope(id, state.previousVehicleId, Advanced(lane.id, currentPoint)))
             }
             // qualora sia stata raggiunta la vehicle length + 1, manda all'entità precedente un messaggio vehicle free
             // per approccio conservativo, utilizziamo la bus_length (nella tratta del tram gira un solo tram sempre)
@@ -593,71 +607,83 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
               }
               else {
                 // ho una lastPosition valida, devo capire se posso avanzare di 1
-                assert(state.currentPointIndex < state.currentPointsSequence(0).length - 1)
-                val targetPoint = state.currentPointsSequence(0)(state.currentPointIndex + 1)
-                val distance = getDistance(targetPoint, nextVehicleLastPosition)
-                // si tenga presente che il controllo da fare dipende dalla direzione in cui stiamo andando
-                direction.position match {
-                  case `up` =>
-                    if(direction.beginToEnd == true) {
-                      println("We should not be here!")
-                    }
-                    else {
-                      // controllo con lunghezza del nextvehicle
-                      if(distance > getLengthFromId(state.nextVehicleId)) {
-                        // posso avanzare di 1
-                        go = true
+                // ATTENZIONE: potrebbe essere che il mio percorso termini su di una zona, ma che l'advanced sia ricevuto da più avanti nella lane
+                // non è dunque vero che la fine del mio percorso implica l'aver ricevuto un predecessor gone (cioè il non avere più nessuno davanti)
+                // questo ha senso solo in una lane dove nessuno si ferma su di una zona
+                // non è dunque nemmeno vero che il ricevere una lastposition valida significhi avere ancora del percorso da fare
+                if(state.currentPointIndex < state.currentPointsSequence(0).length - 1) {
+                  // vi è ancora da percorrere, dunque vediamo se possiamo avanzare di 1
+                  val targetPoint = state.currentPointsSequence(0)(state.currentPointIndex + 1)
+                  val distance = getDistance(targetPoint, nextVehicleLastPosition)
+                  // si tenga presente che il controllo da fare dipende dalla direzione in cui stiamo andando
+                  direction.position match {
+                    case `up` =>
+                      if(direction.beginToEnd == true) {
+                        println("We should not be here!")
                       }
                       else {
-                        // non posso avanzare
-                        go = false
+                        // controllo con lunghezza del nextvehicle
+                        if(distance > getLengthFromId(state.nextVehicleId)) {
+                          // posso avanzare di 1
+                          go = true
+                        }
+                        else {
+                          // non posso avanzare
+                          go = false
+                        }
                       }
-                    }
-                  case `down` =>
-                    if(direction.beginToEnd == true) {
-                      // controllo con lunghezza del nostro veicolo
-                      if(distance > getMyLength()) {
-                        // posso avanzare di 1
-                        go = true
-                      }
-                      else {
-                        // non posso avanzare
-                        go = false
-                      }
-                    }
-                    else {
-                      println("We should not be here!")
-                    }
-                  case `left` =>
-                    if(direction.beginToEnd == true) {
-                      println("We should not be here!")
-                    }
-                    else {
-                      // controllo con lunghezza del nextvehicle
-                      if(distance > getLengthFromId(state.nextVehicleId)) {
-                        // posso avanzare di 1
-                        go = true
+                    case `down` =>
+                      if(direction.beginToEnd == true) {
+                        // controllo con lunghezza del nostro veicolo
+                        if(distance > getMyLength()) {
+                          // posso avanzare di 1
+                          go = true
+                        }
+                        else {
+                          // non posso avanzare
+                          go = false
+                        }
                       }
                       else {
-                        // non posso avanzare
-                        go = false
+                        println("We should not be here!")
                       }
-                    }
-                  case `right` =>
-                    if(direction.beginToEnd == true) {
-                      // controllo con lunghezza del nostro veicolo
-                      if(distance > getMyLength()) {
-                        // posso avanzare di 1
-                        go = true
+                    case `left` =>
+                      if(direction.beginToEnd == true) {
+                        println("We should not be here!")
                       }
                       else {
-                        // non posso avanzare
-                        go = false
+                        // controllo con lunghezza del nextvehicle
+                        if(distance > getLengthFromId(state.nextVehicleId)) {
+                          // posso avanzare di 1
+                          go = true
+                        }
+                        else {
+                          // non posso avanzare
+                          go = false
+                        }
                       }
-                    }
-                    else {
-                      println("We should not be here!")
-                    }
+                    case `right` =>
+                      if(direction.beginToEnd == true) {
+                        // controllo con lunghezza del nostro veicolo
+                        if(distance > getMyLength()) {
+                          // posso avanzare di 1
+                          go = true
+                        }
+                        else {
+                          // non posso avanzare
+                          go = false
+                        }
+                      }
+                      else {
+                        println("We should not be here!")
+                      }
+                  }
+                }
+                else {
+                  // abbiamo finito il percorso e abbiamo una lastposition valida
+                  assert(state.currentPointIndex == state.currentPointsSequence(0).length - 1)
+                  // in tal caso, ci è sufficiente impostare il flag a true
+                  go = true
                 }
               }
             }
@@ -695,17 +721,17 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
                   // dobbiamo avvisare eventuali predecessore e successore che ce ne stiamo andando
                   if(previousVehicle != null && nextVehicle != null) {
                     // avvisa il predecessore di aspettarsi gli update dal nuovo successore
-                    sendToMovable(id, self, previousVehicle, envelope(id, state.previousVehicleId, PredecessorChanged(state.nextVehicleId, nextVehicle)))
+                    sendToMovable(id, self, previousVehicle, envelope(id, state.previousVehicleId, PredecessorChanged(lane.id, state.nextVehicleId, nextVehicle)))
                     // avvisa il successore di mandare gli update al nuovo predecessore
                     sendToMovable(id, self, nextVehicle, envelope(id, state.nextVehicleId, SuccessorChanged(lane.id, state.previousVehicleId, previousVehicle)))
                   }
                   else if(previousVehicle != null && nextVehicle == null) {
                     // avvisa il predecessore che può procedere liberamente
-                    sendToMovable(id, self, previousVehicle, envelope(id, state.previousVehicleId, PredecessorGone))
+                    sendToMovable(id, self, previousVehicle, envelope(id, state.previousVehicleId, PredecessorGone(lane.id)))
                   }
                   else if(previousVehicle == null && nextVehicle != null) {
                     // avvisa il successore che non deve più mandare update a nessuno
-                    sendToMovable(id, self, nextVehicle, envelope(id, state.nextVehicleId, SuccessorGone))
+                    sendToMovable(id, self, nextVehicle, envelope(id, state.nextVehicleId, SuccessorGone(lane.id)))
                   }
                   else {
                     // nessuno da avvisare
@@ -1129,7 +1155,7 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
       case IncrementPointIndex =>
         state.currentPointIndex = state.currentPointIndex + 1
       // LANE
-      case PredecessorArrived(id) =>
+      case PreviousVehicleIdArrived(id) =>
         state.previousVehicleId = id
       case PredecessorGoneNotSentYet =>
         state.predecessorGoneSent = false

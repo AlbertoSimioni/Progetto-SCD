@@ -56,14 +56,14 @@ object Car {
             else {
               myRef.nextVehicleLastPosition = null
             }
-            myRef.persist(PredecessorArrived(predecessorId)) { evt => }
+            myRef.persist(PreviousVehicleIdArrived(predecessorId)) { evt => }
             // persist body begin
             myRef.state.previousVehicleId = predecessorId
             // persist body end
             myRef.previousVehicle = predecessorRef
             // manda gli aggiornamenti a loro, qualora fossero non nulli
             if(predecessorId != null && predecessorRef != null) {
-              myRef.sendToMovable(myId, myRef.self, predecessorRef, envelope(myId, predecessorId, PredecessorArrived))
+              myRef.sendToMovable(myId, myRef.self, predecessorRef, envelope(myId, predecessorId, PredecessorArrived(myRef.state.getCurrentStepId)))
             }
             if(successorId != null && successorRef != null) {
               myRef.sendToMovable(myId, myRef.self, successorRef, envelope(myId, successorId, SuccessorArrived(myRef.state.getCurrentStepId)))
@@ -122,15 +122,15 @@ object Car {
         message match {
           case SuccessorArrived(laneId) =>
             Vehicle.FromVehicle(myRef, myId, senderId, senderRef, message)
-          case PredecessorArrived =>
+          case PredecessorArrived(laneId) =>
             Vehicle.FromVehicle(myRef, myId, senderId, senderRef, message)
-          case Advanced(lastPosition) =>
+          case Advanced(laneId, lastPosition) =>
             Vehicle.FromVehicle(myRef, myId, senderId, senderRef, message)
-          case PredecessorGone =>
+          case PredecessorGone(laneId) =>
             Vehicle.FromVehicle(myRef, myId, senderId, senderRef, message)
-          case SuccessorGone =>
+          case SuccessorGone(laneId) =>
             Vehicle.FromVehicle(myRef, myId, senderId, senderRef, message)
-          case PredecessorChanged(predecessorId, predecessorRef) =>
+          case PredecessorChanged(laneId, predecessorId, predecessorRef) =>
             Vehicle.FromVehicle(myRef, myId, senderId, senderRef, message)
           case SuccessorChanged(laneId, successorId, successorRef) =>
             Vehicle.FromVehicle(myRef, myId, senderId, senderRef, message)
@@ -139,15 +139,15 @@ object Car {
         message match {
           case SuccessorArrived(laneId) =>
             Vehicle.FromVehicle(myRef, myId, senderId, senderRef, message)
-          case PredecessorArrived =>
+          case PredecessorArrived(laneId) =>
             Vehicle.FromVehicle(myRef, myId, senderId, senderRef, message)
-          case Advanced(lastPosition) =>
+          case Advanced(laneId, lastPosition) =>
             Vehicle.FromVehicle(myRef, myId, senderId, senderRef, message)
-          case PredecessorGone =>
+          case PredecessorGone(laneId) =>
             Vehicle.FromVehicle(myRef, myId, senderId, senderRef, message)
-          case SuccessorGone =>
+          case SuccessorGone(laneId) =>
             Vehicle.FromVehicle(myRef, myId, senderId, senderRef, message)
-          case PredecessorChanged(predecessorId, predecessorRef) =>
+          case PredecessorChanged(laneId, predecessorId, predecessorRef) =>
             Vehicle.FromVehicle(myRef, myId, senderId, senderRef, message)
           case SuccessorChanged(laneId, successorId, successorRef) =>
             Vehicle.FromVehicle(myRef, myId, senderId, senderRef, message)
@@ -156,15 +156,15 @@ object Car {
         message match {
           case SuccessorArrived(laneId) =>
             Vehicle.FromVehicle(myRef, myId, senderId, senderRef, message)
-          case PredecessorArrived =>
+          case PredecessorArrived(laneId) =>
             Vehicle.FromVehicle(myRef, myId, senderId, senderRef, message)
-          case Advanced(lastPosition) =>
+          case Advanced(laneId, lastPosition) =>
             Vehicle.FromVehicle(myRef, myId, senderId, senderRef, message)
-          case PredecessorGone =>
+          case PredecessorGone(laneId) =>
             Vehicle.FromVehicle(myRef, myId, senderId, senderRef, message)
-          case SuccessorGone =>
+          case SuccessorGone(laneId) =>
             Vehicle.FromVehicle(myRef, myId, senderId, senderRef, message)
-          case PredecessorChanged(predecessorId, predecessorRef) =>
+          case PredecessorChanged(laneId, predecessorId, predecessorRef) =>
             Vehicle.FromVehicle(myRef, myId, senderId, senderRef, message)
           case SuccessorChanged(laneId, successorId, successorRef) =>
             Vehicle.FromVehicle(myRef, myId, senderId, senderRef, message)

@@ -93,18 +93,18 @@ object Messages {
   // inviato da un veicolo ad un altro veicolo per chiedere la ricezione della posizione
   case class SuccessorArrived(laneId : String)
   // inviato da un veicolo per notificare ad un altro che da ora in poi dovrà regolarsi sull'avanzamento
-  case object PredecessorArrived
+  case class PredecessorArrived(laneId : String)
   // inviato da un veicolo ad un altro veicolo per fornire l'ultima posizione in push
   // viene inviato anche alla lane per gestire le posizioni
-  case class Advanced(lastPosition : point)
+  case class Advanced(laneId : String, lastPosition : point)
   // inviato da un veicolo ad un altro per segnalare di non dover più porre attenzione alla posizione (corsia libera)
-  case object PredecessorGone
+  case class PredecessorGone(laneId : String)
   // inviato da un veicolo al successivo per segnalare di non dover più mandare update della posizione
-  case object SuccessorGone
+  case class SuccessorGone(laneId : String)
   // inviato per notificare un cambio di successore
   case class SuccessorChanged(laneId : String, successorId : String, successorRef : ActorRef)
   // inviato per notificare un cambio di predecessore
-  case class PredecessorChanged(predecessorId : String, predecessorRef : ActorRef)
+  case class PredecessorChanged(laneId : String, predecessorId : String, predecessorRef : ActorRef)
   
   // inviato da una entità mobile all'entità precedente della lane per avvisare che si è arrivati nella nuova lane
   case class VehicleBusy(comingFrom : String)
@@ -169,7 +169,7 @@ object Messages {
   case class NextVehicleIdArrived(id : String)
   case object NextVehicleGone
   
-  case class PredecessorArrived(id : String) extends Event
+  case class PreviousVehicleIdArrived(id : String) extends Event
   case object PreviousVehicleGone
   case object PredecessorGoneNotSentYet extends Event
   case object PredecessorGoneSent extends Event
@@ -233,18 +233,18 @@ object Messages {
             log = log + "LaneAccessGranted"
           case SuccessorArrived(laneId) =>
             log = log + "SuccessorArrived(" + laneId + ")"
-          case PredecessorArrived =>
-            log = log + "PredecessorArrived"
-          case Advanced(lastPosition) =>
-            log = log + "Advanced(" + lastPosition + ")"
-          case PredecessorGone =>
-            log = log + "PredecessorGone"
-          case SuccessorGone =>
-            log = log + "SuccessorGone"
-          case PredecessorChanged =>
-            log = log + "PredecessorChanged"
-          case SuccessorChanged =>
-            log = log + "SuccessorChanged"
+          case PredecessorArrived(laneId) =>
+            log = log + "PredecessorArrived(" + laneId + ")"
+          case Advanced(laneId, lastPosition) =>
+            log = log + "Advanced(" + laneId + " - " + lastPosition + ")"
+          case PredecessorGone(laneId) =>
+            log = log + "PredecessorGone(" + laneId + ")"
+          case SuccessorGone(laneId) =>
+            log = log + "SuccessorGone(" + laneId + ")"
+          case PredecessorChanged(laneId, predecessorId, predecessorRef) =>
+            log = log + "PredecessorChanged(" + laneId + ")"
+          case SuccessorChanged(laneId, successorId, successorRef) =>
+            log = log + "SuccessorChanged(" + laneId + ")"
           case VehicleBusy(comingFrom) =>
             log = log + "VehicleBusy(" + comingFrom + ")"
           case VehicleFree(comingFrom) =>

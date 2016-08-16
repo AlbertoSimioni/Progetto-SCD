@@ -118,8 +118,12 @@ class Injector extends Actor {
                 pedestrianRoute = Routes.createPedestrianRoute(pedestrianBusPlaces, immediateTime)._1
                 i = i + 1
               }
-              else {
+              else if(i == 1){
                 pedestrianRoute = Routes.createPedestrianRoute(carPlaces, deferredTime)._1
+                i = i + 1
+              }
+              else {
+                pedestrianRoute = Routes.createPedestrianRouteWithTram(pedestrianBusPlaces, immediateTime, 0)._1
               }
               /*
               // con probabilità 0.5 genera un percorso che include l'utilzzo del tram

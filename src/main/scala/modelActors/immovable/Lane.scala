@@ -50,7 +50,7 @@ object Lane {
             FromVehicle(myRef, myId, senderId, senderRef, message)
           case NextVehicleRequest(id, last) =>
             FromVehicle(myRef, myId, senderId, senderRef, message)
-          case Advanced(lastPosition) =>
+          case Advanced(laneId, lastPosition) =>
             FromVehicle(myRef, myId, senderId, senderRef, message)
           case HandleLastVehicle =>
             FromVehicle(myRef, myId, senderId, senderRef, message)  
@@ -65,7 +65,7 @@ object Lane {
             FromVehicle(myRef, myId, senderId, senderRef, message)
           case NextVehicleRequest(id, last) =>
             FromVehicle(myRef, myId, senderId, senderRef, message)
-          case Advanced(lastPosition) =>
+          case Advanced(laneId, lastPosition) =>
             FromVehicle(myRef, myId, senderId, senderRef, message)
           case HandleLastVehicle =>
             FromVehicle(myRef, myId, senderId, senderRef, message)  
@@ -80,7 +80,7 @@ object Lane {
             FromVehicle(myRef, myId, senderId, senderRef, message)
           case NextVehicleRequest(id, last) =>
             FromVehicle(myRef, myId, senderId, senderRef, message)
-          case Advanced(lastPosition) =>
+          case Advanced(laneId, lastPosition) =>
             FromVehicle(myRef, myId, senderId, senderRef, message)
           case HandleLastVehicle =>
             FromVehicle(myRef, myId, senderId, senderRef, message)  
@@ -120,42 +120,44 @@ object Lane {
         else {
           myRef.sendToMovable(myId, senderRef, envelope(myId, senderId, NextVehicleResponse(id, correspondingRef)))
         }
-      case Advanced(lastPosition) =>
-        // dobbiamo aggiungere o aggiornare la posizione nella nostra tabella
-        // per prima cosa, l'entità in esame deve essere sotto la nostra gestione
-        if(myRef.state.handledMobileEntities.contains(senderId)) {
-          if(myRef.positionsMap.contains(senderId)) {
-            myRef.positionsMap = myRef.positionsMap.updated(senderId, lastPosition)
-          }
-          else {
-            myRef.positionsMap = myRef.positionsMap + (senderId -> lastPosition)
-          }
-        }
-        // vedi se ci sono delle richieste pendenti da soddisfare
-        if(myRef.pendingLaneRequests.size > 0) {
-          var satisfied = List[String]()
-          for(entry <- myRef.pendingLaneRequests) {
-            if(checkEnoughSpace(myRef, entry._1, entry._2._2, entry._2._3)) {
-              // soddisfa immediatamente la richiesta
-              val neighbours = getNeighbours(myRef, entry._2._2, entry._2._3)
-              val predecessorRef = myRef.handledMobileEntitiesMap.get(neighbours._1).getOrElse(null)
-              val successorRef = myRef.handledMobileEntitiesMap.get(neighbours._2).getOrElse(null)
-              // possiamo aggiungere la sua posizione iniziale a quelle di positionMap
-              if(myRef.state.handledMobileEntities.contains(senderId)) {
-                if(myRef.positionsMap.contains(entry._1)) {
-                  myRef.positionsMap = myRef.positionsMap.updated(entry._1, entry._2._2)
-                }
-                else {
-                  myRef.positionsMap = myRef.positionsMap + (entry._1 -> entry._2._2)
-                }
-              }
-              myRef.sendToMovable(myId, entry._2._1, envelope(myId, entry._1, LaneAccessGranted(neighbours._1, predecessorRef, neighbours._2, successorRef)))
-              satisfied = satisfied :+ entry._1
+      case Advanced(laneId, lastPosition) =>
+        if(laneId == myRef.state.id) {
+          // dobbiamo aggiungere o aggiornare la posizione nella nostra tabella
+          // per prima cosa, l'entità in esame deve essere sotto la nostra gestione
+          if(myRef.state.handledMobileEntities.contains(senderId)) {
+            if(myRef.positionsMap.contains(senderId)) {
+              myRef.positionsMap = myRef.positionsMap.updated(senderId, lastPosition)
+            }
+            else {
+              myRef.positionsMap = myRef.positionsMap + (senderId -> lastPosition)
             }
           }
-          // rimuovi dalla lista delle richieste pendenti quelle soddisfatte
-          for(requestingId <- satisfied) {
-            myRef.pendingLaneRequests = myRef.pendingLaneRequests - requestingId
+          // vedi se ci sono delle richieste pendenti da soddisfare
+          if(myRef.pendingLaneRequests.size > 0) {
+            var satisfied = List[String]()
+            for(entry <- myRef.pendingLaneRequests) {
+              if(checkEnoughSpace(myRef, entry._1, entry._2._2, entry._2._3)) {
+                // soddisfa immediatamente la richiesta
+                val neighbours = getNeighbours(myRef, entry._2._2, entry._2._3)
+                val predecessorRef = myRef.handledMobileEntitiesMap.get(neighbours._1).getOrElse(null)
+                val successorRef = myRef.handledMobileEntitiesMap.get(neighbours._2).getOrElse(null)
+                // possiamo aggiungere la sua posizione iniziale a quelle di positionMap
+                if(myRef.state.handledMobileEntities.contains(senderId)) {
+                  if(myRef.positionsMap.contains(entry._1)) {
+                    myRef.positionsMap = myRef.positionsMap.updated(entry._1, entry._2._2)
+                  }
+                  else {
+                    myRef.positionsMap = myRef.positionsMap + (entry._1 -> entry._2._2)
+                  }
+                }
+                myRef.sendToMovable(myId, entry._2._1, envelope(myId, entry._1, LaneAccessGranted(neighbours._1, predecessorRef, neighbours._2, successorRef)))
+                satisfied = satisfied :+ entry._1
+              }
+            }
+            // rimuovi dalla lista delle richieste pendenti quelle soddisfatte
+            for(requestingId <- satisfied) {
+              myRef.pendingLaneRequests = myRef.pendingLaneRequests - requestingId
+            }
           }
         }
       case HandleLastVehicle =>

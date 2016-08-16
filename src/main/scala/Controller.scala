@@ -26,7 +26,9 @@ class Controller extends Actor with ActorLogging {
   var minutesElapsed = 0
   val maxMinutes = 1440
 
-  override def postStop() = tick.cancel()
+  override def postStop() = {
+    val flag = tick.cancel()
+  }
 
   def receive : Receive = {
     //messaggio periodico che produce l'invio del tempo corrente a tutti i nodi worker tramite pub sub

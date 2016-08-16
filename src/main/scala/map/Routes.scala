@@ -752,10 +752,12 @@ object Routes {
     val times = createTimes()
     // crea le destinazioni
     val places = createPlaces()
-    return createPedestrianRouteWithTram(places, times)
+    // decidi il pezzo di percorso su cui effettuare l'inserimento forzoso
+    val index = nextInt() % 3
+    return createPedestrianRouteWithTram(places, times, index)
   }
   
-  def createPedestrianRouteWithTram(places : (String, String, String), times : (TimeValue, TimeValue, TimeValue)) : (pedestrian_route, Boolean) = {
+  def createPedestrianRouteWithTram(places : (String, String, String), times : (TimeValue, TimeValue, TimeValue), index : Int) : (pedestrian_route, Boolean) = {
     var firstRoute : List[step] = null
     var secondRoute : List[step] = null
     var thirdRoute : List[step] = null
@@ -766,11 +768,14 @@ object Routes {
     var firstTramStop : tram_stop = null
     var secondTramStop : tram_stop = null
     // decidi su quale pezzo di percorso effettuare l'inserimento forzoso
-    val index = nextInt() % 3
     if(index == 0) {
       // tra casa e lavoro
       firstTramStop = getClosestTramStop(places._1, tramStops)
       secondTramStop = getClosestTramStop(places._2, tramStops)
+      if(firstTramStop.id == secondTramStop.id) {
+        tramStops = tramStops.filter { tramStop => tramStop.id != firstTramStop.id }
+        secondTramStop = getClosestTramStop(places._2, tramStops)
+      }
       val firstSection = fromZoneToTramStop(map, places._1, firstTramStop.id)
       val previousDirection = getStepDirection(firstSection.last)
       val intermediateStep = tram_stop_step(firstTramStop, previousDirection, false)
@@ -783,6 +788,10 @@ object Routes {
       // tra lavoro e svago
       firstTramStop = getClosestTramStop(places._2, tramStops)
       secondTramStop = getClosestTramStop(places._3, tramStops)
+      if(firstTramStop.id == secondTramStop.id) {
+        tramStops = tramStops.filter { tramStop => tramStop.id != firstTramStop.id }
+        secondTramStop = getClosestTramStop(places._3, tramStops)
+      }
       firstRoute = pedestrianBreadthFirstSearch(map, places._1, places._2)
       val firstSection = fromZoneToTramStop(map, places._2, firstTramStop.id)
       val previousDirection = getStepDirection(firstSection.last)
@@ -795,6 +804,10 @@ object Routes {
       // tra svago e casa
       firstTramStop = getClosestTramStop(places._3, tramStops)
       secondTramStop = getClosestTramStop(places._1, tramStops)
+      if(firstTramStop.id == secondTramStop.id) {
+        tramStops = tramStops.filter { tramStop => tramStop.id != firstTramStop.id }
+        secondTramStop = getClosestTramStop(places._1, tramStops)
+      }
       firstRoute = pedestrianBreadthFirstSearch(map, places._1, places._2)
       secondRoute = pedestrianBreadthFirstSearch(map, places._2, places._3)
       val firstSection = fromZoneToTramStop(map, places._3, firstTramStop.id)

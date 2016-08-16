@@ -88,15 +88,15 @@ object Tram {
         message match {
           case SuccessorArrived(laneId) =>
             Vehicle.FromVehicle(myRef, myId, senderId, senderRef, message)
-          case PredecessorArrived =>
+          case PredecessorArrived(laneId) =>
             Vehicle.FromVehicle(myRef, myId, senderId, senderRef, message)
-          case Advanced(lastPosition) =>
+          case Advanced(laneId, lastPosition) =>
             Vehicle.FromVehicle(myRef, myId, senderId, senderRef, message)
-          case PredecessorGone =>
+          case PredecessorGone(laneId) =>
             Vehicle.FromVehicle(myRef, myId, senderId, senderRef, message)
-          case SuccessorGone =>
+          case SuccessorGone(laneId) =>
             Vehicle.FromVehicle(myRef, myId, senderId, senderRef, message)
-          case PredecessorChanged(predecessorId, predecessorRef) =>
+          case PredecessorChanged(laneId, predecessorId, predecessorRef) =>
             Vehicle.FromVehicle(myRef, myId, senderId, senderRef, message)
           case SuccessorChanged(laneId, successorId, successorRef) =>
             Vehicle.FromVehicle(myRef, myId, senderId, senderRef, message)
@@ -105,15 +105,15 @@ object Tram {
         message match {
           case SuccessorArrived(laneId) =>
             Vehicle.FromVehicle(myRef, myId, senderId, senderRef, message)
-          case PredecessorArrived =>
+          case PredecessorArrived(laneId) =>
             Vehicle.FromVehicle(myRef, myId, senderId, senderRef, message)
-          case Advanced(lastPosition) =>
+          case Advanced(laneId, lastPosition) =>
             Vehicle.FromVehicle(myRef, myId, senderId, senderRef, message)
-          case PredecessorGone =>
+          case PredecessorGone(laneId) =>
             Vehicle.FromVehicle(myRef, myId, senderId, senderRef, message)
-          case SuccessorGone =>
+          case SuccessorGone(laneId) =>
             Vehicle.FromVehicle(myRef, myId, senderId, senderRef, message)
-          case PredecessorChanged(predecessorId, predecessorRef) =>
+          case PredecessorChanged(laneId, predecessorId, predecessorRef) =>
             Vehicle.FromVehicle(myRef, myId, senderId, senderRef, message)
           case SuccessorChanged(laneId, successorId, successorRef) =>
             Vehicle.FromVehicle(myRef, myId, senderId, senderRef, message)
@@ -122,15 +122,15 @@ object Tram {
         message match {
           case SuccessorArrived(laneId) =>
             Vehicle.FromVehicle(myRef, myId, senderId, senderRef, message)
-          case PredecessorArrived =>
+          case PredecessorArrived(laneId) =>
             Vehicle.FromVehicle(myRef, myId, senderId, senderRef, message)
-          case Advanced(lastPosition) =>
+          case Advanced(laneId, lastPosition) =>
             Vehicle.FromVehicle(myRef, myId, senderId, senderRef, message)
-          case PredecessorGone =>
+          case PredecessorGone(laneId) =>
             Vehicle.FromVehicle(myRef, myId, senderId, senderRef, message)
-          case SuccessorGone =>
+          case SuccessorGone(laneId) =>
             Vehicle.FromVehicle(myRef, myId, senderId, senderRef, message)
-          case PredecessorChanged(predecessorId, predecessorRef) =>
+          case PredecessorChanged(laneId, predecessorId, predecessorRef) =>
             Vehicle.FromVehicle(myRef, myId, senderId, senderRef, message)
           case SuccessorChanged(laneId, successorId, successorRef) =>
             Vehicle.FromVehicle(myRef, myId, senderId, senderRef, message)

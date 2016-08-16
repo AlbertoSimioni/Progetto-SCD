@@ -26,7 +26,7 @@ object Vehicle {
         // attenzione all'eccezione degli incroci doppi
         if((myRef.state.getCurrentStepId == laneId) || (myRef.state.getPreviousStepId == laneId) || (myRef.state.getStepIdAt(-2) == laneId && myRef.state.fromCrossroad() && myRef.state.getCurrentStepId.startsWith("C"))) {
           // situazione normale, invio gli advanced o comunque il predecessorgone quando raggiungo la prossima lane
-          myRef.persist(PredecessorArrived(senderId)) { evt => }
+          myRef.persist(PreviousVehicleIdArrived(senderId)) { evt => }
           // persist body begin
           myRef.state.previousVehicleId = senderId
           // persist body end
@@ -41,35 +41,41 @@ object Vehicle {
           // ricorda che la posizione nei crossroad/bus stop/etc. è gestita da variabili non persistenti
           // le variabili persistenti sono solo per lane e road
           val lastValidPosition = myRef.state.currentPointsSequence(0)(myRef.state.currentPointIndex)
-          myRef.sendToMovable(myId, myRef.self, senderRef, envelope(myId, senderId, Advanced(lastValidPosition)))
+          myRef.sendToMovable(myId, myRef.self, senderRef, envelope(myId, senderId, Advanced(laneId, lastValidPosition)))
         }
         else {
           // ci è arrivato un messaggio probabilmente troppo tardi
           // sblocchiamo la situazione di chi aspetta mandandogli un predecessorgone
-          myRef.sendToMovable(myId, myRef.self, senderRef, envelope(myId, senderId, PredecessorGone))
+          myRef.sendToMovable(myId, myRef.self, senderRef, envelope(myId, senderId, PredecessorGone(laneId)))
         }
-      case PredecessorArrived =>
-        var event : Event = null
-        if(myRef.getMyLength() == car_length) {
-          event = CarEvent(NextVehicleIdArrived(senderId))
+      case PredecessorArrived(laneId) =>
+        // il messaggio deve essere relativo alla lane che stiamo percorrendo
+        // non vi sono altri possibili scenari di interesse
+        if(myRef.state.getCurrentStepId == laneId) {
+          var event : Event = null
+          if(myRef.getMyLength() == car_length) {
+            event = CarEvent(NextVehicleIdArrived(senderId))
+          }
+          else if(myRef.getMyLength() == bus_length) {
+            event = BusEvent(NextVehicleIdArrived(senderId))
+          }
+          else {
+            // tram
+            event = TramEvent(NextVehicleIdArrived(senderId))
+          }
+          myRef.persist(event) { evt => }
+          // persist body begin
+          myRef.state.nextVehicleId = senderId
+          // persist body end
+          myRef.nextVehicle = senderRef
+          myRef.nextVehicleLastPosition = point(-1, -1)
+          // aspettiamo la prossima posizione valida
+          myRef.interestedInVelocityTick = false
         }
-        else if(myRef.getMyLength() == bus_length) {
-          event = BusEvent(NextVehicleIdArrived(senderId))
-        }
-        else {
-          // tram
-          event = TramEvent(NextVehicleIdArrived(senderId))
-        }
-        myRef.persist(event) { evt => }
-        // persist body begin
-        myRef.state.nextVehicleId = senderId
-        // persist body end
-        myRef.nextVehicle = senderRef
-        myRef.nextVehicleLastPosition = point(-1, -1)
-        // aspettiamo la prossima posizione valida
-        myRef.interestedInVelocityTick = false
-      case Advanced(lastPosition) =>
-        if(senderId == myRef.state.nextVehicleId) {
+      case Advanced(laneId, lastPosition) =>
+        // siamo interessati ad un messaggio advanced solo se è relativo alla lane che stiamo percorrendo
+        // e solo se proviene dal mittente che ci aspettiamo
+        if(myRef.state.getCurrentStepId == laneId && senderId == myRef.state.nextVehicleId) {
           // aggiorna la posizione del veicolo davanti
           myRef.nextVehicleLastPosition = lastPosition
           // aggiorna anche il riferimento all'attore, per sicurezza
@@ -81,8 +87,10 @@ object Vehicle {
             myRef.self ! VelocityTick
           }
         }
-      case PredecessorGone =>
-        if(senderId == myRef.state.nextVehicleId) {
+      case PredecessorGone(laneId) =>
+        // siamo interessati ad un predecessorgone solo se è relativo alla lane che stiamo percorrendo
+        // e solo se proviene dal mittente che ci aspettiamo
+        if(myRef.state.getCurrentStepId == laneId && senderId == myRef.state.nextVehicleId) {
           // smetti di seguire gli update del prossimo veicolo
           var event : Event = null
           if(myRef.getMyLength() == car_length) {
@@ -107,28 +115,32 @@ object Vehicle {
             myRef.self ! VelocityTick
           }
         }
-      case SuccessorGone =>
+      case SuccessorGone(laneId) =>
         if(senderId == myRef.state.previousVehicleId) {
-          // smetti di inviare update della posizione
-          var event : Event = null
-          if(myRef.getMyLength() == car_length) {
-            event = CarEvent(PreviousVehicleGone)
+          if((myRef.state.getCurrentStepId == laneId) || (myRef.state.getPreviousStepId == laneId) || (myRef.state.getStepIdAt(-2) == laneId && myRef.state.fromCrossroad() && myRef.state.getCurrentStepId.startsWith("C"))) {
+            // smetti di inviare update della posizione
+            var event : Event = null
+            if(myRef.getMyLength() == car_length) {
+              event = CarEvent(PreviousVehicleGone)
+            }
+            else if(myRef.getMyLength() == bus_length) {
+              event = BusEvent(PreviousVehicleGone)
+            }
+            else {
+              // tram
+              event = TramEvent(PreviousVehicleGone)
+            }
+            myRef.persist(event) { evt => }
+            // persist body begin
+            myRef.state.previousVehicleId = null
+            // persist body end
+            myRef.previousVehicle = null
           }
-          else if(myRef.getMyLength() == bus_length) {
-            event = BusEvent(PreviousVehicleGone)
-          }
-          else {
-            // tram
-            event = TramEvent(PreviousVehicleGone)
-          }
-          myRef.persist(event) { evt => }
-          // persist body begin
-          myRef.state.previousVehicleId = null
-          // persist body end
-          myRef.previousVehicle = null
         }
-      case PredecessorChanged(predecessorId, predecessorRef) =>
-        if(senderId == myRef.state.nextVehicleId) {
+      case PredecessorChanged(laneId, predecessorId, predecessorRef) =>
+        // siamo interessati ad un predecessorchanged solo se è relativo alla lane che stiamo percorrendo
+        // e solo se proviene dal mittente che ci aspettiamo
+        if(myRef.state.getCurrentStepId == laneId && senderId == myRef.state.nextVehicleId) {
           var event : Event = null
           if(myRef.getMyLength() == car_length) {
             event = CarEvent(NextVehicleIdArrived(predecessorId))
@@ -157,7 +169,7 @@ object Vehicle {
           // attenzione all'eccezione degli incroci doppi
           if((myRef.state.getCurrentStepId == laneId) || (myRef.state.getPreviousStepId == laneId) || (myRef.state.getStepIdAt(-2) == laneId && myRef.state.fromCrossroad() && myRef.state.getCurrentStepId.startsWith("C"))) {
             // situazione normale, invio gli advanced o comunque il predecessorgone quando raggiungo la prossima lane
-            myRef.persist(PredecessorArrived(successorId)) { evt => }
+            myRef.persist(PreviousVehicleIdArrived(successorId)) { evt => }
             // persist body begin
             myRef.state.previousVehicleId = successorId
             // persist body end
@@ -172,12 +184,12 @@ object Vehicle {
             // ricorda che la posizione nei crossroad/bus stop/etc. è gestita da variabili non persistenti
             // le variabili persistenti sono solo per lane e road
             val lastValidPosition = myRef.state.currentPointsSequence(0)(myRef.state.currentPointIndex)
-            myRef.sendToMovable(myId, myRef.self, successorRef, envelope(myId, successorId, Advanced(lastValidPosition)))
+            myRef.sendToMovable(myId, myRef.self, successorRef, envelope(myId, successorId, Advanced(laneId, lastValidPosition)))
           }
           else {
             // ci è arrivato un messaggio probabilmente troppo tardi
             // sblocchiamo la situazione di chi aspetta mandandogli un predecessorgone
-            myRef.sendToMovable(myId, myRef.self, successorRef, envelope(myId, successorId, PredecessorGone))
+            myRef.sendToMovable(myId, myRef.self, successorRef, envelope(myId, successorId, PredecessorGone(laneId)))
           }
         }
     }
