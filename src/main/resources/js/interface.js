@@ -64,8 +64,8 @@ window.onload = function() {
     var amount = 2;
     paper.view.setViewSize(1080, 800)
     //paper.view.draw();
-    paper.view.autoUpdate = false;
-    var myVar = setInterval(updateView, 95);
+    //paper.view.autoUpdate = false;
+    //var myVar = setInterval(updateView, 95);
 
 
  /*   paper.view.onFrame = function(event) {
