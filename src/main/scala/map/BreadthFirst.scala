@@ -278,6 +278,7 @@ object BreadthFirst {
       assert(direction.position == zone.position)
       // crea lo step
       steps = steps :+ zone_step(zone, direction)
+      /*
       // in base al verso di percorrenza si decide il vicino
       if(direction.beginToEnd == true) {
         // bisogna prendere il vicino su end
@@ -287,6 +288,9 @@ object BreadthFirst {
         // bisogna prendere il vicino su begin
         neighbor = zone.coordinates.begin.id
       }
+      */
+      // a prescindere dal verso di percorrenza, un zone step DEVE essere seguito da un road step relativo alla road di appartenenza
+      neighbor = zone.road
     }
     var finished = false
     while(finished == false) {
@@ -396,6 +400,7 @@ object BreadthFirst {
       val zone = getZone(map, startEntity).get
       // crea lo step
       steps = steps :+ zone_step(zone, direction)
+      /*
       // in base al verso di percorrenza si decide il vicino
       if(direction.beginToEnd == true) {
         // bisogna prendere il vicino su end
@@ -405,6 +410,10 @@ object BreadthFirst {
         // bisogna prendere il vicino su begin
         neighbor = zone.coordinates.begin.id
       }
+      */
+      // a prescindere dal verso di percorrenza, si deve sempre avere un lane step
+      // ci è sufficiente indicare la road come vicino, poi la gestione della road troverà la lane opportuna
+      neighbor = zone.road
     }
     var finished = false
     while(finished == false) {
@@ -1155,6 +1164,7 @@ object BreadthFirst {
       assert(direction.position == zone.position)
       // crea lo step
       steps = steps :+ zone_step(zone, direction)
+      /*
       // in base al verso di percorrenza si decide il vicino
       if(direction.beginToEnd == true) {
         // bisogna prendere il vicino su end
@@ -1164,6 +1174,9 @@ object BreadthFirst {
         // bisogna prendere il vicino su begin
         neighbor = zone.coordinates.begin.id
       }
+      */
+      // a prescindere dal verso di percorrenza, un zone step DEVE essere sempre seguito da un road step relativo alla road di appartenenza
+      neighbor = zone.road
     }
     var finished = false
     while(finished == false) {

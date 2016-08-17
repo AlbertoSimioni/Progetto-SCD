@@ -117,7 +117,6 @@ object ImmovableActor {
   // PERSISTENCE
   // Messaggio per il salvataggio e la cancellazione di uno snapshot
   case object SaveSnapshot
-  case class DeleteSnapshot(sequenceNr : Long, timestamp : Long)
   
   // CROSSROAD
   case object SemaphoreSwitch
@@ -143,7 +142,7 @@ class ImmovableActor extends PersistentActor with AtLeastOnceDelivery with Actor
   
   // PERSISTENCE
   // Permette di effettuare il salvataggio dello snapshot ogni 10 secondi
-  // val snapshotTimer = context.system.scheduler.schedule(0 millis, 10000 millis, self, SaveSnapshot)
+  val snapshotTimer = context.system.scheduler.schedule(180 seconds, 20 seconds, self, SaveSnapshot)
   
   // SHARDING
   // Permette di comunicare con altri TestActor utilizzando il loro identificativo invece che il loro indirizzo
@@ -507,20 +506,19 @@ class ImmovableActor extends PersistentActor with AtLeastOnceDelivery with Actor
     // PERSISTENCE
     case SaveSnapshot =>
       //state.deliveryState = getDeliverySnapshot
-      //saveSnapshot(state)
+      saveSnapshot(state.getSnapshot())
     case SaveSnapshotSuccess(metadata) =>
-      println("Snapshot stored successfully")
       val prevS = previousSequenceNr
       val prevT = previousTimestamp
       previousSequenceNr = metadata.sequenceNr
       previousTimestamp = metadata.timestamp
       if(prevS != -1 && prevT != -1) {
-        self ! DeleteSnapshot(prevS, prevT)
+        deleteSnapshot(prevS, prevT)
       }
+      // cancella i messaggi fino al sequenceNr alla quale lo snapshot nuovo è stato preso
+      deleteMessages(metadata.sequenceNr)
     case SaveSnapshotFailure(metadata, reason) =>
       println("Failed to store snapshot: " + reason)
-    case DeleteSnapshot(sequenceNr, timestamp) =>
-      //deleteSnapshot(sequenceNr, timestamp)
       
     case PersistenceFailure(payload, sequenceNr, cause) =>
       println("Failed to persist an event: " + cause)
@@ -696,10 +694,11 @@ class ImmovableActor extends PersistentActor with AtLeastOnceDelivery with Actor
       
     case SnapshotOffer(metadata, offeredSnapshot) =>
       offeredSnapshot match {
-        case Some(snapshot : ImmovableState) =>
-          state = snapshot
+        case snapshot : ImmovableState.ImmovableStateSnapshot =>
+          state.setSnapshot(snapshot)
           //setDeliverySnapshot(state.deliveryState)
-          println("State recovered from snapshot successfully")
+        case _ =>
+          
       }
       
   }

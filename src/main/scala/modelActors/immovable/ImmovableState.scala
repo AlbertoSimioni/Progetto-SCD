@@ -14,7 +14,31 @@ import time.TimeMessages._
  * Ciascun attore utilizzerà poi solo i dati a lui necessari in base al ruolo
  */
 
+object ImmovableState {
+  
+  case class ImmovableStateSnapshot(
+      handledMobileEntities : List[String],
+      sleepingActors : Map[String, TimeValue],
+      vehicleFreeMap : Map[String, Boolean],
+      vehicleFree : Boolean,
+      lastMessages : Map[String, Long],
+      deliveryId : Long,
+      id : String,
+      kind : String,
+      bus_stopData : bus_stop,
+      crossroadData : crossroad,
+      laneData : lane,
+      pedestrian_crossroadData : pedestrian_crossroad,
+      roadData : road,
+      tram_stopData : tram_stop,
+      zoneData : zone
+  )
+  
+}
+
 class ImmovableState {
+  
+  import ImmovableState._
   
   // lista degli identificativi delle entità mobili sotto la propria gestione
   var handledMobileEntities = List[String]()
@@ -106,5 +130,44 @@ class ImmovableState {
   var roadData : road = null
   var tram_stopData : tram_stop = null
   var zoneData : zone = null
+  
+  def getSnapshot() : ImmovableStateSnapshot = {
+    val snapshot = ImmovableStateSnapshot(
+        handledMobileEntities,
+        sleepingActors,
+        vehicleFreeMap,
+        vehicleFree,
+        lastMessages,
+        deliveryId,
+        id,
+        kind,
+        bus_stopData,
+        crossroadData,
+        laneData,
+        pedestrian_crossroadData,
+        roadData,
+        tram_stopData,
+        zoneData
+    )
+    return snapshot
+  }
+  
+  def setSnapshot(snapshot : ImmovableStateSnapshot) : Unit = {
+    handledMobileEntities = snapshot.handledMobileEntities
+    sleepingActors = snapshot.sleepingActors
+    vehicleFreeMap = snapshot.vehicleFreeMap
+    vehicleFree = snapshot.vehicleFree
+    lastMessages = snapshot.lastMessages
+    deliveryId = snapshot.deliveryId
+    id = snapshot.id
+    kind = snapshot.kind
+    bus_stopData = snapshot.bus_stopData
+    crossroadData = snapshot.crossroadData
+    laneData = snapshot.laneData
+    pedestrian_crossroadData = snapshot.pedestrian_crossroadData
+    roadData = snapshot.roadData
+    tram_stopData = snapshot.tram_stopData
+    zoneData = snapshot.zoneData
+  }
   
 }

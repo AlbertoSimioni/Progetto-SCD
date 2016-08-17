@@ -52,7 +52,6 @@ object MovableActor {
   // PERSISTENCE
   // Messaggio per il salvataggio e la cancellazione di uno snapshot
   case object SaveSnapshot
-  case class DeleteSnapshot(sequenceNr : Long, timestamp : Long)
   
   // TIME
   // Utilizzato per gestire gli avanzamenti negli spostamenti
@@ -84,7 +83,7 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
   
   // PERSISTENCE
   // Permette di effettuare il salvataggio dello snapshot ogni 10 secondi
-  // val snapshotTimer = context.system.scheduler.schedule(0 millis, 10000 millis, self, SaveSnapshot)
+  val snapshotTimer = context.system.scheduler.schedule(60 seconds, 10 seconds, self, SaveSnapshot)
   
   // SHARDING
   // Permette di comunicare con altri ImmovableActor utilizzando il loro identificativo invece che il loro indirizzo
@@ -171,7 +170,7 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
                 }
               case Route(route) =>
                 // è arrivato il percorso
-                persistAsync(RouteArrived(route)) { evt => println(id + ": route salvata nel db")}
+                persistAsync(RouteArrived(route)) { evt => }
                 // persist body begin
                 state.handleRoute(route)
                 // persist body end
@@ -249,7 +248,7 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
                         // l'unico caso in cui possiamo essere è che non siamo riusciti ad inviare PredecessorGone prima di morire
                         // recupera id della lane precedente
                         var previousLaneId : String = null
-                        if(JSONReader.getLane(current_map, state.getStepIdAt(-2)).isEmpty == false) {
+                        if(state.fromDoubleCrossroad() == false) {
                           previousLaneId = state.getStepIdAt(-2)
                         }
                         else {
@@ -268,7 +267,7 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
                           else {
                             // recupera id della lane precedente
                             var previousLaneId : String = null
-                            if(JSONReader.getLane(current_map, state.getStepIdAt(-2)).isEmpty == false) {
+                            if(state.fromDoubleCrossroad() == false) {
                               previousLaneId = state.getStepIdAt(-2)
                             }
                             else {
@@ -299,7 +298,7 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
                           var previousId = state.getPreviousStepId
                           // recupera anche l'id della lane da cui provenivi
                           var previousLaneId : String = null
-                          if(JSONReader.getLane(current_map, state.getStepIdAt(-2)).isEmpty == false) {
+                          if(state.fromDoubleCrossroad() == false) {
                             previousLaneId = state.getStepIdAt(-2)
                           }
                           else {
@@ -587,7 +586,7 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
               var previousStepId = state.getPreviousStepId
               // recupera anche l'id della lane da cui provenivamo
               var previousLaneId : String = null
-              if(JSONReader.getLane(current_map, state.getStepIdAt(-2)).isEmpty == false) {
+              if(state.fromDoubleCrossroad() == false) {
                 previousLaneId = state.getStepIdAt(-2)
               }
               else {
@@ -707,7 +706,7 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
                   var previousStepId = state.getPreviousStepId
                   // recupera anche l'id della lane da cui provenivamo
                   var previousLaneId : String = null
-                  if(JSONReader.getLane(current_map, state.getStepIdAt(-2)).isEmpty == false) {
+                  if(state.fromDoubleCrossroad() == false) {
                     previousLaneId = state.getStepIdAt(-2)
                   }
                   else {
@@ -1115,20 +1114,19 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
     // PERSISTENCE
     case SaveSnapshot =>
       //state.deliveryState = getDeliverySnapshot
-      //saveSnapshot(state)
+      saveSnapshot(state.getSnapshot())
     case SaveSnapshotSuccess(metadata) =>
-      println("Snapshot stored successfully")
       val prevS = previousSequenceNr
       val prevT = previousTimestamp
       previousSequenceNr = metadata.sequenceNr
       previousTimestamp = metadata.timestamp
       if(prevS != -1 && prevT != -1) {
-        self ! DeleteSnapshot(prevS, prevT)
+        deleteSnapshot(prevS, prevT)
       }
+      // cancella i messaggi fino al sequenceNr alla quale lo snapshot nuovo è stato preso
+      deleteMessages(metadata.sequenceNr)
     case SaveSnapshotFailure(metadata, reason) =>
       println("Failed to store snapshot: " + reason)
-    case DeleteSnapshot(sequenceNr, timestamp) =>
-      //deleteSnapshot(sequenceNr, timestamp)
       
     case PersistenceFailure(payload, sequenceNr, cause) =>
       println("Failed to persist an event: " + cause)
@@ -1164,7 +1162,6 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
         state.beginOfTheStep = true
       case RouteArrived(route) =>
         state.handleRoute(route)
-        println(id + ": recuperata la route")
       // VELOCITY
       case BeginOfTheStep(currentPointsSequence) =>
         state.currentPointsSequence = currentPointsSequence
@@ -1208,10 +1205,11 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
     
     case SnapshotOffer(metadata, offeredSnapshot) =>
       offeredSnapshot match {
-        case Some(snapshot : MovableState) =>
-          state = snapshot
+        case snapshot : MovableState.MovableStateSnapshot =>
+          state.setSnapshot(snapshot)
           //setDeliverySnapshot(state.deliveryState)
-          println("State recovered from snapshot successfully")
+        case _ =>
+          
       }
       
     // TIME
@@ -1311,7 +1309,7 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
     // smetti di mandarti messaggi per la regolazione della velocità
     // velocityTimer.cancel()
     // smetti di mandarti messaggi per l'esecuzione di snapshot
-    // snapshotTimer.cancel()
+    snapshotTimer.cancel()
     // ammazzati
     self ! Shutdown
   }

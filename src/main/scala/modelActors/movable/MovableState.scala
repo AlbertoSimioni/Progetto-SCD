@@ -19,9 +19,32 @@ object MovableState {
   case class BeginOfTheStep(pointsSequence : List[List[point]]) extends Event
   case object IncrementPointIndex extends Event
   
+  case class MovableStateSnapshot(
+      pedestrianRoute : pedestrian_route,
+      carRoute : car_route,
+      busRoute : bus_route,
+      tramRoute : tram_route,
+      currentRoute : List[step],
+      index : Int,
+      beginOfTheStep : Boolean,
+      currentPointsSequence : List[List[point]],
+      currentPointIndex : Int,
+      currentTime : TimeValue,
+      nextVehicleId : String,
+      previousVehicleId : String,
+      predecessorGoneSent : Boolean,
+      travellers : Map[String, String],
+      previousLaneId : String,
+      lastMessages : Map[String, Long],
+      deliveryId : Long,
+      alreadyHidden : Boolean
+  )
+  
 }
 
 class MovableState {
+  
+  import MovableState._
   
   var pedestrianRoute : pedestrian_route = null
   var carRoute : car_route = null
@@ -302,6 +325,21 @@ class MovableState {
     }
   }
   
+  // test affidabile per capire se si è da due incroci o meno
+  def fromDoubleCrossroad() : Boolean = {
+    getStepAt(-1) match {
+      case crossroad_step(_, _) =>
+        getStepAt(-2) match {
+          case crossroad_step(_, _) =>
+            return true
+          case _ =>
+            return false
+        }
+      case _ =>
+        return false
+    }
+  }
+  
   /*
    * Ritorna una lista con:
    * previosPreviousStep
@@ -405,5 +443,50 @@ class MovableState {
   // DORMI/VEGLIA
   // serve per garantire un solo evento di dormita e un solo evento di risveglio verso l'interfaccia grafica
   var alreadyHidden = false
+  
+  def getSnapshot() : MovableStateSnapshot = {
+    val snapshot = MovableStateSnapshot(
+        pedestrianRoute,
+        carRoute,
+        busRoute,
+        tramRoute,
+        currentRoute,
+        index,
+        beginOfTheStep,
+        currentPointsSequence,
+        currentPointIndex,
+        currentTime,
+        nextVehicleId,
+        previousVehicleId,
+        predecessorGoneSent,
+        travellers,
+        previousLaneId,
+        lastMessages,
+        deliveryId,
+        alreadyHidden
+      )
+    return snapshot
+  }
+  
+  def setSnapshot(snapshot : MovableStateSnapshot) : Unit = {
+    pedestrianRoute = snapshot.pedestrianRoute
+    carRoute = snapshot.carRoute
+    busRoute = snapshot.busRoute
+    tramRoute = snapshot.tramRoute
+    currentRoute = snapshot.currentRoute
+    index = snapshot.index
+    beginOfTheStep = snapshot.beginOfTheStep
+    currentPointsSequence = snapshot.currentPointsSequence
+    currentPointIndex = snapshot.currentPointIndex
+    currentTime = snapshot.currentTime
+    nextVehicleId = snapshot.nextVehicleId
+    previousVehicleId = snapshot.previousVehicleId
+    predecessorGoneSent = snapshot.predecessorGoneSent
+    travellers = snapshot.travellers
+    previousLaneId = snapshot.previousLaneId
+    lastMessages = snapshot.lastMessages
+    deliveryId = snapshot.deliveryId
+    alreadyHidden = snapshot.alreadyHidden
+  }
   
 }
