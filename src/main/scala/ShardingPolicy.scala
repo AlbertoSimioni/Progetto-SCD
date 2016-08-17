@@ -204,11 +204,12 @@ object ShardingPolicy extends ShardAllocationStrategy with Serializable {
       // rimuovi vecchi
       var toBeRemoved = List[rectangle]()
       for(rectangle <- rectangleList) {
-        rectangle.bottom_left.x match {
-          case x =>
-            toBeRemoved ::= rectangle
+        if(rectangle.bottom_left.x == x)
+        {
+          toBeRemoved ::= rectangle
         }
       }
+      
       rectangleList = rectangleList.toSet.diff(toBeRemoved.toSet).toList
       // crea nuovi
       val newRegionY = (map_y.toDouble / (factor_y-1)).floor.toInt
@@ -230,7 +231,7 @@ object ShardingPolicy extends ShardAllocationStrategy with Serializable {
       // diminuisci rightMost
       rightMost = rightMost - 1
       // deve essere vero che...
-      assert(originalLength - 1 == rectangleList.length)
+      //assert(originalLength - 1 == rectangleList.length)
     }
     return rectangleList
   }
