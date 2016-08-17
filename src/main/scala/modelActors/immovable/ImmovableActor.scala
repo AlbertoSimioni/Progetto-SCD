@@ -591,6 +591,14 @@ class ImmovableActor extends PersistentActor with AtLeastOnceDelivery with Actor
         Crossroad.HandleSemaphoreSwitch(this, state.id)
       }
       
+    // GESTIONE SALITA DEI PASSEGGERI DAL MEZZO PUBBLICO
+    case ToBusStop(command) =>
+      // l'unico che può mandare u messaggio così è se stesso
+      BusStop.fromImmovableHandler(this, state.id, state.id, command)
+    case ToTramStop(command) =>
+      // l'unico che può mandare u messaggio così è se stesso
+      TramStop.fromImmovableHandler(this, state.id, state.id, command)
+      
   }
   
   // PERSISTENCE

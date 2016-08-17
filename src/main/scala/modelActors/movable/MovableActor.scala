@@ -63,6 +63,10 @@ object MovableActor {
   // http://getakka.net/docs/persistence/persistent-actors
   case object Shutdown
   
+  // DEFER
+  // serve per garantire che i persistAsync siano stati tutti effettuati prima di procedere
+  case object DeferObject
+  
 }
 
 class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery {
@@ -145,26 +149,29 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
             command match {
               case IpResponse(ipAddress) =>
                 if(isLocal(ipAddress)) {
-                  // effettua il cambio gestione
-                  sendToImmovable(id, self, senderId, MobileEntityAdd(id))
                   val previousHandler = state.getPreviousStepId
                   sendToImmovable(id, self, previousHandler, MobileEntityRemove(id))
+                  // effettua il cambio gestione
+                  sendToImmovable(id, self, senderId, MobileEntityAdd(id))
                   // esegui lo step corrente
                   sendToMovable(id, self, self, ExecuteCurrentStep)
                 }
                 else {
-                  // trasferimento di nodo di calcolo, con cambio di gestione
-                  sendToImmovable(id, self, senderId, MobileEntityAdd(id))
-                  sendToImmovable(id, self, senderId, ReCreateMe(id))
                   // informa il precedente gestore
                   val previousHandler = state.getPreviousStepId
                   sendToImmovable(id, self, previousHandler, MobileEntityRemove(id))
-                  // ammazzati
-                  shutdown()
+                  // trasferimento di nodo di calcolo, con cambio di gestione
+                  sendToImmovable(id, self, senderId, MobileEntityAdd(id))
+                  // prima di dare il comando di ricreazione al destinatario, assicuriamoci di aver completato tutti i persistAsync
+                  defer(DeferObject) { evt =>
+                    sendToImmovable(id, self, senderId, ReCreateMe(id))
+                    // ammazzati
+                    shutdown()
+                  }
                 }
               case Route(route) =>
                 // è arrivato il percorso
-                persistAsync(RouteArrived(route)) { evt => }
+                persistAsync(RouteArrived(route)) { evt => println(id + ": route salvata nel db")}
                 // persist body begin
                 state.handleRoute(route)
                 // persist body end
@@ -484,9 +491,12 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
                     }
                     else {
                       // se in anticipo, vai a dormire
-                      val immovableActorId = state.getCurrentStepId
-                      sendToImmovable(id, self, immovableActorId, PauseExecution(comparedTime))
-                      shutdown()
+                      // assicuriamoci di aver completato le persistAsync prima di procedere
+                      defer(DeferObject) { evt =>
+                        val immovableActorId = state.getCurrentStepId
+                        sendToImmovable(id, self, immovableActorId, PauseExecution(comparedTime))
+                        shutdown()
+                      }
                     }
                     
                 }
@@ -948,9 +958,12 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
                     state.beginOfTheStep = true
                     // persist body end
                     // ora accodati
-                    sendToImmovable(id, self, bus_stop.id, envelope(id, bus_stop.id, WaitForPublicTransport(nextStop)))
-                    // ammazzati
-                    shutdown()
+                    // prima assicuriamoci di aver salvato tutte le persistAsync
+                    defer(DeferObject) { evt =>
+                      sendToImmovable(id, self, bus_stop.id, envelope(id, bus_stop.id, WaitForPublicTransport(nextStop)))
+                      // ammazzati
+                      shutdown()
+                    }
                   }
                 }
                 else {
@@ -1035,9 +1048,12 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
                     state.beginOfTheStep = true
                     // persist body end
                     // ora accodati
-                    sendToImmovable(id, self, tram_stop.id, envelope(id, tram_stop.id, WaitForPublicTransport(nextStop)))
-                    // ammazzati
-                    shutdown()
+                    // prima assicuriamoci di aver salvato tutte le persistAsync
+                    defer(DeferObject) { evt =>
+                      sendToImmovable(id, self, tram_stop.id, envelope(id, tram_stop.id, WaitForPublicTransport(nextStop)))
+                      // ammazzati
+                      shutdown()
+                    }
                   }
                 }
                 else {
@@ -1087,10 +1103,11 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
           }
           else {
             val delay = nextVelocityTick - currentTime
-            val cancellable = context.system.scheduler.scheduleOnce(Duration(delay, "millis")) {
+            val cancellable = context.system.scheduler.scheduleOnce(Duration(delay, "millis"), self, VelocityTick)
+            //val cancellable = context.system.scheduler.scheduleOnce(Duration(delay, "millis")) {
               //sendToMovable(id, self, self, VelocityTick)
-              self ! VelocityTick
-            }
+              //self ! VelocityTick
+            //}
           }
         }
       }
@@ -1147,6 +1164,7 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
         state.beginOfTheStep = true
       case RouteArrived(route) =>
         state.handleRoute(route)
+        println(id + ": recuperata la route")
       // VELOCITY
       case BeginOfTheStep(currentPointsSequence) =>
         state.currentPointsSequence = currentPointsSequence
@@ -1214,12 +1232,48 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
   def sendToImmovable(senderId : String, senderRef : ActorRef, destinationId : String, command : Command) : Unit = {
     deliver(shardRegion.path, deliveryId => {
       if(deliveryId >= state.deliveryId) {
-        persistAsync(PersistDeliveryId(deliveryId)) { evt => }
+        command match {
+          case ReCreateMe(id) =>
+            persist(PersistDeliveryId(deliveryId)) { evt => }
+          case PauseExecution(wakeupTime) =>
+            persist(PersistDeliveryId(deliveryId)) { evt => }
+          case _ =>
+            val content = develope(command)
+            if(content != null) {
+              content match {
+                case WaitForPublicTransport(nextStop) =>
+                  persist(PersistDeliveryId(deliveryId)) { evt => }
+                case _ =>
+                  persistAsync(PersistDeliveryId(deliveryId)) { evt => }
+              }
+            }
+            else {
+              persistAsync(PersistDeliveryId(deliveryId)) { evt => }
+            }
+        }
         state.deliveryId = deliveryId
       }
       else {
         // potremmo essere dopo un ripristino
-        persistAsync(PersistDeliveryId(state.deliveryId + deliveryId)) { evt => }
+        command match {
+          case ReCreateMe(id) =>
+            persist(PersistDeliveryId(state.deliveryId + deliveryId)) { evt => }
+          case PauseExecution(wakeupTime) =>
+            persist(PersistDeliveryId(state.deliveryId + deliveryId)) { evt => }
+          case _ =>
+            val content = develope(command)
+            if(content != null) {
+              content match {
+                case WaitForPublicTransport(nextStop) =>
+                  persist(PersistDeliveryId(state.deliveryId + deliveryId)) { evt => }
+                case _ =>
+                  persistAsync(PersistDeliveryId(state.deliveryId + deliveryId)) { evt => }
+              }
+            }
+            else {
+              persistAsync(PersistDeliveryId(state.deliveryId + deliveryId)) { evt => }
+            }
+        }
         state.deliveryId = state.deliveryId + deliveryId
       }
       ToImmovable(destinationId, ToPersistentMessages.FromMovable(senderId, senderRef, Request(state.deliveryId, command)))

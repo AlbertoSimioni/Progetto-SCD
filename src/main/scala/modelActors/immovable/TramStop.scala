@@ -1,5 +1,7 @@
 package modelActors.immovable
 
+import scala.concurrent.duration._
+
 import akka.actor.ActorRef
 
 import modelActors.Messages._
@@ -9,7 +11,8 @@ import pubsub.Messages._
 
 object TramStop {
   
-  // commands
+  // messages
+  case class CompleteTravellersHandling(numTravellers : Int, tramId : String, tramRef : ActorRef)
   
   // events
   
@@ -26,6 +29,35 @@ object TramStop {
       case FromRoad(message) =>
         
       case FromTramStop(message) =>
+        message match {
+          case CompleteTravellersHandling(numTravellers, tramId, tramRef) =>
+            // seleziona i pedoni che devono salire
+            val placesAvailable = Tram.capacity - numTravellers
+            var goingOn = List[(String, String)]()
+            if(myRef.travellersQueue.length <= placesAvailable) {
+              // prendili tutti
+              goingOn = myRef.travellersQueue
+              myRef.travellersQueue = List[(String, String)]()
+            }
+            else {
+              // prendi i primi placesAvailable
+              goingOn = myRef.travellersQueue.slice(0,placesAvailable)
+              myRef.travellersQueue = myRef.travellersQueue.slice(placesAvailable, myRef.travellersQueue.length)
+            }
+            // rendi persistente la rimozione
+            myRef.persistAsync(TramStopEvent(TravellersGoneOn(goingOn))) { evt => }
+            // persist body begin
+            for(traveller <- goingOn) {
+              myRef.state.handledMobileEntities = myRef.state.handledMobileEntities.filter { current => current != traveller._1 }
+            }
+            // persist body end
+            for(traveller <- goingOn) {
+              myRef.handledMobileEntitiesMap = myRef.handledMobileEntitiesMap - traveller._1
+              // genera gli eventi hide
+              myRef.publisherGuiHandler ! hidePedestrian(traveller._1, "", true)
+            }
+            myRef.sendToMovable(myId, tramRef, envelope(myId, tramId, GetIn(goingOn)))
+        }
         
       case FromZone(message) =>
         
@@ -86,32 +118,9 @@ object TramStop {
               // aggiungi una entry alla tabella 
               myRef.handledMobileEntitiesMap = myRef.handledMobileEntitiesMap + (traveller -> travellerRef)
             }
-            // seleziona i pedoni che devono salire
-            val placesAvailable = Tram.capacity - numTravellers
-            var goingOn = List[(String, String)]()
-            if(myRef.travellersQueue.length <= placesAvailable) {
-              // prendili tutti
-              goingOn = myRef.travellersQueue
-              myRef.travellersQueue = List[(String, String)]()
-            }
-            else {
-              // prendi i primi placesAvailable
-              goingOn = myRef.travellersQueue.slice(0,placesAvailable)
-              myRef.travellersQueue = myRef.travellersQueue.slice(placesAvailable, myRef.travellersQueue.length)
-            }
-            // rendi persistente la rimozione
-            myRef.persistAsync(TramStopEvent(TravellersGoneOn(goingOn))) { evt => }
-            // persist body begin
-            for(traveller <- goingOn) {
-              myRef.state.handledMobileEntities = myRef.state.handledMobileEntities.filter { current => current != traveller._1 }
-            }
-            // persist body end
-            for(traveller <- goingOn) {
-              myRef.handledMobileEntitiesMap = myRef.handledMobileEntitiesMap - traveller._1
-              // genera gli eventi hide
-              myRef.publisherGuiHandler ! hidePedestrian(traveller._1, "", true)
-            }
-            myRef.sendToMovable(myId, senderRef, envelope(myId, senderId, GetIn(goingOn)))
+            // prima di far salire i passeggeri, aspettiamo un pò
+            import myRef.context._
+            val cancellable = myRef.context.system.scheduler.scheduleOnce(Duration(1500, "millis"), myRef.self, envelope(myId, myId, CompleteTravellersHandling(numTravellers, senderId, senderRef)))
         }
     }
   }

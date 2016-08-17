@@ -1,5 +1,7 @@
 package modelActors.immovable
 
+import scala.concurrent.duration._
+
 import akka.actor.ActorRef
 
 import modelActors.Messages._
@@ -9,13 +11,43 @@ import pubsub.Messages._
 
 object BusStop {
   
-  // real commands
+  // messages
+  case class CompleteTravellersHandling(numTravellers : Int, busId : String, busRef : ActorRef)
   
   // events
   
   def fromImmovableHandler(myRef : ImmovableActor, myId : String, senderId : String, command : RealCommand) : Unit = {
     command match {
       case FromBusStop(message) =>
+        message match {
+          case CompleteTravellersHandling(numTravellers, busId, busRef) =>
+            // seleziona i pedoni che devono salire
+            val placesAvailable = Bus.capacity - numTravellers
+            var goingOn = List[(String, String)]()
+            if(myRef.travellersQueue.length <= placesAvailable) {
+              // prendili tutti
+              goingOn = myRef.travellersQueue
+              myRef.travellersQueue = List[(String, String)]()
+            }
+            else {
+              // prendi i primi placesAvailable
+              goingOn = myRef.travellersQueue.slice(0,placesAvailable)
+              myRef.travellersQueue = myRef.travellersQueue.slice(placesAvailable, myRef.travellersQueue.length)
+            }
+            // rendi persistente la rimozione
+            myRef.persistAsync(BusStopEvent(TravellersGoneOn(goingOn))) { evt => }
+            // persist body begin
+            for(traveller <- goingOn) {
+              myRef.state.handledMobileEntities = myRef.state.handledMobileEntities.filter { current => current != traveller._1 }
+            }
+            // persist body end
+            for(traveller <- goingOn) {
+              myRef.handledMobileEntitiesMap = myRef.handledMobileEntitiesMap - traveller._1
+              // genera gli eventi hide
+              myRef.publisherGuiHandler ! hidePedestrian(traveller._1, "", true)
+            }
+            myRef.sendToMovable(myId, busRef, envelope(myId, busId, GetIn(goingOn)))
+        }
         
       case FromCrossroad(message) =>
         
@@ -75,32 +107,9 @@ object BusStop {
               // aggiungi una entry alla tabella 
               myRef.handledMobileEntitiesMap = myRef.handledMobileEntitiesMap + (traveller -> travellerRef)
             }
-            // seleziona i pedoni che devono salire
-            val placesAvailable = Bus.capacity - numTravellers
-            var goingOn = List[(String, String)]()
-            if(myRef.travellersQueue.length <= placesAvailable) {
-              // prendili tutti
-              goingOn = myRef.travellersQueue
-              myRef.travellersQueue = List[(String, String)]()
-            }
-            else {
-              // prendi i primi placesAvailable
-              goingOn = myRef.travellersQueue.slice(0,placesAvailable)
-              myRef.travellersQueue = myRef.travellersQueue.slice(placesAvailable, myRef.travellersQueue.length)
-            }
-            // rendi persistente la rimozione
-            myRef.persistAsync(BusStopEvent(TravellersGoneOn(goingOn))) { evt => }
-            // persist body begin
-            for(traveller <- goingOn) {
-              myRef.state.handledMobileEntities = myRef.state.handledMobileEntities.filter { current => current != traveller._1 }
-            }
-            // persist body end
-            for(traveller <- goingOn) {
-              myRef.handledMobileEntitiesMap = myRef.handledMobileEntitiesMap - traveller._1
-              // genera gli eventi hide
-              myRef.publisherGuiHandler ! hidePedestrian(traveller._1, "", true)
-            }
-            myRef.sendToMovable(myId, senderRef, envelope(myId, senderId, GetIn(goingOn)))
+            // prima di far salire i passeggeri, aspettiamo un pò
+            import myRef.context._
+            val cancellable = myRef.context.system.scheduler.scheduleOnce(Duration(1500, "millis"), myRef.self, envelope(myId, myId, CompleteTravellersHandling(numTravellers, senderId, senderRef)))
         }
       case FromTram(message) =>
         message match {

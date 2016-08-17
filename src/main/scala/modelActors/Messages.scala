@@ -236,7 +236,7 @@ object Messages {
           case PredecessorArrived(laneId) =>
             log = log + "PredecessorArrived(" + laneId + ")"
           case Advanced(laneId, lastPosition) =>
-            log = log + "Advanced(" + laneId + " - " + lastPosition + ")"
+            log = log + "Advanced(" + lastPosition + ")"
           case PredecessorGone(laneId) =>
             log = log + "PredecessorGone(" + laneId + ")"
           case SuccessorGone(laneId) =>
@@ -833,6 +833,8 @@ object Messages {
         return message
   	  case ToZone(FromZone(message)) =>
         return message
+      case _ =>
+        return null
 	  }
   }
 }
