@@ -71,7 +71,18 @@ object UrbanSimulatorApp extends App with ReactiveApi with MainActors with React
 		idExtractor = UrbanElement.idExtractor,
 		shardResolver = UrbanElement.shardResolver,
 		allocationStrategy = ShardingPolicy)*/
-  
+  val role = system.settings.config.getList("akka.cluster.roles").get(0).unwrapped
+  if(role == "guihandler") {
+    IO(UHttp) ! Http.Bind(wsService, Configuration.host, Configuration.portWs)
+    // Since the UTttp extension extends from Http extension, it starts an actor whose name will later collide with the Http extension.
+    system.actorSelection("/user/IO-HTTP") ! PoisonPill
+    // We could use IO(UHttp) here instead of killing the "/user/IO-HTTP" actor
+    IO(Http) ! Http.Bind(rootService, Configuration.host, Configuration.portHttp)
+    sys.addShutdownHook({ IO(UHttp) ! Http.Unbind; IO(Http) ! Http.Unbind; system.shutdown })
+    system.actorOf(Props(classOf[Subscriber], "modelEvent"), "subscriberModel")
+  }
+
+
   val shardRegionActor = ClusterSharding(system).start(
     typeName = ImmovableActor.typeOfEntries,
     entryProps = Some(ImmovableActor.props()/*.withDispatcher("custom-dispatcher")*/),
@@ -94,16 +105,6 @@ object UrbanSimulatorApp extends App with ReactiveApi with MainActors with React
     else if(role == "controller") {
 			// attiva Controller
 			val controller = system.actorOf(Props[controllerActors.Controller])
-		}
-		// avvio server http
-    else if(role == "guihandler") {
-			IO(UHttp) ! Http.Bind(wsService, Configuration.host, Configuration.portWs)
-			// Since the UTttp extension extends from Http extension, it starts an actor whose name will later collide with the Http extension.
-			system.actorSelection("/user/IO-HTTP") ! PoisonPill
-			// We could use IO(UHttp) here instead of killing the "/user/IO-HTTP" actor
-			IO(Http) ! Http.Bind(rootService, Configuration.host, Configuration.portHttp)
-			sys.addShutdownHook({ IO(UHttp) ! Http.Unbind; IO(Http) ! Http.Unbind; system.shutdown })
-      system.actorOf(Props(classOf[Subscriber], "modelEvent"), "subscriberModel")
 		}
 	}
   

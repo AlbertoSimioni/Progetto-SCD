@@ -16,11 +16,11 @@ import scala.concurrent.duration.Duration
  * Corrisponde al coordinatore vero e prorpio del sistema
  */
 class Controller extends Actor {
-  import context.dispatcher
+  //import context.dispatcher
   // fai partire il sistema
-  //sendToNonPersistent(self, self, StartSystem)
+  sendToNonPersistent(self, self, StartSystem)
 
-  context.system.scheduler.scheduleOnce(Duration(5000, "millis"), self, ToNonPersistent(self,ToNonPersistentMessages.FromNonPersistent(self, StartSystem)))
+  //context.system.scheduler.scheduleOnce(Duration(5000, "millis"), self, ToNonPersistent(self,ToNonPersistentMessages.FromNonPersistent(self, StartSystem)))
 
 
   override def receive : Receive = {
