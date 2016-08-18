@@ -71,45 +71,6 @@ object ImmovableActor {
   // Permette di capire lo shard di appartenenza del ImmovableActor da un messaggio a lui diretto
   val shardResolver: ShardRegion.ShardResolver = msg => msg match {
     case envelope : ToImmovable =>
-      /*
-      if(envelope.destinationId == null) {
-        envelope.toImmovableMessage match {
-          case ToPersistentMessages.FromImmovable(senderId, payload) =>
-            println("From Immovable, Mittente: " + senderId)
-            payload match {
-              case Request(deliveryId, command) =>
-                println("Request")
-                command match {
-                  case ReCreateMobileEntities =>
-                    println("Recreatemobileentities")
-                  case ToBusStop(command) =>
-                    println("tobusstop")
-                  case ToCrossroad(command) =>
-                    println("tocrossroad")
-                  case ToLane(command) =>
-                    println("tolane")
-                  case ToPedestrianCrossroad(command) =>
-                    println("topedestriancrossroad")
-                  case ToRoad(command) =>
-                    println("toroad")
-                  case ToTramStop(command) =>
-                    println("totramstop")
-                  case ToZone(command) =>
-                    println("tozone")
-                  case _ =>
-                    println("Altro e We should not be here!")  
-                }
-              case Ack(deliveryId) =>
-                println("Acknowledgement")
-            }
-          case ToPersistentMessages.FromMovable(senderId, senderRef, payload) =>
-            println("From Movable, Mittente: " + senderId)
-          case ToPersistentMessages.FromNonPersistent(senderRef, command) =>
-            println("From Non Persistent, Mittente: " + senderRef.path)
-        }
-        assert(false)
-      }
-      */
       val shardId = decideShard(envelope.destinationId)
       shardId
   }
@@ -173,7 +134,7 @@ class ImmovableActor extends PersistentActor with AtLeastOnceDelivery with Actor
   // deve essere mantenuta consistente con la mappa handledMobileEntitiesMap
   // in particolare, un veicolo aggiunto a handledMobileEntitiesMap non è necessariamente aggiunto anche a positionsMap
   // mentre un veicolo rimosso deve essere rimosso anche dalla mappa
-  var positionsMap = Map[String, point]()
+  var positionsMap = Map[String, (ActorRef, point)]()
   // Richieste pendenti per chi deve entrare a metà della lane
   var pendingLaneRequests = Map[String, (ActorRef, point, direction)]()
   
@@ -315,36 +276,6 @@ class ImmovableActor extends PersistentActor with AtLeastOnceDelivery with Actor
                 // persist body end
                 // rimuovi if any
                 handledMobileEntitiesMap = handledMobileEntitiesMap.filter(pair => pair._1 != id)
-                // fallo anche sulla tabella delle posizioni
-                positionsMap = positionsMap.filter(pair => pair._1 != id)
-                // dal momento che abbiamo rimosso potenzialemente delle posizioni nella nostra map, va effettuato un controllo sulle pending requests
-                // vedi se ci sono delle richieste pendenti da soddisfare
-                if(pendingLaneRequests.size > 0) {
-                  var satisfied = List[String]()
-                  for(entry <- pendingLaneRequests) {
-                    if(Lane.checkEnoughSpace(this, entry._1, entry._2._2, entry._2._3)) {
-                      // soddisfa immediatamente la richiesta
-                      val neighbours = Lane.getNeighbours(this, entry._2._2, entry._2._3)
-                      val predecessorRef = handledMobileEntitiesMap.get(neighbours._1).getOrElse(null)
-                      val successorRef = handledMobileEntitiesMap.get(neighbours._2).getOrElse(null)
-                      // possiamo aggiungere la sua posizione iniziale a quelle di positionMap
-                      if(state.handledMobileEntities.contains(senderId)) {
-                        if(positionsMap.contains(entry._1)) {
-                          positionsMap = positionsMap.updated(entry._1, entry._2._2)
-                        }
-                        else {
-                          positionsMap = positionsMap + (entry._1 -> entry._2._2)
-                        }
-                      }
-                      sendToMovable(state.id, entry._2._1, envelope(state.id, entry._1, LaneAccessGranted(neighbours._1, predecessorRef, neighbours._2, successorRef)))
-                      satisfied = satisfied :+ entry._1
-                    }
-                  }
-                  // rimuovi dalla lista delle richieste pendenti quelle soddisfatte
-                  for(requestingId <- satisfied) {
-                    pendingLaneRequests = pendingLaneRequests - requestingId
-                  }
-                }
               case PauseExecution(wakeupTime) =>
                 // l'attore mobile chiede di essere messo in stato dormiente
                 persistAsync(MobileEntitySleeping(senderId, wakeupTime)) { evt => }
@@ -530,6 +461,7 @@ class ImmovableActor extends PersistentActor with AtLeastOnceDelivery with Actor
       val toBeWakenUp = state.actorsToBeWakenUp(timeValue)
       if(toBeWakenUp.isEmpty == false) {
         for(id <- toBeWakenUp) {
+          println(state.id + ": sto svegliando " + id + " perchè sono le " + timeValue)
           persistAsync(MobileEntityWakingUp(id)) { evt => }
           // persist body begin
           state.removeSleepingActor(id)

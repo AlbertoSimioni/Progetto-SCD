@@ -130,6 +130,9 @@ object Messages {
   // messaggio inviato dalla bus stop al bus per passargli chi sta salendo
   case class GetIn(travellers : List[(String, String)])
   
+  // messaggio per richiedere la rimozuione della posizione nella positionsMap
+  case object RemovePosition
+  
   
   
   // evento per il filtro dei duplicati
@@ -187,6 +190,7 @@ object Messages {
   // stampa una stringa di logging del messaggio
   def printMessage(senderId : String, destinationId : String, message : Command) : Unit = {
     var log : String = senderId + " => " + destinationId + ": "
+    var flag = true
     message match {
       case IpRequest =>
         log = log + "IpRequest"
@@ -237,6 +241,7 @@ object Messages {
             log = log + "PredecessorArrived(" + laneId + ")"
           case Advanced(laneId, lastPosition) =>
             log = log + "Advanced(" + lastPosition + ")"
+            flag = false
           case PredecessorGone(laneId) =>
             log = log + "PredecessorGone(" + laneId + ")"
           case SuccessorGone(laneId) =>
@@ -265,9 +270,13 @@ object Messages {
             log = log + "GetOut"
           case GetIn(travellers) =>
             log = log + "GetIn"
+          case RemovePosition =>
+            log = log + "RemovePosition"
         }
     }
-    println(log)
+    if(flag) {
+      println(log)
+    }
   }
   
   // effettua l'imbustamento giusto rispetto alle entità coinvolte

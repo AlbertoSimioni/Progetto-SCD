@@ -96,7 +96,7 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
   
   // TIME
   // Tick utilizzato solo negli avanzamenti
-  //val velocityTimer = context.system.scheduler.schedule(0 millis, Duration(getVelocityTickInterval(id), "millis"), self, VelocityTick)
+  // val velocityTimer = context.system.scheduler.schedule(0 millis, Duration(getVelocityTickInterval(id), "millis"), self, VelocityTick)
   
   // VELOCITY
   // interruttore per l'interessamento ai tick di velocità o meno
@@ -283,8 +283,9 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
                           // persist body end
                           previousVehicle = null
                         }
-                        // se c'è una qualche previousLane, avvisala di modificare i campi lastVehicle (qualora fossimo stati l'unico veicolo)
+                        // se c'è una qualche previousLane, avvisala di modificare i campi lastVehicle (qualora fossimo stati l'unico veicolo) e di cancellare la nostra posizione
                         if(state.previousLaneId != null) {
+                          sendToImmovable(id, self, state.previousLaneId, envelope(id, state.previousLaneId, RemovePosition))
                           sendToImmovable(id, self, state.previousLaneId, envelope(id, state.previousLaneId, HandleLastVehicle))
                           persistAsync(PreviousLaneChanged(null)) { evt => }
                           // persist body begin
@@ -478,6 +479,7 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
                     // seconda cosa: compara il tempo attuale con il tempo corrispondente
                     if(isLate(comparedTime, state.currentTime)) {
                       // se in ritardo, vai al prossimo step
+                      println(id + ": sono in ritardo")
                       sendToMovable(id, self, self, PersistAndNextStep)
                       // evento grafico associato
                       if(state.alreadyHidden == true) {
@@ -491,7 +493,9 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
                     else {
                       // se in anticipo, vai a dormire
                       // assicuriamoci di aver completato le persistAsync prima di procedere
+                      println(id + ": sono in anticipo")
                       defer(DeferObject) { evt =>
+                        println(id + ": e ora me ne vado a dormire")
                         val immovableActorId = state.getCurrentStepId
                         sendToImmovable(id, self, immovableActorId, PauseExecution(comparedTime))
                         shutdown()
@@ -702,7 +706,7 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
                 // abbiamo finito la lane
                 // potremmo essere nel caso in cui la prossima entità è attaccata all'incrocio e non abbiamo avuto spazio sufficiente per lanciare la vehicle_free
                 // in tal caso, prima di passare allo step successivo, devo mandarla
-                if(state.currentPointIndex < bus_length + 1) {
+                if(state.currentPointIndex < bus_length + 1 && state.fromZone() == false) {
                   var previousStepId = state.getPreviousStepId
                   // recupera anche l'id della lane da cui provenivamo
                   var previousLaneId : String = null
@@ -748,6 +752,7 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
                   }
                   // notifichiamo la lane che gestisca la nostra uscita di scena
                   sendToImmovable(id, self, lane.id, envelope(id, lane.id, HandleLastVehicle))
+                  sendToImmovable(id, self, lane.id, envelope(id, lane.id, RemovePosition))
                   persistAsync(PreviousLaneChanged(null)) { evt => }
                   // persist body begin
                   state.previousLaneId = null

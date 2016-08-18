@@ -753,7 +753,7 @@ object Routes {
     // crea le destinazioni
     val places = createPlaces()
     // decidi il pezzo di percorso su cui effettuare l'inserimento forzoso
-    val index = nextInt() % 3
+    val index = nextInt(100) % 3
     return createPedestrianRouteWithTram(places, times, index)
   }
   
@@ -762,7 +762,7 @@ object Routes {
     var secondRoute : List[step] = null
     var thirdRoute : List[step] = null
     // ottieni due fermate del tram appartenenti alla stessa tratta
-    val targetRoute = (nextInt() % getAllTramRoutes().length) + 1
+    val targetRoute = (nextInt(100) % getAllTramRoutes().length) + 1
     var tramStops = JSONReader.getAllTramStops(map).filter { tramStop => tramStop.route == targetRoute }
     assert(tramStops.length > 1)
     var firstTramStop : tram_stop = null
