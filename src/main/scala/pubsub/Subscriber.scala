@@ -42,13 +42,13 @@ class Subscriber(contentType : String) extends Actor with ActorLogging {
       //println("PedestrianPosition")
     case m @ hideCar(id,zoneID) =>   context.actorSelection("/user/activeConnections") !
       hideCar(id,zoneID)
-      println("hideCar")
+      //println("hideCar")
     case m @ hideBus(id) =>   context.actorSelection("/user/activeConnections") !
       ActiveConnections.SendMessageToClients(BrowserMessagesFormatter.HideBusToJson(m),false)
       //println("hideBus")
     case m @ hidePedestrian(id,zoneID,inVehicle) =>   context.actorSelection("/user/activeConnections") !
       hidePedestrian(id,zoneID,inVehicle)
-      println("hidePedestrian")
+      //println("hidePedestrian")
     case m @ hideTram(id) =>   context.actorSelection("/user/activeConnections") !
       ActiveConnections.SendMessageToClients(BrowserMessagesFormatter.HideTramToJson(m),false)
       //println("hideTram");
