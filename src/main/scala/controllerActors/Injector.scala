@@ -115,7 +115,7 @@ class Injector extends Actor {
               self ! PoisonPill
             
             case CreatePedestrian(id) =>
-              println("ATTENZIONE! PERCORSO PEDONE NON RANDOM")
+              /*println("ATTENZIONE! PERCORSO PEDONE NON RANDOM")
               var pedestrianRoute : pedestrian_route = null
               if(i == 0) {
                 pedestrianRoute = Routes.createPedestrianRoute(pedestrianBusPlaces, immediateTime)._1
@@ -127,8 +127,8 @@ class Injector extends Actor {
               }
               else {
                 pedestrianRoute = Routes.createPedestrianRouteWithTram(pedestrianBusPlaces, immediateTime, 0)._1
-              }
-              /*
+              }*/
+
               // con probabilità 0.5 genera un percorso che include l'utilzzo del tram
               var pedestrianRoute : pedestrian_route = null
               if(scala.util.Random.nextInt() % 2 == 0) {
@@ -139,12 +139,12 @@ class Injector extends Actor {
                 // con inserimento tram forzoso
                 pedestrianRoute = Routes.createPedestrianRouteWithTram()._1
               }
-              */
+
               val firstId = Routes.getStepId(pedestrianRoute.houseToWorkRoute(0))
               sendToImmovable(self, firstId, CreateMobileEntity(id, pedestrianRoute))
               publisherGuiHanlder ! CreateMobileEntity(id, pedestrianRoute)
             case CreateCar(id) =>
-              println("ATTENZIONE! PERCORSO AUTOMOBILE NON RANDOM")
+             /*println("ATTENZIONE! PERCORSO AUTOMOBILE NON RANDOM")
               var carRoute : car_route = null
               if(j < 2) {
                 carRoute = Routes.createCarRoute(carPlaces, immediateTime)
@@ -156,8 +156,8 @@ class Injector extends Actor {
               }
               else {
                 carRoute = Routes.createCarRoute(carPlaces3, immediateTime)
-              }
-              //val carRoute = Routes.createCarRoute()
+              }*/
+              val carRoute = Routes.createCarRoute()
               val firstId = Routes.getStepId(carRoute.houseToWorkRoute(0))
               sendToImmovable(self, firstId, CreateMobileEntity(id, carRoute))
               publisherGuiHanlder ! CreateMobileEntity(id, carRoute)
