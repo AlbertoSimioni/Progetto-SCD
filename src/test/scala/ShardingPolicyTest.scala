@@ -1,6 +1,6 @@
 import org.scalatest._
 
-import ShardingPolicy._
+import main.ShardingPolicy._
 import modelActors.immovable.ShardUtilities._
 
 /**

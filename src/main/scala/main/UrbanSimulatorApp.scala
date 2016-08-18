@@ -1,35 +1,16 @@
-import com.typesafe.config.ConfigFactory
-import akka.actor.ActorSystem
-import akka.contrib.pattern.ClusterSharding
-import akka.actor.Props
-import akka.persistence.journal.leveldb.SharedLeveldbJournal
-import akka.persistence.journal.leveldb.SharedLeveldbStore
-import akka.util.Timeout
-import java.util.concurrent.TimeUnit;
-import akka.actor.Identify
-import akka.pattern.ask
-import akka.actor.ActorIdentity
-import akka.actor.PoisonPill
+package main
+
+import akka.actor.{ActorSystem, PoisonPill, Props}
 import akka.cluster.Cluster
-import _root_.akka.actor.ActorSystem
-import _root_.akka.io.IO
-import _root_.akka.io.Tcp
-import _root_.spray.can.Http
-import _root_.spray.can.server.UHttp
+import akka.contrib.pattern.ClusterSharding
+import akka.io.IO
+import api.{MainActors, ReactiveApi, ReactiveSecurityConfig}
 import com.typesafe.config.ConfigFactory
-import api.MainActors
-import api.ReactiveApi
-import api.ReactiveSecurityConfig
-import api.{ MainActors, ReactiveApi, ReactiveSecurityConfig }
-import akka.io.{ IO, Tcp }
-import java.net.InetSocketAddress
+import controllerActors.LocalDBActor
+import modelActors.immovable.ImmovableActor
+import pubsub.Subscriber
 import spray.can.Http
 import spray.can.server.UHttp
-
-import pubsub.Subscriber
-import time.TimeCounter
-import modelActors.immovable.ImmovableActor
-import controllerActors.LocalDBActor
 
 object UrbanSimulatorApp extends App with ReactiveApi with MainActors with ReactiveSecurityConfig {
 
@@ -83,7 +64,7 @@ object UrbanSimulatorApp extends App with ReactiveApi with MainActors with React
   }
 
 
-  val shardRegionActor = ClusterSharding(system).start(
+  val shardRegionActor = ClusterSharding(system). start(
     typeName = ImmovableActor.typeOfEntries,
     entryProps = Some(ImmovableActor.props()/*.withDispatcher("custom-dispatcher")*/),
     idExtractor = ImmovableActor.idExtractor,

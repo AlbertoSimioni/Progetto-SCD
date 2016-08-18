@@ -1,5 +1,6 @@
 package modelActors.immovable
 
+import akka.cluster.Cluster
 import scala.math._
 
 import com.typesafe.config.ConfigFactory
@@ -7,6 +8,7 @@ import com.typesafe.config.ConfigFactory
 import map.Domain._
 import map.JSONReader
 import map.JSONUtilities._
+import main._
 
 object ShardUtilities {
 
@@ -76,7 +78,8 @@ object ShardUtilities {
    */
   def decideShard(id : String) : String = {
     // recupera il numNodes da configurazione
-    val numNodes = ConfigFactory.load().getInt("domain.num_nodes")
+    //val numNodes = ConfigFactory.load().getInt("domain.num_nodes")
+    val numNodes = Cluster(UrbanSimulatorApp.system).state.members.size - 2
     // calcola le dimensioni del singolo shard
     val (shard_x, shard_y) = getDimensionsOfShard(numNodes, current_map_x, current_map_y)
     // ottieni i dati dall'ID in input

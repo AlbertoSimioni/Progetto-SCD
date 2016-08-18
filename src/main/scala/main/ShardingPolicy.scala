@@ -1,3 +1,5 @@
+package main
+
 import akka.contrib.pattern.ShardCoordinator.ShardAllocationStrategy
 import akka.actor.ActorRef
 import akka.contrib.pattern.ShardRegion.ShardId
@@ -10,6 +12,8 @@ import scala.util.control.Breaks._
 import map.JSONUtilities._
 import map._
 import map.Domain._
+
+
 
 /*
  * Template per l'implementazione di una strategia di ridistribuzione degli shard
@@ -209,7 +213,7 @@ object ShardingPolicy extends ShardAllocationStrategy with Serializable {
           toBeRemoved ::= rectangle
         }
       }
-      
+
       rectangleList = rectangleList.toSet.diff(toBeRemoved.toSet).toList
       // crea nuovi
       val newRegionY = (map_y.toDouble / (factor_y-1)).floor.toInt
