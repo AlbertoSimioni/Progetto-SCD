@@ -163,7 +163,7 @@ class ActiveConnections extends Actor with ActorLogging {
       self ! ActiveConnections.SendMessageToClients(state,false)
 
     case ActiveConnections.entityPath(id,path) =>
-      //println("path received " + id)
+      println("path received " + id)
       entityPaths.put(id,path)
 
     case ActiveConnections.SendMessageToClients(message,buffered) =>

@@ -80,6 +80,7 @@ object ShardUtilities {
     // recupera il numNodes da configurazione
     //val numNodes = ConfigFactory.load().getInt("domain.num_nodes")
     val numNodes = Cluster(UrbanSimulatorApp.system).state.members.size - 2
+    println("proco dio: " +numNodes)
     // calcola le dimensioni del singolo shard
     val (shard_x, shard_y) = getDimensionsOfShard(numNodes, current_map_x, current_map_y)
     // ottieni i dati dall'ID in input

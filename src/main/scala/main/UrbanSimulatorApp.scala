@@ -1,6 +1,6 @@
 package main
 
-import akka.actor.{ActorSystem, PoisonPill, Props}
+import akka.actor.{ActorRef, ActorSystem, PoisonPill, Props}
 import akka.cluster.Cluster
 import akka.contrib.pattern.ClusterSharding
 import akka.io.IO
@@ -64,14 +64,15 @@ object UrbanSimulatorApp extends App with ReactiveApi with MainActors with React
   }
 
 
-  val shardRegionActor = ClusterSharding(system). start(
-    typeName = ImmovableActor.typeOfEntries,
-    entryProps = Some(ImmovableActor.props()/*.withDispatcher("custom-dispatcher")*/),
-    idExtractor = ImmovableActor.idExtractor,
-    shardResolver = ImmovableActor.shardResolver,
-    allocationStrategy = ShardingPolicy)
+  var shardRegionActor : ActorRef = null;
   
 	Cluster(system) registerOnMemberUp {
+    shardRegionActor  = ClusterSharding(system). start(
+      typeName = ImmovableActor.typeOfEntries,
+      entryProps = Some(ImmovableActor.props()/*.withDispatcher("custom-dispatcher")*/),
+      idExtractor = ImmovableActor.idExtractor,
+      shardResolver = ImmovableActor.shardResolver,
+      allocationStrategy = ShardingPolicy)
 		// recupero il ruolo
 		val role = system.settings.config.getList("akka.cluster.roles").get(0).unwrapped
     if(role == "worker") {
