@@ -8,6 +8,7 @@ import common.CommonMessages._
 import map.Routes._
 import time.TimeMessages._
 import movable.MovableActor._
+import movable.MovableState.MovableStateSnapshot
 
 /**
  * @author Matteo Pozza
@@ -53,7 +54,7 @@ object Messages {
   // comando di creazione di una entità mobile
   case class CreateMobileEntity(id : String, route : route) extends Command
   // comando di ri-creazione di un attore mobile
-  case class ReCreateMe(id : String) extends Command
+  case class ReCreateMe(id : String, snapshot : MovableStateSnapshot) extends Command
   // comando per l'iniezione di un percorso
   case class Route(route : route) extends Command
   // comando per la creazione degli attori mobili sotto la propria gestione
@@ -66,13 +67,15 @@ object Messages {
   // comando per l'esecuzione dello step corrente
   case object ExecuteCurrentStep extends Command
   // comando inviato dall'entità mobile a quella immobile per farla entrare in stato dormiente
-  case class PauseExecution(wakeupTime : TimeValue) extends Command
+  case class PauseExecution(wakeupTime : TimeValue, snapshot : MovableStateSnapshot) extends Command
   // comando inviato dall'entità immobile alle entità mobili create per far riprendere a loro l'esecuzione dei loro step
   case object ResumeExecution extends Command
   // messaggio per richiedere l'actorref dato un id
   case class MovableActorRequest(id : String) extends Command
   // messaggio di risposta associato
   case class MovableActorResponse(id : String, ref : ActorRef) extends Command
+  // offerta di snapshot per l'attore mobile
+  case class MovableStateSnapshotOffer(snapshot : MovableStateSnapshot) extends Command
   
   // inviato da un veicolo alla lane per recuperare l'actorref di chi gli sta davanti (prima volta)
   case object NextVehicleFirstRequest
@@ -124,11 +127,11 @@ object Messages {
   case object Cross_Out
   
   // messaggio inviato da un pedone per attendere alla fermata del bus
-  case class WaitForPublicTransport(destination : String)
+  case class WaitForPublicTransport(destination : String, snapshot : MovableStateSnapshot)
   // messaggio inviato da un bus ad una bus stop per passargli chi sta scendendo e quanti passeggeri sono ancora a bordo
-  case class GetOut(travellers : List[String], numTravellers : Int)
+  case class GetOut(travellers : List[(String, MovableStateSnapshot)], numTravellers : Int)
   // messaggio inviato dalla bus stop al bus per passargli chi sta salendo
-  case class GetIn(travellers : List[(String, String)])
+  case class GetIn(travellers : List[(String, (String, MovableStateSnapshot))])
   
   // messaggio per richiedere la rimozuione della posizione nella positionsMap
   case object RemovePosition
@@ -148,7 +151,7 @@ object Messages {
   // attore mobile rimosso dall gestione
   case class MobileEntityGone(id : String) extends Event
   // attore mobile aggiunto alla lista dei dormienti
-  case class MobileEntitySleeping(id : String, wakeupTime : TimeValue) extends Event
+  case class MobileEntitySleeping(id : String, wakeupTime : TimeValue, snapshot : MovableStateSnapshot) extends Event
   // attore mobile rimosso dalla lista dei dormienti
   case class MobileEntityWakingUp(id : String) extends Event
   // evento per l'avanzamento dell'indice del percorso
@@ -180,8 +183,8 @@ object Messages {
   case class VehicleFreeArrived(id : String)
   case class VehicleBusyArrived(id : String)
   
-  case class TravellersGoneOff(travellers : List[String])
-  case class TravellersGoneOn(travellers : List[(String, String)])
+  case class TravellersGoneOff(travellers : List[(String, MovableStateSnapshot)])
+  case class TravellersGoneOn(travellers : List[(String, (String, MovableStateSnapshot))])
   
   case class PreviousLaneChanged(laneId : String) extends Event
   
@@ -196,7 +199,7 @@ object Messages {
         log = log + "IpRequest"
       case IpResponse(_) =>
         log = log + "IpResponse"
-      case ReCreateMe(id) =>
+      case ReCreateMe(id, _) =>
           log = log + "ReCreateMe"
       case Route(_) =>
         log = log + "Route"
@@ -210,7 +213,7 @@ object Messages {
         log = log + "MobileEntityRemove"
       case ExecuteCurrentStep =>
         log = log + "ExecuteCurrentStep"
-      case PauseExecution(_) =>
+      case PauseExecution(_, _) =>
         log = log + "PauseExecution"
       case ResumeExecution =>
         log = log + "ResumeExecution"
@@ -218,6 +221,8 @@ object Messages {
         log = log + "MovableActorRequest"
       case MovableActorResponse(_, _) =>
         log = log + "MovableActorResponse"
+      case MovableStateSnapshotOffer(snapshot) =>
+        log = log + "MovableStateSnapshotOffer"
       case _ =>
         val content = develope(message)
         content match {
@@ -264,7 +269,7 @@ object Messages {
             log = log + "VehicleOut"
           case Cross_Out =>
             log = log + "CrossOut"
-          case WaitForPublicTransport(destination) =>
+          case WaitForPublicTransport(destination, _) =>
             log = log + "WaitForPublicTransport"
           case GetOut(travellers, numTravellers) =>
             log = log + "GetOut"

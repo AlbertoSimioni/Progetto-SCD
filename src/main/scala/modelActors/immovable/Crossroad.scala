@@ -99,7 +99,7 @@ object Crossroad {
         // per sicurezza, metti a false anche la entry nella tabella temporanea
         myRef.vehicleFreeTemp = false
         // rendi persistente il cambiamento
-        myRef.persistAsync(CrossroadEvent(VehicleBusyArrived(comingFrom))) { evt => }
+        // myRef.persistAsync(CrossroadEvent(VehicleBusyArrived(comingFrom))) { evt => }
          // persist body begin
         myRef.state.vehicleFree = false
         // persist body end
@@ -107,7 +107,7 @@ object Crossroad {
         // metti a true la entry nella tabella temporanea
         myRef.vehicleFreeTemp = true
         // rendi persistente il cambiamento
-        myRef.persistAsync(CrossroadEvent(VehicleFreeArrived(comingFrom))) { evt => }
+        // myRef.persistAsync(CrossroadEvent(VehicleFreeArrived(comingFrom))) { evt => }
         // persist body begin
         myRef.state.vehicleFree = true
         // persist body end

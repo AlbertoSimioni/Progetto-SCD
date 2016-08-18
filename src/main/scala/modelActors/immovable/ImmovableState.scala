@@ -6,6 +6,7 @@ import akka.persistence.AtLeastOnceDelivery.AtLeastOnceDeliverySnapshot
 
 import map.Domain._
 import time.TimeMessages._
+import modelActors.movable.MovableState.MovableStateSnapshot
 
 /**
  * @author Matteo Pozza
@@ -18,7 +19,7 @@ object ImmovableState {
   
   case class ImmovableStateSnapshot(
       handledMobileEntities : List[String],
-      sleepingActors : Map[String, TimeValue],
+      sleepingActors : Map[String, (TimeValue, MovableStateSnapshot)],
       vehicleFreeMap : Map[String, Boolean],
       vehicleFree : Boolean,
       lastMessages : Map[String, Long],
@@ -45,16 +46,17 @@ class ImmovableState {
   
   // TIME
   // tabella dei dormienti
-  var sleepingActors = Map[String, TimeValue]()
+  var sleepingActors = Map[String, (TimeValue, MovableStateSnapshot)]()
   
-  def addSleepingActor(id : String, wakeupTime : TimeValue) : Unit = {
+  def addSleepingActor(id : String, wakeupTime : TimeValue, snapshot : MovableStateSnapshot) : Unit = {
     // PRECONDIZIONE: l'entità che ci chiede di dormire deve essere sotto la nostra gestione
     assert(handledMobileEntities.contains(id))
+    val tuple = (wakeupTime, snapshot)
     if(sleepingActors.contains(id)) {
-      sleepingActors = sleepingActors.updated(id, wakeupTime)
+      sleepingActors = sleepingActors.updated(id, tuple)
     }
     else {
-      sleepingActors = sleepingActors + (id -> wakeupTime)
+      sleepingActors = sleepingActors + (id -> tuple)
     }
   }
   
@@ -65,11 +67,12 @@ class ImmovableState {
   }
   
   // ritorna la lista di attori che devono essere svegliati perchè è l'ora esatta o sono in ritardo
-  def actorsToBeWakenUp(currentTime : TimeValue) : List[String] = {
-    var toBeWakenUp = List[String]()
+  def actorsToBeWakenUp(currentTime : TimeValue) : List[(String, MovableStateSnapshot)] = {
+    var toBeWakenUp = List[(String, MovableStateSnapshot)]()
     for(pair <- sleepingActors) {
-      if(isLate(pair._2, currentTime)) {
-        toBeWakenUp = toBeWakenUp :+ pair._1
+      if(isLate(pair._2._1, currentTime)) {
+        val tuple = (pair._1, pair._2._2)
+        toBeWakenUp = toBeWakenUp :+ tuple
       }
     }
     return toBeWakenUp

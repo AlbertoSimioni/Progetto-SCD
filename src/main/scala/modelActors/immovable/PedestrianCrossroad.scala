@@ -138,7 +138,7 @@ object PedestrianCrossroad {
           myRef.vehicleFreeTempMap = myRef.vehicleFreeTempMap + (comingFrom -> false)
         }
         // rendi persistente il cambiamento
-        myRef.persistAsync(PedestrianCrossroadEvent(VehicleBusyArrived(comingFrom))) { evt => }
+        // myRef.persistAsync(PedestrianCrossroadEvent(VehicleBusyArrived(comingFrom))) { evt => }
         // persist body begin
         if(myRef.state.vehicleFreeMap.contains(comingFrom)) {
           myRef.state.vehicleFreeMap = myRef.state.vehicleFreeMap.updated(comingFrom, false)
@@ -157,7 +157,7 @@ object PedestrianCrossroad {
           myRef.vehicleFreeTempMap = myRef.vehicleFreeTempMap + (comingFrom -> true)
         }
         // rendi persistente il cambiamento
-        myRef.persistAsync(PedestrianCrossroadEvent(VehicleFreeArrived(comingFrom))) { evt => }
+        // myRef.persistAsync(PedestrianCrossroadEvent(VehicleFreeArrived(comingFrom))) { evt => }
         // persist body begin
         if(myRef.state.vehicleFreeMap.contains(comingFrom)) {
           myRef.state.vehicleFreeMap = myRef.state.vehicleFreeMap.updated(comingFrom, true)

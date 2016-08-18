@@ -35,6 +35,7 @@ import map.Routes._
 import time.TimeMessages._
 import pubsub.PublisherInstance
 import pubsub.Messages._
+import modelActors.movable.MovableState.MovableStateSnapshot
 
 /**
  * @author Matteo Pozza
@@ -103,7 +104,7 @@ class ImmovableActor extends PersistentActor with AtLeastOnceDelivery with Actor
   
   // PERSISTENCE
   // Permette di effettuare il salvataggio dello snapshot ogni 10 secondi
-  val snapshotTimer = context.system.scheduler.schedule(180 seconds, 20 seconds, self, SaveSnapshot)
+  // val snapshotTimer = context.system.scheduler.schedule(180 seconds, 20 seconds, self, SaveSnapshot)
   
   // SHARDING
   // Permette di comunicare con altri TestActor utilizzando il loro identificativo invece che il loro indirizzo
@@ -156,8 +157,8 @@ class ImmovableActor extends PersistentActor with AtLeastOnceDelivery with Actor
   // coda non persistente dei pedoni che sono in attesa alla fermata
   // non persistente perchè in caso di ripristino i pedoni partiranno da capo della bus/tram_stop
   // key: id pedone
-  // value: bus stop destinazione
-  var travellersQueue = List[(String, String)]()
+  // value: bus stop destinazione + snapshot
+  var travellersQueue = List[(String, (String, MovableStateSnapshot))]()
   
   // CROSSROAD
   // variabile per il vehicle_free (non abbiamo bisogno di una mappa, basta singola variabile)
@@ -193,7 +194,7 @@ class ImmovableActor extends PersistentActor with AtLeastOnceDelivery with Actor
           // controlla che il messaggio non sia duplicato
           if(state.isNewMessage(senderId, deliveryId) == true) {
         	  // messaggio nuovo
-        	  persistAsync(NoDuplicate(senderId, deliveryId)) { msg => }
+        	  // persistAsync(NoDuplicate(senderId, deliveryId)) { msg => }
             // persist body begin
             state.updateFilter(senderId, deliveryId)
             // persist body end
@@ -239,7 +240,7 @@ class ImmovableActor extends PersistentActor with AtLeastOnceDelivery with Actor
           // controlla che il messaggio non sia duplicato
           if(state.isNewMessage(senderId, deliveryId) == true) {
         	  // messaggio nuovo
-        	  persistAsync(NoDuplicate(senderId, deliveryId)) { msg => }
+        	  // persistAsync(NoDuplicate(senderId, deliveryId)) { msg => }
             // persist body begin
             state.updateFilter(senderId, deliveryId)
             // persist body end
@@ -248,13 +249,15 @@ class ImmovableActor extends PersistentActor with AtLeastOnceDelivery with Actor
         	  command match {
               case IpRequest =>
                 sendToMovable(destinationId, senderRef, IpResponse(getIp()))
-              case ReCreateMe(id) =>
+              case ReCreateMe(id, snapshot) =>
                 // ri-creazione di un attore mobile
                 val reCreatedMobileEntity = context.actorOf(MovableActor.props(id)/*.withDispatcher("custom-dispatcher")*/)
+                // offri lo snapshot
+                sendToMovable(destinationId, reCreatedMobileEntity, MovableStateSnapshotOffer(snapshot))
                 // fai riprendere la sua esecuzione
                 sendToMovable(destinationId, reCreatedMobileEntity, ResumeExecution)
               case MobileEntityAdd(id) =>
-                persistAsync(MobileEntityArrived(id)) { evt => }
+                // persistAsync(MobileEntityArrived(id)) { evt => }
                 // persist body begin
                 if(state.handledMobileEntities.contains(id) == false) {
                   state.handledMobileEntities = state.handledMobileEntities :+ id
@@ -268,7 +271,7 @@ class ImmovableActor extends PersistentActor with AtLeastOnceDelivery with Actor
                   handledMobileEntitiesMap = handledMobileEntitiesMap + (id -> senderRef)
                 }
               case MobileEntityRemove(id) =>
-                persistAsync(MobileEntityGone(id)) { evt => }
+                // persistAsync(MobileEntityGone(id)) { evt => }
                 // persist body begin
                 if(state.handledMobileEntities.contains(id) == true) {
                   state.handledMobileEntities = state.handledMobileEntities.filter { current_id => current_id != id }
@@ -276,11 +279,11 @@ class ImmovableActor extends PersistentActor with AtLeastOnceDelivery with Actor
                 // persist body end
                 // rimuovi if any
                 handledMobileEntitiesMap = handledMobileEntitiesMap.filter(pair => pair._1 != id)
-              case PauseExecution(wakeupTime) =>
+              case PauseExecution(wakeupTime, snapshot) =>
                 // l'attore mobile chiede di essere messo in stato dormiente
-                persistAsync(MobileEntitySleeping(senderId, wakeupTime)) { evt => }
+                // persistAsync(MobileEntitySleeping(senderId, wakeupTime, snapshot)) { evt => }
                 // persist body begin
-                state.addSleepingActor(senderId, wakeupTime)
+                state.addSleepingActor(senderId, wakeupTime, snapshot)
                 // persist body end
               case MovableActorRequest(id) =>
                 // recupera l'actorref dalla tabella, if any
@@ -318,7 +321,7 @@ class ImmovableActor extends PersistentActor with AtLeastOnceDelivery with Actor
             case 'R' =>
               val entry = JSONReader.getRoad(current_map, id)
               if(entry.isDefined) {
-    	          persistAsync(IdentityArrived(id)) { msg => }
+    	          // persistAsync(IdentityArrived(id)) { msg => }
                 // persist body begin
                 state.id = id
                 state.kind = "Road"
@@ -331,7 +334,7 @@ class ImmovableActor extends PersistentActor with AtLeastOnceDelivery with Actor
             case 'L' =>
               val entry = JSONReader.getLane(current_map, id)
               if(entry.isDefined) {
-          	    persistAsync(IdentityArrived(id)) { msg => }
+          	    // persistAsync(IdentityArrived(id)) { msg => }
                 // persist body begin
                 state.id = id
                 state.kind = "Lane"
@@ -344,7 +347,7 @@ class ImmovableActor extends PersistentActor with AtLeastOnceDelivery with Actor
             case 'C' =>
               val entry = JSONReader.getCrossroad(current_map, id)
               if(entry.isDefined) {
-          	    persistAsync(IdentityArrived(id)) { msg => }
+          	    // persistAsync(IdentityArrived(id)) { msg => }
                 // persist body begin
                 state.id = id
                 state.kind = "Crossroad"
@@ -359,7 +362,7 @@ class ImmovableActor extends PersistentActor with AtLeastOnceDelivery with Actor
             case 'P' =>
               val entry = JSONReader.getPedestrianCrossroad(current_map, id)
               if(entry.isDefined) {
-          	    persistAsync(IdentityArrived(id)) { msg => }
+          	    // persistAsync(IdentityArrived(id)) { msg => }
                 // persist body begin
                 state.id = id
                 state.kind = "Pedestrian_Crossroad"
@@ -372,11 +375,12 @@ class ImmovableActor extends PersistentActor with AtLeastOnceDelivery with Actor
             case 'B' =>
               val entry = JSONReader.getBusStop(current_map, id)
               if(entry.isDefined) {
-          	    persistAsync(IdentityArrived(id)) { msg =>
-          	      state.id = msg.id
-                  state.kind = "Bus_Stop"
-          	      state.bus_stopData = entry.get
-          	    }
+          	    // persistAsync(IdentityArrived(id)) { msg => }
+                // persist body begin
+        	      state.id = id
+                state.kind = "Bus_Stop"
+        	      state.bus_stopData = entry.get
+                // persist body end
               }
               else {
           	    println("Problems with received bus stop identifier")
@@ -384,7 +388,7 @@ class ImmovableActor extends PersistentActor with AtLeastOnceDelivery with Actor
             case 'T' =>
               val entry = JSONReader.getTramStop(current_map, id)
               if(entry.isDefined) {
-          	    persistAsync(IdentityArrived(id)) { msg => }
+          	    // persistAsync(IdentityArrived(id)) { msg => }
                 // persist body begin
                 state.id = id
                 state.kind = "Tram_Stop"
@@ -397,7 +401,7 @@ class ImmovableActor extends PersistentActor with AtLeastOnceDelivery with Actor
             case 'Z' =>
               val entry = JSONReader.getZone(current_map, id)
               if(entry.isDefined) {
-          	    persistAsync(IdentityArrived(id)) { msg => }
+          	    // persistAsync(IdentityArrived(id)) { msg => }
                 // persist body begin
                 state.id = id
                 state.kind = "Zone"
@@ -411,7 +415,7 @@ class ImmovableActor extends PersistentActor with AtLeastOnceDelivery with Actor
           
         case CreateMobileEntity(id, route) =>
           // creazione di una entità mobile
-          persistAsync(MobileEntityArrived(id)) {evt => }
+          // persistAsync(MobileEntityArrived(id)) {evt => }
           // persist body begin
           if(state.handledMobileEntities.contains(id) == false) {
             state.handledMobileEntities = state.handledMobileEntities :+ id
@@ -461,12 +465,13 @@ class ImmovableActor extends PersistentActor with AtLeastOnceDelivery with Actor
       val toBeWakenUp = state.actorsToBeWakenUp(timeValue)
       if(toBeWakenUp.isEmpty == false) {
         for(id <- toBeWakenUp) {
-          println(state.id + ": sto svegliando " + id + " perchè sono le " + timeValue)
-          persistAsync(MobileEntityWakingUp(id)) { evt => }
+          println(state.id + ": sto svegliando " + id._1 + " perchè sono le " + timeValue)
+          // persistAsync(MobileEntityWakingUp(id)) { evt => }
           // persist body begin
-          state.removeSleepingActor(id)
+          state.removeSleepingActor(id._1)
           // persist body end
-          val wakenUpEntity = context.actorOf(MovableActor.props(id)/*.withDispatcher("custom-dispatcher")*/)
+          val wakenUpEntity = context.actorOf(MovableActor.props(id._1)/*.withDispatcher("custom-dispatcher")*/)
+          sendToMovable(state.id, wakenUpEntity, MovableStateSnapshotOffer(id._2))
           sendToMovable(state.id, wakenUpEntity, ResumeExecution)
         }
       }
@@ -574,8 +579,8 @@ class ImmovableActor extends PersistentActor with AtLeastOnceDelivery with Actor
       // TIME
       case MobileEntityWakingUp(id) =>
         state.removeSleepingActor(id)
-      case MobileEntitySleeping(id, wakeupTime) =>
-        state.addSleepingActor(id, wakeupTime)
+      case MobileEntitySleeping(id, wakeupTime, snapshot) =>
+        state.addSleepingActor(id, wakeupTime, snapshot)
         
       // AT LEAST ONCE
       case PersistDeliveryId(deliveryId) =>
@@ -640,12 +645,12 @@ class ImmovableActor extends PersistentActor with AtLeastOnceDelivery with Actor
   def sendToImmovable(senderId : String, destinationId : String, command : Command) : Unit = {
     deliver(shardRegion.path, deliveryId => {
       if(deliveryId >= state.deliveryId) {
-        persistAsync(PersistDeliveryId(deliveryId)) { evt => }
+        // persistAsync(PersistDeliveryId(deliveryId)) { evt => }
         state.deliveryId = deliveryId
       }
       else {
         // potremmo essere dopo un ripristino
-        persistAsync(PersistDeliveryId(state.deliveryId + deliveryId)) { evt => }
+        // persistAsync(PersistDeliveryId(state.deliveryId + deliveryId)) { evt => }
         state.deliveryId = state.deliveryId + deliveryId
       }
       ToImmovable(destinationId, ToPersistentMessages.FromImmovable(senderId, Request(state.deliveryId, command)))
@@ -657,12 +662,12 @@ class ImmovableActor extends PersistentActor with AtLeastOnceDelivery with Actor
   def sendToMovable(senderId : String, destinationRef : ActorRef, command : Command) : Unit = {
     deliver(destinationRef.path, deliveryId => {
       if(deliveryId >= state.deliveryId) {
-        persistAsync(PersistDeliveryId(deliveryId)) { evt => }
+        // persistAsync(PersistDeliveryId(deliveryId)) { evt => }
         state.deliveryId = deliveryId
       }
       else {
         // potremmo essere dopo un ripristino
-        persistAsync(PersistDeliveryId(state.deliveryId + deliveryId)) { evt => }
+        // persistAsync(PersistDeliveryId(state.deliveryId + deliveryId)) { evt => }
         state.deliveryId = state.deliveryId + deliveryId
       }
       ToMovable(destinationRef, ToPersistentMessages.FromImmovable(senderId, Request(state.deliveryId, command)))

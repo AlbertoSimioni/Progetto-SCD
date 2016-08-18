@@ -31,7 +31,7 @@ object Bus {
             myRef.self ! VelocityTick
           case GetIn(goingOn) =>
             // per prima cosa, rendi persistente l'arrivo dei passeggeri
-            myRef.persistAsync(BusEvent(TravellersGoneOn(goingOn))) { evt => }
+            // myRef.persistAsync(BusEvent(TravellersGoneOn(goingOn))) { evt => }
             // persist body begin
             for(tuple <- goingOn) {
               myRef.state.travellers = myRef.state.travellers + (tuple._1 -> tuple._2)
@@ -150,7 +150,7 @@ object Bus {
         state.previousVehicleId = null
       case TravellersGoneOff(goingOff) =>
         for(traveller <- goingOff) {
-          state.travellers = state.travellers - traveller
+          state.travellers = state.travellers - traveller._1
         }
       case TravellersGoneOn(goingOn) =>
         for(tuple <- goingOn) {

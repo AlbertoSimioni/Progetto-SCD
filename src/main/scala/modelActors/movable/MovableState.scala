@@ -33,7 +33,7 @@ object MovableState {
       nextVehicleId : String,
       previousVehicleId : String,
       predecessorGoneSent : Boolean,
-      travellers : Map[String, String],
+      travellers : Map[String, (String, MovableStateSnapshot)],
       previousLaneId : String,
       lastMessages : Map[String, Long],
       deliveryId : Long,
@@ -395,7 +395,7 @@ class MovableState {
   
   // BUS
   // mappa dei pedoni trasportati, con rispettive destinazioni
-  var travellers = Map[String, String]()
+  var travellers = Map[String, (String, MovableStateSnapshot)]()
   
   // VEICOLO
   // id della previous lane

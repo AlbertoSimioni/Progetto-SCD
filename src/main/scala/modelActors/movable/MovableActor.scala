@@ -64,7 +64,7 @@ object MovableActor {
   
   // DEFER
   // serve per garantire che i persistAsync siano stati tutti effettuati prima di procedere
-  case object DeferObject
+  // case object DeferObject
   
 }
 
@@ -83,7 +83,7 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
   
   // PERSISTENCE
   // Permette di effettuare il salvataggio dello snapshot ogni 10 secondi
-  val snapshotTimer = context.system.scheduler.schedule(60 seconds, 10 seconds, self, SaveSnapshot)
+  // val snapshotTimer = context.system.scheduler.schedule(60 seconds, 10 seconds, self, SaveSnapshot)
   
   // SHARDING
   // Permette di comunicare con altri ImmovableActor utilizzando il loro identificativo invece che il loro indirizzo
@@ -139,7 +139,7 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
           // controlla che il messaggio non sia duplicato
           if(state.isNewMessage(senderId, deliveryId) == true) {
             // messaggio nuovo
-            persistAsync(NoDuplicate(senderId, deliveryId)) { msg => }
+            // persistAsync(NoDuplicate(senderId, deliveryId)) { msg => }
             // persist body begin
             state.updateFilter(senderId, deliveryId)
             // persist body end
@@ -162,15 +162,20 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
                   // trasferimento di nodo di calcolo, con cambio di gestione
                   sendToImmovable(id, self, senderId, MobileEntityAdd(id))
                   // prima di dare il comando di ricreazione al destinatario, assicuriamoci di aver completato tutti i persistAsync
+                  sendToImmovable(id, self, senderId, ReCreateMe(id, state.getSnapshot()))
+                  // ammazzati
+                  shutdown()
+                  /*
                   defer(DeferObject) { evt =>
-                    sendToImmovable(id, self, senderId, ReCreateMe(id))
+                    sendToImmovable(id, self, senderId, ReCreateMe(id, state.getSnapshot()))
                     // ammazzati
                     shutdown()
                   }
+                  */
                 }
               case Route(route) =>
                 // è arrivato il percorso
-                persistAsync(RouteArrived(route)) { evt => }
+                // persistAsync(RouteArrived(route)) { evt => }
                 // persist body begin
                 state.handleRoute(route)
                 // persist body end
@@ -183,6 +188,8 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
                 previousVehicle = ref
                 // fai ripartire l'esecuzione
                 sendToMovable(this.id, self, self, ExecuteCurrentStep)
+              case MovableStateSnapshotOffer(snapshot) =>
+                state.setSnapshot(snapshot)
                 
               case ToPedestrian(command) =>
                 Pedestrian.fromImmovableHandler(this, id, senderId, command)
@@ -207,7 +214,7 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
           // controlla che il messaggio non sia duplicato
           if(state.isNewMessage(senderId, deliveryId) == true) {
             // messaggio nuovo
-            persistAsync(NoDuplicate(senderId, deliveryId)) { msg => }
+            // persistAsync(NoDuplicate(senderId, deliveryId)) { msg => }
             // persist body begin
             state.updateFilter(senderId, deliveryId)
             // persist body end
@@ -221,7 +228,7 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
                     // solo un pedone può avere road_step
                     if(state.beginOfTheStep) {
                       val currentPointsSequence = getPointsSequence(id, stepSequence)
-                      persistAsync(BeginOfTheStep(currentPointsSequence)) { evt => }
+                      // persistAsync(BeginOfTheStep(currentPointsSequence)) { evt => }
                       // persist body begin
                       state.currentPointsSequence = currentPointsSequence
                       state.currentPointIndex = 0
@@ -276,7 +283,7 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
                             }
                             sendToMovable(id, self, previousVehicle, envelope(id, state.previousVehicleId, PredecessorGone(previousLaneId)))
                           }
-                          persistAsync(PredecessorGoneSent) { evt => }
+                          // persistAsync(PredecessorGoneSent) { evt => }
                           // persist body begin
                           state.previousVehicleId = null
                           state.predecessorGoneSent = true
@@ -287,7 +294,7 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
                         if(state.previousLaneId != null) {
                           sendToImmovable(id, self, state.previousLaneId, envelope(id, state.previousLaneId, RemovePosition))
                           sendToImmovable(id, self, state.previousLaneId, envelope(id, state.previousLaneId, HandleLastVehicle))
-                          persistAsync(PreviousLaneChanged(null)) { evt => }
+                          // persistAsync(PreviousLaneChanged(null)) { evt => }
                           // persist body begin
                           state.previousLaneId = null
                           // persist body end
@@ -446,7 +453,7 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
                         assert(getMyLength() == car_length)
                         publisherGuiHandler ! hideCar(id, zone.id)
                       }
-                      persistAsync(SleepingStatusChange(true)) { evt => }
+                      // persistAsync(SleepingStatusChange(true)) { evt => }
                       // persist body begin
                       state.alreadyHidden = true
                       // persist body end
@@ -484,7 +491,7 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
                       // evento grafico associato
                       if(state.alreadyHidden == true) {
                         publisherGuiHandler ! entityAwaked(id, zone.id)
-                        persistAsync(SleepingStatusChange(false)) { evt => }
+                        // persistAsync(SleepingStatusChange(false)) { evt => }
                         // persist body begin
                         state.alreadyHidden = false
                         // persist body end
@@ -494,18 +501,24 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
                       // se in anticipo, vai a dormire
                       // assicuriamoci di aver completato le persistAsync prima di procedere
                       println(id + ": sono in anticipo")
+                      println(id + ": e ora me ne vado a dormire")
+                      val immovableActorId = state.getCurrentStepId
+                      sendToImmovable(id, self, immovableActorId, PauseExecution(comparedTime, state.getSnapshot()))
+                      shutdown()
+                      /*
                       defer(DeferObject) { evt =>
                         println(id + ": e ora me ne vado a dormire")
                         val immovableActorId = state.getCurrentStepId
-                        sendToImmovable(id, self, immovableActorId, PauseExecution(comparedTime))
+                        sendToImmovable(id, self, immovableActorId, PauseExecution(comparedTime, state.getSnapshot()))
                         shutdown()
                       }
+                      */
                     }
                     
                 }
               case PersistAndNextStep =>
                 // memorizza
-                persistAsync(NextStepEvent) { evt => }
+                // persistAsync(NextStepEvent) { evt => }
                 // persist body begin
                 state.index = state.index + 1
                 if(state.index >= state.currentRoute.length) {
@@ -555,7 +568,7 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
               interestedInVelocityTick = false
             }
             else {
-              persistAsync(IncrementPointIndex) {evt => }
+              // persistAsync(IncrementPointIndex) {evt => }
               // persist body begin
               state.currentPointIndex = state.currentPointIndex + 1 
               // persist body end
@@ -725,7 +738,7 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
                 // se non stiamo andando in una zona
                 if(state.toZone() == false) {
                   // la lane corrente diventa la nostra previousLane
-                  persistAsync(PreviousLaneChanged(lane.id)) { evt => }
+                  // persistAsync(PreviousLaneChanged(lane.id)) { evt => }
                   // persist body begin
                   state.previousLaneId = lane.id
                   // persist body end
@@ -753,26 +766,26 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
                   // notifichiamo la lane che gestisca la nostra uscita di scena
                   sendToImmovable(id, self, lane.id, envelope(id, lane.id, HandleLastVehicle))
                   sendToImmovable(id, self, lane.id, envelope(id, lane.id, RemovePosition))
-                  persistAsync(PreviousLaneChanged(null)) { evt => }
+                  // persistAsync(PreviousLaneChanged(null)) { evt => }
                   // persist body begin
                   state.previousLaneId = null
                   // persist body end
                   // dal momento che stiamo andando in una zone, azzeriamo il nostro stato
-                  persistAsync(PredecessorGoneSent) { evt => }
+                  // persistAsync(PredecessorGoneSent) { evt => }
                   // persist body begin
                   state.predecessorGoneSent = true
                   state.previousVehicleId = null
                   // persist body end
                   previousVehicle = null
                   if(getMyLength() == car_length) {
-                    persistAsync(CarEvent(NextVehicleGone)) { evt => }
+                    // persistAsync(CarEvent(NextVehicleGone)) { evt => }
                   }
                   else if (getMyLength() == bus_length) {
-                    persistAsync(BusEvent(NextVehicleGone)) { evt => }
+                    // persistAsync(BusEvent(NextVehicleGone)) { evt => }
                   }
                   else {
                     // tram
-                    persistAsync(TramEvent(NextVehicleGone)) { evt => }
+                    // persistAsync(TramEvent(NextVehicleGone)) { evt => }
                   }
                   // persist body begin
                   state.nextVehicleId = null
@@ -785,7 +798,7 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
                 interestedInVelocityTick = false
               }
               else {
-                persistAsync(IncrementPointIndex) {evt => }
+                // persistAsync(IncrementPointIndex) {evt => }
                 // persist body begin
                 state.currentPointIndex = state.currentPointIndex + 1
                 // persist body end
@@ -952,7 +965,7 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
                     val nextStop = state.getNextStepId
                     assert(nextStop.charAt(0) == 'B')
                     // passa al prossimo step senza IpRequest
-                    persistAsync(NextStepEvent) { evt => }
+                    // persistAsync(NextStepEvent) { evt => }
                     // persist body begin
                     state.index = state.index + 1
                     if(state.index >= state.currentRoute.length) {
@@ -962,29 +975,35 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
                     state.beginOfTheStep = true
                     // persist body end
                     // ora accodati
+                    sendToImmovable(id, self, bus_stop.id, envelope(id, bus_stop.id, WaitForPublicTransport(nextStop, state.getSnapshot())))
+                    // ammazzati
+                    shutdown()
+                    /*
                     // prima assicuriamoci di aver salvato tutte le persistAsync
                     defer(DeferObject) { evt =>
-                      sendToImmovable(id, self, bus_stop.id, envelope(id, bus_stop.id, WaitForPublicTransport(nextStop)))
+                      sendToImmovable(id, self, bus_stop.id, envelope(id, bus_stop.id, WaitForPublicTransport(nextStop, state.getSnapshot())))
                       // ammazzati
                       shutdown()
                     }
+                    */
                   }
                 }
                 else {
                   // siamo un bus che deve far salire e scendere i pedoni, oppure che ha terminato il suo percorso
                   if(pathPhase == 0) {
                     // seleziona chi deve scendere
-                    var goingOff = List[String]()
+                    var goingOff = List[(String, MovableStateSnapshot)]()
                     for(entry <- state.travellers) {
-                      if(entry._2 == bus_stop.id) {
-                        goingOff = goingOff :+ entry._1
+                      if(entry._2._1 == bus_stop.id) {
+                        val tuple = (entry._1, entry._2._2)
+                        goingOff = goingOff :+ tuple
                       }
                     }
                     // rendi persistente la rimozione
-                    persistAsync(BusEvent(TravellersGoneOff(goingOff))) { evt => }
+                    // persistAsync(BusEvent(TravellersGoneOff(goingOff))) { evt => }
                     // persist body begin
                     for(traveller <- goingOff) {
-                      state.travellers = state.travellers - traveller
+                      state.travellers = state.travellers - traveller._1
                     }
                     // persist body end
                     // invia i viaggiatori scesi e il numero corrente di passeggeri alla bus stop
@@ -1042,7 +1061,7 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
                     val nextStop = state.getNextStepId
                     assert(nextStop.charAt(0) == 'T')
                     // passa al prossimo step senza IpRequest
-                    persistAsync(NextStepEvent) { evt => }
+                    // persistAsync(NextStepEvent) { evt => }
                     // persist body begin
                     state.index = state.index + 1
                     if(state.index >= state.currentRoute.length) {
@@ -1052,29 +1071,35 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
                     state.beginOfTheStep = true
                     // persist body end
                     // ora accodati
+                    sendToImmovable(id, self, tram_stop.id, envelope(id, tram_stop.id, WaitForPublicTransport(nextStop, state.getSnapshot())))
+                    // ammazzati
+                    shutdown()
+                    /*
                     // prima assicuriamoci di aver salvato tutte le persistAsync
                     defer(DeferObject) { evt =>
-                      sendToImmovable(id, self, tram_stop.id, envelope(id, tram_stop.id, WaitForPublicTransport(nextStop)))
+                      sendToImmovable(id, self, tram_stop.id, envelope(id, tram_stop.id, WaitForPublicTransport(nextStop, state.getSnapshot())))
                       // ammazzati
                       shutdown()
                     }
+                    */
                   }
                 }
                 else {
                   // siamo un tram che deve far salire e scendere i pedoni, oppure che ha terminato il suo percorso
                   if(pathPhase == 0) {
                     // seleziona chi deve scendere
-                    var goingOff = List[String]()
+                    var goingOff = List[(String, MovableStateSnapshot)]()
                     for(entry <- state.travellers) {
-                      if(entry._2 == tram_stop.id) {
-                        goingOff = goingOff :+ entry._1
+                      if(entry._2._1 == tram_stop.id) {
+                        val tuple = (entry._1, entry._2._2)
+                        goingOff = goingOff :+ tuple
                       }
                     }
                     // rendi persistente la rimozione
-                    persistAsync(TramEvent(TravellersGoneOff(goingOff))) { evt => }
+                    // persistAsync(TramEvent(TravellersGoneOff(goingOff))) { evt => }
                     // persist body begin
                     for(traveller <- goingOff) {
-                      state.travellers = state.travellers - traveller
+                      state.travellers = state.travellers - traveller._1
                     }
                     // persist body end
                     // invia i viaggiatori scesi e il numero corrente di passeggeri alla tram stop
@@ -1142,7 +1167,7 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
     case UnsubscribeAck =>
       println("Successfully unsubscribed from time events")
     case TimeCommand(timeValue) =>
-      persistAsync(TimeEvent(timeValue)) { evt => }
+      // persistAsync(TimeEvent(timeValue)) { evt => }
       // persist body begin
       state.currentTime = timeValue
       // persist body end
@@ -1235,7 +1260,7 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
   def sendToImmovable(senderId : String, senderRef : ActorRef, destinationId : String, command : Command) : Unit = {
     deliver(shardRegion.path, deliveryId => {
       if(deliveryId >= state.deliveryId) {
-        command match {
+        /*command match {
           case ReCreateMe(id) =>
             persist(PersistDeliveryId(deliveryId)) { evt => }
           case PauseExecution(wakeupTime) =>
@@ -1253,12 +1278,12 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
             else {
               persistAsync(PersistDeliveryId(deliveryId)) { evt => }
             }
-        }
+        }*/
         state.deliveryId = deliveryId
       }
       else {
         // potremmo essere dopo un ripristino
-        command match {
+        /*command match {
           case ReCreateMe(id) =>
             persist(PersistDeliveryId(state.deliveryId + deliveryId)) { evt => }
           case PauseExecution(wakeupTime) =>
@@ -1276,10 +1301,11 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
             else {
               persistAsync(PersistDeliveryId(state.deliveryId + deliveryId)) { evt => }
             }
-        }
+        }*/
         state.deliveryId = state.deliveryId + deliveryId
       }
-      ToImmovable(destinationId, ToPersistentMessages.FromMovable(senderId, senderRef, Request(state.deliveryId, command)))
+      val updatedCommand = updateCommand(command, state.deliveryId)
+      ToImmovable(destinationId, ToPersistentMessages.FromMovable(senderId, senderRef, Request(state.deliveryId, updatedCommand)))
     })
   }
   
@@ -1288,15 +1314,16 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
   def sendToMovable(senderId : String, senderRef : ActorRef, destinationRef : ActorRef, command : Command) : Unit = {
     deliver(destinationRef.path, deliveryId => {
       if(deliveryId >= state.deliveryId) {
-        persistAsync(PersistDeliveryId(deliveryId)) { evt => }
+        // persistAsync(PersistDeliveryId(deliveryId)) { evt => }
         state.deliveryId = deliveryId
       }
       else {
         // potremmo essere dopo un ripristino
-        persistAsync(PersistDeliveryId(state.deliveryId + deliveryId)) { evt => }
+        // persistAsync(PersistDeliveryId(state.deliveryId + deliveryId)) { evt => }
         state.deliveryId = state.deliveryId + deliveryId
       }
-      ToMovable(destinationRef, ToPersistentMessages.FromMovable(senderId, senderRef, Request(state.deliveryId, command)))
+      val updatedCommand = updateCommand(command, state.deliveryId)
+      ToMovable(destinationRef, ToPersistentMessages.FromMovable(senderId, senderRef, Request(state.deliveryId, updatedCommand)))
     })
   }
   
@@ -1314,7 +1341,7 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
     // smetti di mandarti messaggi per la regolazione della velocità
     // velocityTimer.cancel()
     // smetti di mandarti messaggi per l'esecuzione di snapshot
-    snapshotTimer.cancel()
+    // snapshotTimer.cancel()
     // ammazzati
     self ! Shutdown
   }
@@ -1323,6 +1350,77 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
   // Recupera la lunghezza dell'entità rappresentata
   def getMyLength() : Int = {
     getLengthFromId(id)
+  }
+  
+  // UTILITY
+  // aggiorna la deliveryId di uno snapshot
+  def updateSnapshot(snapshot : MovableStateSnapshot, deliveryId : Long) : MovableStateSnapshot = {
+    return MovableStateSnapshot(
+        snapshot.pedestrianRoute,
+        snapshot.carRoute,
+        snapshot.busRoute,
+        snapshot.tramRoute,
+        snapshot.currentRoute,
+        snapshot.index,
+        snapshot.beginOfTheStep,
+        snapshot.currentPointsSequence,
+        snapshot.currentPointIndex,
+        snapshot.currentTime,
+        snapshot.nextVehicleId,
+        snapshot.previousVehicleId,
+        snapshot.predecessorGoneSent,
+        snapshot.travellers,
+        snapshot.previousLaneId,
+        snapshot.lastMessages,
+        deliveryId,
+        snapshot.alreadyHidden
+    )
+  }
+  
+  // UTILITY
+  // modifica un command per includere nello snapshot l'ultima deliveryId, se necessario
+  def updateCommand(command : Command, deliveryId : Long) : Command = {
+    command match {
+      case ReCreateMe(id, snapshot) =>
+        return ReCreateMe(id, updateSnapshot(snapshot, deliveryId))
+      case PauseExecution(wakeupTime, snapshot) =>
+        return PauseExecution(wakeupTime, updateSnapshot(snapshot, deliveryId))
+      case _ =>
+        val content = develope(command)
+        if(content != null) {
+          command match {
+            case ToBusStop(realCommand) =>
+              realCommand match {
+                case FromPedestrian(message) =>
+                  message match {
+                    case WaitForPublicTransport(nextStop, snapshot) =>
+                      return ToBusStop(FromPedestrian(WaitForPublicTransport(nextStop, updateSnapshot(snapshot, deliveryId))))
+                    case _ =>
+                      return command
+                  }
+                case _ =>
+                  return command
+              }
+            case ToTramStop(realCommand) =>
+              realCommand match {
+                case FromPedestrian(message) =>
+                  message match {
+                    case WaitForPublicTransport(nextStop, snapshot) =>
+                      return ToTramStop(FromPedestrian(WaitForPublicTransport(nextStop, updateSnapshot(snapshot, deliveryId))))
+                    case _ =>
+                      return command
+                  }
+                case _ =>
+                  return command
+              }
+            case _ =>
+              return command
+          }
+        }
+        else {
+          return command
+        }
+    }
   }
   
 }

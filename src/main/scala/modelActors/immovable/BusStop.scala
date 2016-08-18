@@ -8,6 +8,7 @@ import modelActors.Messages._
 import modelActors.movable.MovableActor
 import modelActors.movable.Bus
 import pubsub.Messages._
+import modelActors.movable.MovableState.MovableStateSnapshot
 
 object BusStop {
   
@@ -23,11 +24,11 @@ object BusStop {
           case CompleteTravellersHandling(numTravellers, busId, busRef) =>
             // seleziona i pedoni che devono salire
             val placesAvailable = Bus.capacity - numTravellers
-            var goingOn = List[(String, String)]()
+            var goingOn = List[(String, (String, MovableStateSnapshot))]()
             if(myRef.travellersQueue.length <= placesAvailable) {
               // prendili tutti
               goingOn = myRef.travellersQueue
-              myRef.travellersQueue = List[(String, String)]()
+              myRef.travellersQueue = List[(String, (String, MovableStateSnapshot))]()
             }
             else {
               // prendi i primi placesAvailable
@@ -35,7 +36,7 @@ object BusStop {
               myRef.travellersQueue = myRef.travellersQueue.slice(placesAvailable, myRef.travellersQueue.length)
             }
             // rendi persistente la rimozione
-            myRef.persistAsync(BusStopEvent(TravellersGoneOn(goingOn))) { evt => }
+            // myRef.persistAsync(BusStopEvent(TravellersGoneOn(goingOn))) { evt => }
             // persist body begin
             for(traveller <- goingOn) {
               myRef.state.handledMobileEntities = myRef.state.handledMobileEntities.filter { current => current != traveller._1 }
@@ -68,9 +69,9 @@ object BusStop {
     command match {
       case FromPedestrian(message) =>
         message match {
-          case WaitForPublicTransport(nextStop) =>
+          case WaitForPublicTransport(nextStop, snapshot) =>
             // aggiungi il pedone nella coda non persistente
-            val tuple = (senderId, nextStop)
+            val tuple = (senderId, (nextStop, snapshot))
             myRef.travellersQueue = myRef.travellersQueue :+ tuple
         }
         
@@ -93,19 +94,21 @@ object BusStop {
             FromVehicle(myRef, myId, senderId, senderRef, message)
           case GetOut(travellers, numTravellers) =>
             // rendi subito persistente l'arrivo dei viaggiatori
-            myRef.persistAsync(BusStopEvent(TravellersGoneOff(travellers))) { evt => }
+            // myRef.persistAsync(BusStopEvent(TravellersGoneOff(travellers))) { evt => }
             // persist body begin
             for(traveller <- travellers) {
-              myRef.state.handledMobileEntities = myRef.state.handledMobileEntities :+ traveller
+              myRef.state.handledMobileEntities = myRef.state.handledMobileEntities :+ traveller._1
             }
             // persist body end
             // fai ripartire gli attori
             for(traveller <- travellers) {
-              val travellerRef = myRef.context.actorOf(MovableActor.props(traveller))
+              val travellerRef = myRef.context.actorOf(MovableActor.props(traveller._1))
+              // offri lo snapshot
+              myRef.sendToMovable(myId, travellerRef, MovableStateSnapshotOffer(traveller._2))
               // fai partire ciascuna entità
               myRef.sendToMovable(myId, travellerRef, ResumeExecution)
               // aggiungi una entry alla tabella 
-              myRef.handledMobileEntitiesMap = myRef.handledMobileEntitiesMap + (traveller -> travellerRef)
+              myRef.handledMobileEntitiesMap = myRef.handledMobileEntitiesMap + (traveller._1 -> travellerRef)
             }
             // prima di far salire i passeggeri, aspettiamo un pò
             import myRef.context._
@@ -141,7 +144,7 @@ object BusStop {
         }
       case TravellersGoneOff(travellers) =>
         for(traveller <- travellers) {
-          state.handledMobileEntities = state.handledMobileEntities :+ traveller
+          state.handledMobileEntities = state.handledMobileEntities :+ traveller._1
         }
       case TravellersGoneOn(travellers) =>
         for(traveller <- travellers) {
@@ -184,7 +187,7 @@ object BusStop {
           myRef.vehicleFreeTempMap = myRef.vehicleFreeTempMap + (comingFrom -> false)
         }
         // rendi persistente il cambiamento
-        myRef.persistAsync(BusStopEvent(VehicleBusyArrived(comingFrom))) { evt => }
+        // myRef.persistAsync(BusStopEvent(VehicleBusyArrived(comingFrom))) { evt => }
         // persist body begin
         if(myRef.state.vehicleFreeMap.contains(comingFrom)) {
           myRef.state.vehicleFreeMap = myRef.state.vehicleFreeMap.updated(comingFrom, false)
@@ -202,7 +205,7 @@ object BusStop {
           myRef.vehicleFreeTempMap = myRef.vehicleFreeTempMap + (comingFrom -> true)
         }
         // rendi persistente il cambiamento
-        myRef.persistAsync(BusStopEvent(VehicleFreeArrived(comingFrom))) { evt => }
+        // myRef.persistAsync(BusStopEvent(VehicleFreeArrived(comingFrom))) { evt => }
         // persist body begin
         if(myRef.state.vehicleFreeMap.contains(comingFrom)) {
           myRef.state.vehicleFreeMap = myRef.state.vehicleFreeMap.updated(comingFrom, true)

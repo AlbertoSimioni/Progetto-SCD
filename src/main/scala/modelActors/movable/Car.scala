@@ -45,7 +45,7 @@ object Car {
             // potrebbe avvenire che beginOfTheStep sia reso persistente, ma per qualche motivo uno od entrambi dei messaggi
             // inviati al predecessore e al successore vengano persi prima di un crash
             // in questo caso, potrebbe essere che, al ripristino, il predecessor e successor si comportino ignorando il veicolo in mezzo
-            myRef.persistAsync(CarEvent(NextVehicleIdArrived(successorId))) { evt => }
+            // myRef.persistAsync(CarEvent(NextVehicleIdArrived(successorId))) { evt => }
             // persist body begin
             myRef.state.nextVehicleId = successorId
             // persist body end
@@ -56,7 +56,7 @@ object Car {
             else {
               myRef.nextVehicleLastPosition = null
             }
-            myRef.persistAsync(PreviousVehicleIdArrived(predecessorId)) { evt => }
+            // myRef.persistAsync(PreviousVehicleIdArrived(predecessorId)) { evt => }
             // persist body begin
             myRef.state.previousVehicleId = predecessorId
             // persist body end
@@ -77,7 +77,7 @@ object Car {
             if(myRef.state.beginOfTheStep) {
               // recupera la sequenza di punti da percorrere
               val currentPointsSequence = getPointsSequence(myId, stepSequence)
-              myRef.persistAsync(BeginOfTheStep(currentPointsSequence)) { evt => }
+              // myRef.persistAsync(BeginOfTheStep(currentPointsSequence)) { evt => }
               // persist body begin
               myRef.state.currentPointsSequence = currentPointsSequence
               myRef.state.currentPointIndex = 0
