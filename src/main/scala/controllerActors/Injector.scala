@@ -23,12 +23,14 @@ import map.Routes
 import map.Routes._
 import time.TimeMessages._
 
+import scala.concurrent.duration.Duration
+
 /**
  * @author Matteo Pozza
  * La classe modella l'attore che crea entità mobili, generando un percorso appropriato e iniettandolo dentro all'entità.
  */
 class Injector extends Actor {
-  
+  import context.dispatcher
   val immediateTime = (TimeValue(16, 30), TimeValue(0, 30), TimeValue(8, 30))
   val deferredTime = (TimeValue(2, 30), TimeValue(10, 30), TimeValue(18, 30))
   val pedestrianBusPlaces = ("Z000008400004680", "Z000048000000480", "Z000038400004320")
@@ -44,8 +46,9 @@ class Injector extends Actor {
 
   val publisherGuiHanlder = PublisherInstance.getPublisherModelEvents(context.system)
   // determina l'inizio dell'injection
-  sendToNonPersistent(self, self, StartInjection)
-  
+  //sendToNonPersistent(self, self, StartInjection)
+  context.system.scheduler.scheduleOnce(Duration(5000, "millis"), self, ToNonPersistent(self,ToNonPersistentMessages.FromNonPersistent(self, StartInjection)))
+
   override def receive : Receive = {
     case ToNonPersistent(destinationRef, toNonPersistentMessage) =>
       toNonPersistentMessage match {
