@@ -336,8 +336,9 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
                     }
                     
                   case crossroad_step(crossroad, direction) =>
-                    if(state.fromCrossroad() && getMyLength() != pedestrian_length) {
-                      // siamo un veicolo e siamo appena stati su un altro incrocio
+                    if(state.fromCrossroad()) {
+                      // siamo appena stati su un altro incrocio
+                      // il percorso e la logica calcolati in precedenza ci hanno già portati al termine del secondo incrocio
                       // fai solo persist and next step
                       sendToMovable(id, self, self, PersistAndNextStep)
                     }
