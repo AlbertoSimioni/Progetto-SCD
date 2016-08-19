@@ -83,7 +83,6 @@ object UrbanSimulatorApp extends App with ReactiveApi with MainActors with React
 		// recupero il ruolo
 		val role = system.settings.config.getList("akka.cluster.roles").get(0).unwrapped
     if(role == "worker") {
-      Console.setOut(new FileOutputStream("output.txt"))
       // se il database è locale, recupera il riferimento ad esso nel seed node
       val configuration = ConfigFactory.load
       val database = configuration.getString("domain.database")
