@@ -1,6 +1,6 @@
 package main
 
-import akka.actor.{ActorRef, ActorSystem, PoisonPill, Props}
+import akka.actor._
 import akka.cluster.Cluster
 import akka.contrib.pattern.ClusterSharding
 import akka.io.IO
@@ -11,6 +11,9 @@ import modelActors.immovable.ImmovableActor
 import pubsub.Subscriber
 import spray.can.Http
 import spray.can.server.UHttp
+import java.io.FileOutputStream
+import scala.Console
+
 
 object UrbanSimulatorApp extends App with ReactiveApi with MainActors with ReactiveSecurityConfig {
 
@@ -62,7 +65,11 @@ object UrbanSimulatorApp extends App with ReactiveApi with MainActors with React
     sys.addShutdownHook({ IO(UHttp) ! Http.Unbind; IO(Http) ! Http.Unbind; system.shutdown })
     system.actorOf(Props(classOf[Subscriber], "modelEvent"), "subscriberModel")
   }
+  if(role == "worker") {
+    Console.setOut(new FileOutputStream("output.txt"))
+  }
 
+  system.eventStream.subscribe(system.actorOf(Props(classOf[DeadLetterListener]),"deadLetterListener"), classOf[DeadLetter])
 
   var shardRegionActor : ActorRef = null;
   
@@ -76,6 +83,7 @@ object UrbanSimulatorApp extends App with ReactiveApi with MainActors with React
 		// recupero il ruolo
 		val role = system.settings.config.getList("akka.cluster.roles").get(0).unwrapped
     if(role == "worker") {
+      Console.setOut(new FileOutputStream("output.txt"))
       // se il database è locale, recupera il riferimento ad esso nel seed node
       val configuration = ConfigFactory.load
       val database = configuration.getString("domain.database")
