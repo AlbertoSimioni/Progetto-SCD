@@ -226,7 +226,9 @@ class ImmovableActor extends PersistentActor with AtLeastOnceDelivery with Actor
         	    case ToZone(command) =>
         	      Zone.fromImmovableHandler(this, destinationId, senderId, command)
         	    case _ =>
-        	      println("We should not be here!")
+        	      println("ERRORE: comando ricevuto da entità immobile non previsto")
+                println("Comando: " + command)
+                assert(false)
         	  }
           }
         case Ack(deliveryId) =>
@@ -306,7 +308,9 @@ class ImmovableActor extends PersistentActor with AtLeastOnceDelivery with Actor
         	    case ToZone(command) =>
         	      Zone.fromMovableHandler(this, destinationId, senderId, sender, command)
         	    case _ =>
-        	      println("We should not be here!")
+        	      println("ERRORE: comando ricevuto da entità mobile non previsto")
+                println("Comando: " + command)
+                assert(false)
         	  }
           }
         case Ack(deliveryId) =>

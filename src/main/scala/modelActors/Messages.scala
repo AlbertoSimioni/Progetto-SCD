@@ -280,7 +280,7 @@ object Messages {
         }
     }
     if(flag) {
-      //println(log)
+      println(log)
     }
   }
   

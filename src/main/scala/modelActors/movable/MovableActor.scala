@@ -200,7 +200,9 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
               case ToTram(command) =>
                 Tram.fromImmovableHandler(this, id, senderId, command)
               case _ =>
-                println("We should not be here!")
+                println("ERRORE: comando ricevuto da entità immobile non previsto")
+                println("Comando: " + command)
+                assert(false)
             }
           }
         case Ack(deliveryId) =>
@@ -539,7 +541,9 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
               case ToTram(command) =>
                 Tram.fromMovableHandler(this, id, senderId, senderRef, command)
               case _ =>
-                println("We should not be here!")
+                println("ERRORE: comando ricevuto da entità mobile non previsto")
+                println("Comando: " + command)
+                assert(false)
             }
           }
         case Ack(deliveryId) =>
@@ -645,7 +649,9 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
                   direction.position match {
                     case `up` =>
                       if(direction.beginToEnd == true) {
-                        println("We should not be here!")
+                        println("ERRORE: direzione di percorrenza della lane contraria al senso di marcia")
+                        println("Direzione: " + direction)
+                        assert(false)
                       }
                       else {
                         // controllo con lunghezza del nextvehicle
@@ -671,11 +677,15 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
                         }
                       }
                       else {
-                        println("We should not be here!")
+                        println("ERRORE: direzione di percorrenza della lane contraria al senso di marcia")
+                        println("Direzione: " + direction)
+                        assert(false)
                       }
                     case `left` =>
                       if(direction.beginToEnd == true) {
-                        println("We should not be here!")
+                        println("ERRORE: direzione di percorrenza della lane contraria al senso di marcia")
+                        println("Direzione: " + direction)
+                        assert(false)
                       }
                       else {
                         // controllo con lunghezza del nextvehicle
@@ -701,7 +711,9 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
                         }
                       }
                       else {
-                        println("We should not be here!")
+                        println("ERRORE: direzione di percorrenza della lane contraria al senso di marcia")
+                        println("Direzione: " + direction)
+                        assert(false)
                       }
                   }
                 }
@@ -1120,7 +1132,8 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
               currentNonPersistentPointIndex = currentNonPersistentPointIndex + 1
             }
           case zone_step(zone, direction) =>
-            println("We should not be here!")
+            println("ERRORE: velocity tick dentro un zone step")
+            assert(false)
         }
         // controllo sul prossimo messaggio
         if(interestedInVelocityTick) {

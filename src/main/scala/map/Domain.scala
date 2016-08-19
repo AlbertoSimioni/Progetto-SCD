@@ -279,7 +279,8 @@ object Domain {
            }
          }
          else {
-           println("We should not be here!")
+           println("ERRORE: incrocio " + crossroadId + " di categoria nil ha 4 vertici invece di 3")
+           assert(false)
          }
        case `angle` =>
          // due most vertex consecutivi devono essere null
@@ -336,7 +337,8 @@ object Domain {
            }
          }
          else {
-           println("We should not be here!")
+           println("ERRORE: incrocio " + crossroadId + " di categoria angle non ha due most vertex consecutivi null")
+           assert(false)
          }
        case `classic` =>
          // capiamo qual'è il vertice null

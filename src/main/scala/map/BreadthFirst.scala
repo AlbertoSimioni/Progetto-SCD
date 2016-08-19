@@ -1259,7 +1259,8 @@ object BreadthFirst {
           }
         case "zone" =>
           // non finiremo mai qui
-          println("We should not be here!")
+          println("ERRORE: nella creazione di un percorso per raggiungere una stazione del tram abbiamo considerato una zona")
+          assert(false)
       }
     }
     // neighbor contiene l'id dell'ultima entità, che è un pedestrian crossroad o un tram stop

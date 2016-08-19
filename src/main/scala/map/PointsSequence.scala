@@ -40,7 +40,8 @@ object PointsSequence {
         currentStep match {
           case road_step(road, direction) =>
             // un bus non può avere road_step
-            println("We should not be here!")
+            println("ERRORE: un bus non deve avere road step")
+            assert(false)
           case laneStep @ lane_step(lane, direction) =>
             // la direzione corrente è sicuramente la stessa di uscita
             finalList = handleLaneStep(laneStep, bus_length, previousStep, nextStep)
@@ -54,7 +55,8 @@ object PointsSequence {
             finalList = handleTramStopStep(tramStopStep, previousPreviousStep, previousStep, nextStep, bus_length)
           case zone_step(zone, direction) =>
             // un bus non può avere zone_step
-            println("We should not be here!")
+            println("ERRORE: un bus non deve avere zone step")
+            assert(false)
         }
         
       case "TRA" =>
@@ -62,7 +64,8 @@ object PointsSequence {
         currentStep match {
           case road_step(road, direction) =>
             // un tram non può avere road_step
-            println("We should not be here!")
+            println("ERRORE: un tram non deve avere road step")
+            assert(false)
           case laneStep @ lane_step(lane, direction) =>
             // la direzione corrente è sicuramente la stessa di uscita
             finalList = handleTramLaneStep(laneStep)
@@ -76,7 +79,8 @@ object PointsSequence {
             finalList = handleTramStopTramStep(tramStopStep, previousStep)
           case zone_step(zone, direction) =>
             // un tram non può avere zone_step
-            println("We should not be here!")
+            println("ERRORE: un tram non deve avere zone step")
+            assert(false)
         }
         
       case "PED" =>
@@ -86,7 +90,8 @@ object PointsSequence {
             finalList = handleRoadPedestrianStep(roadStep, previousStep, nextStep)
           case lane_step(lane, direction) =>
             // un pedone non può avere lane_step
-            println("We should not be here!")
+            println("ERRORE: un pedone non deve avere lane step")
+            assert(false)
           case crossroadStep @ crossroad_step(crossroad, direction) =>
             finalList = handleCrossroadStep(crossroadStep, previousPreviousStep, previousStep, nextStep, nextNextStep, nextNextNextStep, pedestrian_length)
           case pedestrianCrossroadStep @ pedestrian_crossroad_step(pedestrian_crossroad, direction) =>
@@ -97,7 +102,8 @@ object PointsSequence {
             finalList = handleTramStopPedestrianStep(tramStopStep, previousPreviousStep, previousStep, nextStep, nextNextStep)
           case zone_step(zone, direction) =>
             // la zone_step non ha bisogno di sequenze di punti
-            println("We should not be here!")
+            println("ERRORE: è stata richiesta una sequenza di punti da un pedone quando lo step in questione era un zone step")
+            assert(false)
         }
         
       case "CAR" =>
@@ -105,7 +111,8 @@ object PointsSequence {
         currentStep match {
           case road_step(road, direction) =>
             // una macchina non può avere road_step
-            println("We should not be here!")
+            println("ERRORE: una macchina non deve avere road step")
+            assert(false)
           case laneStep @ lane_step(lane, direction) =>
             // la direzione corrente è sicuramente la stessa di uscita
             finalList = handleLaneStep(laneStep, car_length, previousStep, nextStep)
@@ -119,7 +126,8 @@ object PointsSequence {
             finalList = handleTramStopStep(tramStopStep, previousPreviousStep, previousStep, nextStep, car_length)
           case zone_step(zone, direction) =>
             // la zone_step non ha bisogno di sequenze di punti
-            println("We should not be here!")
+            println("ERRORE: è stata richiesta una sequenza di punti da una macchina quando lo step in questione era un zone step")
+            assert(false)
         }
  
     }
@@ -134,7 +142,8 @@ object PointsSequence {
       case `up` =>
         if(laneStep.direction.beginToEnd == true) {
           // caso non possibile, siamo contromarcia
-          println("We should not be here!")
+          println("ERRORE: la direzione dichiarata non rispetta i sensi di marcia delle corsie")
+          assert(false)
         }
         else {
           val laneEndPoint = JSONReader.getRoadEndPoint(current_map, laneStep.lane.road)
@@ -167,7 +176,8 @@ object PointsSequence {
         }
         else {
           // caso non possibile, siamo contromarcia
-          println("We should not be here!")
+          println("ERRORE: la direzione dichiarata non rispetta i sensi di marcia delle corsie")
+          assert(false)
         }
       case `right` =>
         if(laneStep.direction.beginToEnd == true) {
@@ -186,12 +196,14 @@ object PointsSequence {
         }
         else {
           // caso non possibile, siamo contromarcia
-          println("We should not be here!")
+          println("ERRORE: la direzione dichiarata non rispetta i sensi di marcia delle corsie")
+          assert(false)
         }
       case `left` =>
         if(laneStep.direction.beginToEnd == true) {
           // caso non possibile, siamo contromarcia
-          println("We should not be here!")
+          println("ERRORE: la direzione dichiarata non rispetta i sensi di marcia delle corsie")
+          assert(false)
         }
         else {
           val laneEndPoint = JSONReader.getRoadEndPoint(current_map, laneStep.lane.road)
@@ -219,7 +231,8 @@ object PointsSequence {
       case `up` =>
         if(laneStep.direction.beginToEnd == true) {
           // caso non possibile, siamo contromarcia
-          println("We should not be here!")
+          println("ERRORE: la direzione dichiarata non rispetta i sensi di marcia delle corsie")
+          assert(false)
         }
         else {
           // corsia orizzontale alta, da destra verso sinistra
@@ -321,12 +334,14 @@ object PointsSequence {
         }
         else {
           // caso non possibile, siamo contromarcia
-          println("We should not be here!")
+          println("ERRORE: la direzione dichiarata non rispetta i sensi di marcia delle corsie")
+          assert(false)
         }
       case `left` =>
         if(laneStep.direction.beginToEnd == true) {
           // caso non possibile, siamo contromarcia
-          println("We should not be here!")
+          println("ERRORE: la direzione dichiarata non rispetta i sensi di marcia delle corsie")
+          assert(false)
         }
         else {
           // corsia verticale sinistra, dall'alto verso il basso
@@ -429,7 +444,8 @@ object PointsSequence {
         }
         else {
           // caso non possibile, siamo contromarcia
-          println("We should not be here!")
+          println("ERRORE: la direzione dichiarata non rispetta i sensi di marcia delle corsie")
+          assert(false)
         }
     }
     return pointsList
@@ -883,7 +899,8 @@ object PointsSequence {
               }
               pointsList = pointsList :+ firstPointsList
             case _ =>
-              println("We should not be here!")
+              println("ERRORE: un pedone ha due fermate del bus consecutive non ignorate senza avere un road step successivo ad esse")
+              assert(false)
           }
       }
     }
@@ -931,7 +948,8 @@ object PointsSequence {
           }
           pointsList = pointsList :+ firstPointsList
         case _ =>
-          println("We should not be here!")
+          println("ERRORE: un bus ignora una fermata del bus e il suo step precedente non è un lane step")
+          assert(false)
       }
     }
     else {
@@ -990,7 +1008,8 @@ object PointsSequence {
           pointsList = pointsList :+ firstPointsList
           pointsList = pointsList :+ secondPointsList
         case _ =>
-          println("We should not be here!")
+          println("ERRORE: un bus affronta una bus stop di sua pertinenza e lo step precedente non è un lane step")
+          assert(false)
       }
     }
     return pointsList
@@ -1044,11 +1063,13 @@ object PointsSequence {
           }
           pointsList = pointsList :+ firstPointsList
         case _ =>
-          println("We should not be here!")
+          println("ERRORE: una macchina o un tram ignora una fermata del bus e il suo step precedente non è una lane step")
+          assert(false)
       }
     }
     else {
-      println("We should not be here!")
+      println("ERRORE: una macchina o un tram si sta dichiarando interessato ad una fermata del bus")
+      assert(false)
     }
     return pointsList
   }
@@ -1169,7 +1190,8 @@ object PointsSequence {
               }
               pointsList = pointsList :+ firstPointsList
             case _ =>
-              println("We should not be here!")
+              println("ERRORE: un pedone ha due fermate del tram consecutive non ignorate senza avere un road step successivo ad esse")
+              assert(false)
           }
       }
     }
@@ -1217,7 +1239,8 @@ object PointsSequence {
           }
           pointsList = pointsList :+ firstPointsList
         case _ =>
-          println("We should not be here!")
+          println("ERRORE: un tram ignora una fermata del tram e il suo step precedente non è un lane step")
+          assert(false)
       }
     }
     else {
@@ -1277,7 +1300,8 @@ object PointsSequence {
           pointsList = pointsList :+ firstPointsList
           pointsList = pointsList :+ secondPointsList
         case _ =>
-          println("We should not be here!")
+          println("ERRORE: un tram affronta una tram stop di sua pertinenza e lo step precedente non è un lane step")
+          assert(false)
       }
     }
     return pointsList
@@ -1326,11 +1350,13 @@ object PointsSequence {
           }
           pointsList = pointsList :+ firstPointsList
         case _ =>
-          println("We should not be here!")
+          println("ERRORE: una macchina o un bus ignora una fermata del tram e il suo step precedente non è una lane step")
+          assert(false)
       }
     }
     else {
-      println("We should not be here!")
+      println("ERRORE: una macchina o un bus si sta dichiarando interessato ad una fermata del tram")
+      assert(false)
     }
     return pointsList
   }
@@ -1379,7 +1405,8 @@ object PointsSequence {
         }
         pointsList = pointsList :+ firstPointsList
       case _ =>
-        println("We should not be here!")
+        println("ERRORE: un veicolo approccia delle strisce pedonali e il suo step precedente non è un lane step")
+        assert(false)
     }
     return pointsList
   }
@@ -1448,7 +1475,10 @@ object PointsSequence {
                   pointsList = pointsList :+ secondPointsList
                   pointsList = pointsList :+ thirdPointsList
                 case _ =>
-                  println("We should not be here!")
+                  println("ERRORE: un pedone sta dichiarando una direzione di uscita dalle strisce non concorde con la direzione di ingresso")
+                  println("Direzione di ingresso: " + direction)
+                  println("Direzione di uscita:"  + pedestrianCrossroadStep.direction)
+                  assert(false)
               }
             }
             else {
@@ -1482,7 +1512,10 @@ object PointsSequence {
                   pointsList = pointsList :+ secondPointsList
                   pointsList = pointsList :+ thirdPointsList
                 case _ =>
-                  println("We should not be here!")
+                  println("ERRORE: un pedone sta dichiarando una direzione di uscita dalle strisce non concorde con la direzione di ingresso")
+                  println("Direzione di ingresso: " + direction)
+                  println("Direzione di uscita:"  + pedestrianCrossroadStep.direction)
+                  assert(false)
               }
             }
           case `down` =>
@@ -1517,7 +1550,10 @@ object PointsSequence {
                   pointsList = pointsList :+ secondPointsList
                   pointsList = pointsList :+ thirdPointsList
                 case _ =>
-                  println("We should not be here!")
+                  println("ERRORE: un pedone sta dichiarando una direzione di uscita dalle strisce non concorde con la direzione di ingresso")
+                  println("Direzione di ingresso: " + direction)
+                  println("Direzione di uscita:"  + pedestrianCrossroadStep.direction)
+                  assert(false)
               }
             }
             else {
@@ -1551,7 +1587,10 @@ object PointsSequence {
                   pointsList = pointsList :+ secondPointsList
                   pointsList = pointsList :+ thirdPointsList
                 case _ =>
-                  println("We should not be here!")
+                  println("ERRORE: un pedone sta dichiarando una direzione di uscita dalle strisce non concorde con la direzione di ingresso")
+                  println("Direzione di ingresso: " + direction)
+                  println("Direzione di uscita:"  + pedestrianCrossroadStep.direction)
+                  assert(false)
               }
             }
           case `left` =>
@@ -1586,7 +1625,10 @@ object PointsSequence {
                   pointsList = pointsList :+ secondPointsList
                   pointsList = pointsList :+ thirdPointsList
                 case _ =>
-                  println("We should not be here!")
+                  println("ERRORE: un pedone sta dichiarando una direzione di uscita dalle strisce non concorde con la direzione di ingresso")
+                  println("Direzione di ingresso: " + direction)
+                  println("Direzione di uscita:"  + pedestrianCrossroadStep.direction)
+                  assert(false)
               }
             }
             else {
@@ -1620,7 +1662,10 @@ object PointsSequence {
                   pointsList = pointsList :+ secondPointsList
                   pointsList = pointsList :+ thirdPointsList
                 case _ =>
-                  println("We should not be here!")
+                  println("ERRORE: un pedone sta dichiarando una direzione di uscita dalle strisce non concorde con la direzione di ingresso")
+                  println("Direzione di ingresso: " + direction)
+                  println("Direzione di uscita:"  + pedestrianCrossroadStep.direction)
+                  assert(false)
               }
             }
           case `right` =>
@@ -1655,7 +1700,10 @@ object PointsSequence {
                   pointsList = pointsList :+ secondPointsList
                   pointsList = pointsList :+ thirdPointsList
                 case _ =>
-                  println("We should not be here!")
+                  println("ERRORE: un pedone sta dichiarando una direzione di uscita dalle strisce non concorde con la direzione di ingresso")
+                  println("Direzione di ingresso: " + direction)
+                  println("Direzione di uscita:"  + pedestrianCrossroadStep.direction)
+                  assert(false)
               }
             }
             else {
@@ -1689,12 +1737,16 @@ object PointsSequence {
                   pointsList = pointsList :+ secondPointsList
                   pointsList = pointsList :+ thirdPointsList
                 case _ =>
-                  println("We should not be here!")
+                  println("ERRORE: un pedone sta dichiarando una direzione di uscita dalle strisce non concorde con la direzione di ingresso")
+                  println("Direzione di ingresso: " + direction)
+                  println("Direzione di uscita:"  + pedestrianCrossroadStep.direction)
+                  assert(false)
               }
             }
         }
       case _ =>
-        println("We should not be here!")
+        println("ERRORE: un pedone affronta le strisce pedonali e il suo step precedente non è un road step")
+        assert(false)
     }
     return pointsList
   }
@@ -1726,10 +1778,14 @@ object PointsSequence {
                 val nextNextSequence = handleRoadPedestrianStep(nextNextRoadStep, nextStep, nextNextNextStep)
                 endPoint = nextNextSequence(0)(0)
               case _ =>
-                println("We should not be here!")
+                println("ERRORE: un pedone ha la sequenza di step road-crossroad-crossroad e lo step ancora successivo non è un road step")
+                println("Step in questione: " + nextNextStep)
+                assert(false)
             }
           case _ =>
-            println("We should not be here!")
+            println("ERRORE: un pedone ha la sequenza di step road-crossroad e lo step ancora successivo non è nè road nè crossroad")
+            println("Step in questione: " + nextStep)
+            assert(false)
         }
       case previousLaneStep @ lane_step(previousLane, direction) =>
         // sono un veicolo
@@ -1768,13 +1824,19 @@ object PointsSequence {
                 endPoint = nextNextSequence(0)(0)
               }
             case _ =>
-              println("We should not be here!")
+              println("ERRORE: un veicolo ha la sequenza di step lane-crossroad-crossroad e lo step ancora successivo non è un lane step")
+              println("Step in questione: " + nextNextStep)
+              assert(false)
           }
         case _ =>
-          println("We should not be here!")
+          println("ERRORE: un veicolo ha la sequenza di step lane-crossroad e lo step ancora successivo non è nè lane nè crossroad")
+          println("Step in questione: " + nextStep)
+          assert(false)
         }
       case _ =>
-        println("We should not be here!")
+        println("ERRORE: un crossroad step non è preceduto nè da un lane step nè da un road step")
+        println("Step in questione: " + previousStep)
+        assert(false)
     }
     // beginPoint ed endPoint sono definiti
     // previousDirection è definita
@@ -1804,16 +1866,25 @@ object PointsSequence {
               }
               else {
                 // nessuna entità può entrare ed uscire da un incrocio con due direzioni opposte
-                println("We should not be here!")
+                println("ERRORE: direzioni di ingresso e uscita dall'incrocio del pedone in disaccordo")
+                println("Direzione di ingresso: " + previousDirection)
+                println("Direzione di uscita: " + currStep.direction)
+                assert(false)
               }
             case `down` =>
               if(currStep.direction.beginToEnd) {
                 // non è possibile avere questa combinazione
-                println("We should not be here!")
+                println("ERRORE: direzioni di ingresso e uscita dall'incrocio in disaccordo")
+                println("Direzione di ingresso: " + previousDirection)
+                println("Direzione di uscita: " + currStep.direction)
+                assert(false)
               }
               else {
                 // non è possibile avere questa combinazione
-                println("We should not be here!")
+                println("ERRORE: direzioni di ingresso e uscita dall'incrocio in disaccordo")
+                println("Direzione di ingresso: " + previousDirection)
+                println("Direzione di uscita: " + currStep.direction)
+                assert(false)
               }
             case `left` =>
               if(currStep.direction.beginToEnd) {
@@ -1829,12 +1900,18 @@ object PointsSequence {
               }
               else {
                 // non è possibile avere questa combinazione
-                println("We should not be here!")
+                println("ERRORE: direzioni di ingresso e uscita dall'incrocio in disaccordo")
+                println("Direzione di ingresso: " + previousDirection)
+                println("Direzione di uscita: " + currStep.direction)
+                assert(false)
               }
             case `right` =>
               if(currStep.direction.beginToEnd) {
                 // non è possibile avere questa combinazione
-                println("We should not be here!")
+                println("ERRORE: direzioni di ingresso e uscita dall'incrocio in disaccordo")
+                println("Direzione di ingresso: " + previousDirection)
+                println("Direzione di uscita: " + currStep.direction)
+                assert(false)
               }
               else {
                 // prima parte
@@ -1855,7 +1932,10 @@ object PointsSequence {
             case `up` =>
               if(currStep.direction.beginToEnd) {
                 // non è possibile avere questa combinazione
-                println("We should not be here!")
+                println("ERRORE: direzioni di ingresso e uscita dall'incrocio in disaccordo")
+                println("Direzione di ingresso: " + previousDirection)
+                println("Direzione di uscita: " + currStep.direction)
+                assert(false)
               }
               else {
                 // controlla la y per decidere se il numero di corsie è diverso
@@ -1877,16 +1957,25 @@ object PointsSequence {
             case `down` =>
               if(currStep.direction.beginToEnd) {
                 // non è possibile avere questa combinazione
-                println("We should not be here!")
+                println("ERRORE: direzioni di ingresso e uscita dall'incrocio in disaccordo")
+                println("Direzione di ingresso: " + previousDirection)
+                println("Direzione di uscita: " + currStep.direction)
+                assert(false)
               }
               else {
                 // non è possibile avere questa combinazione
-                println("We should not be here!")
+                println("ERRORE: direzioni di ingresso e uscita dall'incrocio in disaccordo")
+                println("Direzione di ingresso: " + previousDirection)
+                println("Direzione di uscita: " + currStep.direction)
+                assert(false)
               }
             case `left` =>
               if(currStep.direction.beginToEnd) {
                 // non è possibile avere questa combinazione
-                println("We should not be here!")
+                println("ERRORE: direzioni di ingresso e uscita dall'incrocio in disaccordo")
+                println("Direzione di ingresso: " + previousDirection)
+                println("Direzione di uscita: " + currStep.direction)
+                assert(false)
               }
               else {
                 // prima parte
@@ -1913,7 +2002,10 @@ object PointsSequence {
               }
               else {
                 // non è possibile avere questa combinazione
-                println("We should not be here!")
+                println("ERRORE: direzioni di ingresso e uscita dall'incrocio in disaccordo")
+                println("Direzione di ingresso: " + previousDirection)
+                println("Direzione di uscita: " + currStep.direction)
+                assert(false)
               }
           }
         }
@@ -1923,11 +2015,17 @@ object PointsSequence {
             case `up` =>
               if(currStep.direction.beginToEnd) {
                 // non è possibile avere questa combinazione
-                println("We should not be here!")
+                println("ERRORE: direzioni di ingresso e uscita dall'incrocio in disaccordo")
+                println("Direzione di ingresso: " + previousDirection)
+                println("Direzione di uscita: " + currStep.direction)
+                assert(false)
               }
               else {
                 // non è possibile avere questa combinazione
-                println("We should not be here!")
+                println("ERRORE: direzioni di ingresso e uscita dall'incrocio in disaccordo")
+                println("Direzione di ingresso: " + previousDirection)
+                println("Direzione di uscita: " + currStep.direction)
+                assert(false)
               }
             case `down` =>
               if(currStep.direction.beginToEnd) {
@@ -1949,12 +2047,18 @@ object PointsSequence {
               }
               else {
                 // non è possibile avere questa combinazione
-                println("We should not be here!")
+                println("ERRORE: direzioni di ingresso e uscita dall'incrocio in disaccordo")
+                println("Direzione di ingresso: " + previousDirection)
+                println("Direzione di uscita: " + currStep.direction)
+                assert(false)
               }
             case `left` =>
               if(currStep.direction.beginToEnd) {
                 // non è possibile avere questa combinazione
-                println("We should not be here!")
+                println("ERRORE: direzioni di ingresso e uscita dall'incrocio in disaccordo")
+                println("Direzione di ingresso: " + previousDirection)
+                println("Direzione di uscita: " + currStep.direction)
+                assert(false)
               }
               else {
                 // prima parte
@@ -1981,7 +2085,10 @@ object PointsSequence {
               }
               else {
                 // non è possibile avere questa combinazione
-                println("We should not be here!")
+                println("ERRORE: direzioni di ingresso e uscita dall'incrocio in disaccordo")
+                println("Direzione di ingresso: " + previousDirection)
+                println("Direzione di uscita: " + currStep.direction)
+                assert(false)
               }
           }
         }
@@ -1990,16 +2097,25 @@ object PointsSequence {
             case `up` =>
               if(currStep.direction.beginToEnd) {
                 // non è possibile avere questa combinazione
-                println("We should not be here!")
+                println("ERRORE: direzioni di ingresso e uscita dall'incrocio in disaccordo")
+                println("Direzione di ingresso: " + previousDirection)
+                println("Direzione di uscita: " + currStep.direction)
+                assert(false)
               }
               else {
                 // non è possibile avere questa combinazione
-                println("We should not be here!")
+                println("ERRORE: direzioni di ingresso e uscita dall'incrocio in disaccordo")
+                println("Direzione di ingresso: " + previousDirection)
+                println("Direzione di uscita: " + currStep.direction)
+                assert(false)
               }
             case `down` =>
               if(currStep.direction.beginToEnd) {
                 // non è possibile avere questa combinazione
-                println("We should not be here!")
+                println("ERRORE: direzioni di ingresso e uscita dall'incrocio in disaccordo")
+                println("Direzione di ingresso: " + previousDirection)
+                println("Direzione di uscita: " + currStep.direction)
+                assert(false)
               }
               else {
                 // controlla la y per decidere se il numero di corsie è diverso
@@ -2032,12 +2148,18 @@ object PointsSequence {
               }
               else {
                 // non è possibile avere questa combinazione
-                println("We should not be here!")
+                println("ERRORE: direzioni di ingresso e uscita dall'incrocio in disaccordo")
+                println("Direzione di ingresso: " + previousDirection)
+                println("Direzione di uscita: " + currStep.direction)
+                assert(false)
               }
             case `right` =>
               if(currStep.direction.beginToEnd) {
                 // non è possibile avere questa combinazione
-                println("We should not be here!")
+                println("ERRORE: direzioni di ingresso e uscita dall'incrocio in disaccordo")
+                println("Direzione di ingresso: " + previousDirection)
+                println("Direzione di uscita: " + currStep.direction)
+                assert(false)
               }
               else {
                 // prima parte
@@ -2070,12 +2192,18 @@ object PointsSequence {
               }
               else {
                 // non è possibile avere questa combinazione
-                println("We should not be here!")
+                println("ERRORE: direzioni di ingresso e uscita dall'incrocio in disaccordo")
+                println("Direzione di ingresso: " + previousDirection)
+                println("Direzione di uscita: " + currStep.direction)
+                assert(false)
               }
             case `down` =>
               if(currStep.direction.beginToEnd) {
                 // non è possibile avere questa combinazione
-                println("We should not be here!")
+                println("ERRORE: direzioni di ingresso e uscita dall'incrocio in disaccordo")
+                println("Direzione di ingresso: " + previousDirection)
+                println("Direzione di uscita: " + currStep.direction)
+                assert(false)
               }
               else {
                 // prima parte
@@ -2108,16 +2236,25 @@ object PointsSequence {
               }
               else {
                 // non è possibile avere questa combinazione
-                println("We should not be here!")
+                println("ERRORE: direzioni di ingresso e uscita dall'incrocio in disaccordo")
+                println("Direzione di ingresso: " + previousDirection)
+                println("Direzione di uscita: " + currStep.direction)
+                assert(false)
               }
             case `right` =>
               if(currStep.direction.beginToEnd) {
                 // non è possibile avere questa combinazione
-                println("We should not be here!")
+                println("ERRORE: direzioni di ingresso e uscita dall'incrocio in disaccordo")
+                println("Direzione di ingresso: " + previousDirection)
+                println("Direzione di uscita: " + currStep.direction)
+                assert(false)
               }
               else {
                 // non è possibile avere questa combinazione
-                println("We should not be here!")
+                println("ERRORE: direzioni di ingresso e uscita dall'incrocio in disaccordo")
+                println("Direzione di ingresso: " + previousDirection)
+                println("Direzione di uscita: " + currStep.direction)
+                assert(false)
               }
           }
         }
@@ -2127,7 +2264,10 @@ object PointsSequence {
             case `up` =>
               if(currStep.direction.beginToEnd) {
                 // non è possibile avere questa combinazione
-                println("We should not be here!")
+                println("ERRORE: direzioni di ingresso e uscita dall'incrocio in disaccordo")
+                println("Direzione di ingresso: " + previousDirection)
+                println("Direzione di uscita: " + currStep.direction)
+                assert(false)
               }
               else {
                 // prima parte
@@ -2154,12 +2294,18 @@ object PointsSequence {
               }
               else {
                 // non è possibile avere questa combinazione
-                println("We should not be here!")
+                println("ERRORE: direzioni di ingresso e uscita dall'incrocio in disaccordo")
+                println("Direzione di ingresso: " + previousDirection)
+                println("Direzione di uscita: " + currStep.direction)
+                assert(false)
               }
             case `left` =>
               if(currStep.direction.beginToEnd) {
                 // non è possibile avere questa combinazione
-                println("We should not be here!")
+                println("ERRORE: direzioni di ingresso e uscita dall'incrocio in disaccordo")
+                println("Direzione di ingresso: " + previousDirection)
+                println("Direzione di uscita: " + currStep.direction)
+                assert(false)
               }
               else {
                 // controlla la x per decidere se il numero di corsie è diverso
@@ -2181,11 +2327,17 @@ object PointsSequence {
             case `right` =>
               if(currStep.direction.beginToEnd) {
                 // non è possibile avere questa combinazione
-                println("We should not be here!")
+                println("ERRORE: direzioni di ingresso e uscita dall'incrocio in disaccordo")
+                println("Direzione di ingresso: " + previousDirection)
+                println("Direzione di uscita: " + currStep.direction)
+                assert(false)
               }
               else {
                 // non è possibile avere questa combinazione
-                println("We should not be here!")
+                println("ERRORE: direzioni di ingresso e uscita dall'incrocio in disaccordo")
+                println("Direzione di ingresso: " + previousDirection)
+                println("Direzione di uscita: " + currStep.direction)
+                assert(false)
               }
           }
         }
@@ -2196,7 +2348,10 @@ object PointsSequence {
             case `up` =>
               if(currStep.direction.beginToEnd) {
                 // non è possibile avere questa combinazione
-                println("We should not be here!")
+                println("ERRORE: direzioni di ingresso e uscita dall'incrocio in disaccordo")
+                println("Direzione di ingresso: " + previousDirection)
+                println("Direzione di uscita: " + currStep.direction)
+                assert(false)
               }
               else {
                 // prima parte
@@ -2223,16 +2378,25 @@ object PointsSequence {
               }
               else {
                 // non è possibile avere questa combinazione
-                println("We should not be here!")
+                println("ERRORE: direzioni di ingresso e uscita dall'incrocio in disaccordo")
+                println("Direzione di ingresso: " + previousDirection)
+                println("Direzione di uscita: " + currStep.direction)
+                assert(false)
               }
             case `left` =>
               if(currStep.direction.beginToEnd) {
                 // non è possibile avere questa combinazione
-                println("We should not be here!")
+                println("ERRORE: direzioni di ingresso e uscita dall'incrocio in disaccordo")
+                println("Direzione di ingresso: " + previousDirection)
+                println("Direzione di uscita: " + currStep.direction)
+                assert(false)
               }
               else {
                 // non è possibile avere questa combinazione
-                println("We should not be here!")
+                println("ERRORE: direzioni di ingresso e uscita dall'incrocio in disaccordo")
+                println("Direzione di ingresso: " + previousDirection)
+                println("Direzione di uscita: " + currStep.direction)
+                assert(false)
               }
             case `right` =>
               if(currStep.direction.beginToEnd) {
@@ -2254,7 +2418,10 @@ object PointsSequence {
               }
               else {
                 // non è possibile avere questa combinazione
-                println("We should not be here!")
+                println("ERRORE: direzioni di ingresso e uscita dall'incrocio in disaccordo")
+                println("Direzione di ingresso: " + previousDirection)
+                println("Direzione di uscita: " + currStep.direction)
+                assert(false)
               }
           }
         }
@@ -2275,12 +2442,18 @@ object PointsSequence {
               }
               else {
                 // non è possibile avere questa combinazione
-                println("We should not be here!")
+                println("ERRORE: direzioni di ingresso e uscita dall'incrocio in disaccordo")
+                println("Direzione di ingresso: " + previousDirection)
+                println("Direzione di uscita: " + currStep.direction)
+                assert(false)
               }
             case `down` =>
               if(currStep.direction.beginToEnd) {
                 // non è possibile avere questa combinazione
-                println("We should not be here!")
+                println("ERRORE: direzioni di ingresso e uscita dall'incrocio in disaccordo")
+                println("Direzione di ingresso: " + previousDirection)
+                println("Direzione di uscita: " + currStep.direction)
+                assert(false)
               }
               else {
                 // prima parte
@@ -2296,16 +2469,25 @@ object PointsSequence {
             case `left` =>
               if(currStep.direction.beginToEnd) {
                 // non è possibile avere questa combinazione
-                println("We should not be here!")
+                println("ERRORE: direzioni di ingresso e uscita dall'incrocio in disaccordo")
+                println("Direzione di ingresso: " + previousDirection)
+                println("Direzione di uscita: " + currStep.direction)
+                assert(false)
               }
               else {
                 // non è possibile avere questa combinazione
-                println("We should not be here!")
+                println("ERRORE: direzioni di ingresso e uscita dall'incrocio in disaccordo")
+                println("Direzione di ingresso: " + previousDirection)
+                println("Direzione di uscita: " + currStep.direction)
+                assert(false)
               }
             case `right` =>
               if(currStep.direction.beginToEnd) {
                 // non è possibile avere questa combinazione
-                println("We should not be here!")
+                println("ERRORE: direzioni di ingresso e uscita dall'incrocio in disaccordo")
+                println("Direzione di ingresso: " + previousDirection)
+                println("Direzione di uscita: " + currStep.direction)
+                assert(false)
               }
               else {
                 // controlla la x per decidere se il numero di corsie è diverso
