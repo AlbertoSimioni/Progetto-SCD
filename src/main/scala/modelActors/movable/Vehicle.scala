@@ -76,15 +76,18 @@ object Vehicle {
         // siamo interessati ad un messaggio advanced solo se è relativo alla lane che stiamo percorrendo
         // e solo se proviene dal mittente che ci aspettiamo
         if(myRef.state.getCurrentStepId == laneId && senderId == myRef.state.nextVehicleId) {
-          // aggiorna la posizione del veicolo davanti
-          myRef.nextVehicleLastPosition = lastPosition
           // aggiorna anche il riferimento all'attore, per sicurezza
           myRef.nextVehicle = senderRef
-          // se è la prima volta che ricevi questo messaggio, attiva l'interruttore di interessamento ai velocity tick
-          if(myRef.interestedInVelocityTick == false) {
-            myRef.interestedInVelocityTick = true
-            // myRef.sendToMovable(myId, myRef.self, myRef.self, VelocityTick)
-            myRef.self ! VelocityTick
+          // aggiorna la posizione del veicolo davanti
+          // attenzione! ha senso aggiornare la posizione solo se è differente da quella che abbiamo già
+          if((myRef.nextVehicleLastPosition.x != lastPosition.x) || (myRef.nextVehicleLastPosition.y != lastPosition.y)) {
+            myRef.nextVehicleLastPosition = lastPosition
+            // se è la prima volta che ricevi questo messaggio, attiva l'interruttore di interessamento ai velocity tick
+            if(myRef.interestedInVelocityTick == false) {
+              myRef.interestedInVelocityTick = true
+              // myRef.sendToMovable(myId, myRef.self, myRef.self, VelocityTick)
+              myRef.self ! VelocityTick
+            }
           }
         }
       case PredecessorGone(laneId) =>

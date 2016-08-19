@@ -318,7 +318,7 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
                             previousId = targetCrossroad.id
                             previousLaneId = state.getStepIdAt(-3)
                           }
-                          sendToImmovable(id, self, previousId, envelope(id, previousId, VehicleBusy(previousLaneId)))
+                          sendToImmovable(id, self, previousId, envelope(id, previousId, VehicleBusy(previousLaneId, lane.id)))
                           // manda un messaggio alla lane corrente per ricevere il ref
                           sendToImmovable(id, self, lane.id, envelope(id, lane.id, NextVehicleFirstRequest))
                         }
@@ -361,14 +361,18 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
                           val target = getClassicCrossroad(crossroad)
                           // recupera l'id della lane precedente
                           val previousId = state.getPreviousStepId
+                          // recupera l'id della lane successiva
+                          val nextId = state.getStepIdAt(2)
                           // richiesta all'incrocio
-                          sendToImmovable(id, self, target.id, envelope(id, target.id, Vehicle_In(previousId)))
+                          sendToImmovable(id, self, target.id, envelope(id, target.id, Vehicle_In(previousId, nextId)))
                         }
                         else {
                           // recupera l'id della lane precedente
                           val previousId = state.getPreviousStepId
+                          // recuper l'id della lane successiva
+                          val nextId = state.getNextStepId
                           // richiesta all'incrocio
-                          sendToImmovable(id, self, crossroad.id, envelope(id, crossroad.id, Vehicle_In(previousId)))
+                          sendToImmovable(id, self, crossroad.id, envelope(id, crossroad.id, Vehicle_In(previousId, nextId)))
                         }
                       }
                     }
@@ -400,8 +404,10 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
                       else {
                         // recupera l'id della lane precedente
                         val previousId = state.getPreviousStepId
+                        // recupera l'id della lane successiva
+                        val nextId = state.getNextStepId
                         // richiesta alle strisce
-                        sendToImmovable(id, self, pedestrian_crossroad.id, envelope(id, pedestrian_crossroad.id, Vehicle_In(previousId)))
+                        sendToImmovable(id, self, pedestrian_crossroad.id, envelope(id, pedestrian_crossroad.id, Vehicle_In(previousId, nextId)))
                       }
                     }
                   case bus_stop_step(bus_stop, direction, ignore) =>
@@ -420,8 +426,10 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
                     else {
                       // recupera l'id della lane precedente
                       val previousId = state.getPreviousStepId
+                      // recupera l'id della lane successiva
+                      val nextId = state.getNextStepId
                       // richiesta alle fermata del bus
-                      sendToImmovable(id, self, bus_stop.id, envelope(id, bus_stop.id, Vehicle_In(previousId)))
+                      sendToImmovable(id, self, bus_stop.id, envelope(id, bus_stop.id, Vehicle_In(previousId, nextId)))
                     }
                   case tram_stop_step(tram_stop, direction, ignore) =>
                     pathPhase = 0
@@ -439,8 +447,10 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
                     else {
                       // recupera l'id della lane precedente
                       val previousId = state.getPreviousStepId
+                      // recupera l'id della lane successiva
+                      val nextId = state.getNextStepId
                       // richiesta alle fermata del bus
-                      sendToImmovable(id, self, tram_stop.id, envelope(id, tram_stop.id, Vehicle_In(previousId)))
+                      sendToImmovable(id, self, tram_stop.id, envelope(id, tram_stop.id, Vehicle_In(previousId, nextId)))
                     }
                   case zone_step(zone, direction) =>
                     // PRECONDIZIONE: solo un pedone o un veicolo possono avere uno zone_step nel loro percorso
@@ -618,7 +628,7 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
                 previousStepId = targetCrossroad.id
                 previousLaneId = state.getStepIdAt(-3)
               }
-              sendToImmovable(id, self, previousStepId, envelope(id, previousStepId, VehicleFree(previousLaneId)))
+              sendToImmovable(id, self, previousStepId, envelope(id, previousStepId, VehicleFree(previousLaneId, lane.id)))
             }
             // GESTIONE PUNTO SUCCESSIVO
             // flag che ci segnala se possiamo avanzare o no
@@ -746,7 +756,7 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
                     previousStepId = targetCrossroad.id
                     previousLaneId = state.getStepIdAt(-3)
                   }
-                  sendToImmovable(id, self, previousStepId, envelope(id, previousStepId, VehicleFree(previousLaneId)))
+                  sendToImmovable(id, self, previousStepId, envelope(id, previousStepId, VehicleFree(previousLaneId, lane.id)))
                 }
                 // se non stiamo andando in una zona
                 if(state.toZone() == false) {

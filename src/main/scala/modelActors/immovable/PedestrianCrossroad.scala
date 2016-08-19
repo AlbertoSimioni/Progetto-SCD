@@ -58,29 +58,29 @@ object PedestrianCrossroad {
         }
       case FromCar(message) =>
         message match {
-          case Vehicle_In(comingFrom) =>
+          case Vehicle_In(comingFrom, goingTo) =>
             FromVehicle(myRef, myId, senderId, senderRef, message)
-          case VehicleBusy(comingFrom) =>
+          case VehicleBusy(comingFrom, goingTo) =>
             FromVehicle(myRef, myId, senderId, senderRef, message)
-          case VehicleFree(comingFrom) =>
+          case VehicleFree(comingFrom, goingTo) =>
             FromVehicle(myRef, myId, senderId, senderRef, message)
         }
       case FromBus(message) =>
         message match {
-          case Vehicle_In(comingFrom) =>
+          case Vehicle_In(comingFrom, goingTo) =>
             FromVehicle(myRef, myId, senderId, senderRef, message)
-          case VehicleBusy(comingFrom) =>
+          case VehicleBusy(comingFrom, goingTo) =>
             FromVehicle(myRef, myId, senderId, senderRef, message)
-          case VehicleFree(comingFrom) =>
+          case VehicleFree(comingFrom, goingTo) =>
             FromVehicle(myRef, myId, senderId, senderRef, message)
         }
       case FromTram(message) =>
         message match {
-          case Vehicle_In(comingFrom) =>
+          case Vehicle_In(comingFrom, goingTo) =>
             FromVehicle(myRef, myId, senderId, senderRef, message)
-          case VehicleBusy(comingFrom) =>
+          case VehicleBusy(comingFrom, goingTo) =>
             FromVehicle(myRef, myId, senderId, senderRef, message)
-          case VehicleFree(comingFrom) =>
+          case VehicleFree(comingFrom, goingTo) =>
             FromVehicle(myRef, myId, senderId, senderRef, message)
         }
     }
@@ -109,7 +109,7 @@ object PedestrianCrossroad {
   // modella la risposta ad un generico veicolo
   def FromVehicle(myRef : ImmovableActor, myId : String, senderId : String, senderRef : ActorRef, message : Any) : Unit = {
     message match {
-      case Vehicle_In(comingFrom) =>
+      case Vehicle_In(comingFrom, goingTo) =>
         if((myRef.pedestrianRequests.size == 0 && myRef.numPedestrianCrossing == 0) && myRef.vehicleFreeTempMap.get(comingFrom).getOrElse(true)) {
           myRef.numVehicleCrossing = myRef.numVehicleCrossing + 1
           // poni il corrispondente vehicleFree a false
@@ -129,7 +129,7 @@ object PedestrianCrossroad {
           val tuple = (senderId, senderRef)
           myRef.vehicleRequests = myRef.vehicleRequests + (comingFrom -> tuple)
         }
-      case VehicleBusy(comingFrom) =>
+      case VehicleBusy(comingFrom, goingTo) =>
         // per sicurezza, metti a false anche la entry nella tabella temporanea
         if(myRef.vehicleFreeTempMap.contains(comingFrom)) {
           myRef.vehicleFreeTempMap = myRef.vehicleFreeTempMap.updated(comingFrom, false)
@@ -147,7 +147,7 @@ object PedestrianCrossroad {
           myRef.state.vehicleFreeMap = myRef.state.vehicleFreeMap + (comingFrom -> false)
         }
         // persist body end
-      case VehicleFree(comingFrom) =>
+      case VehicleFree(comingFrom, goingTo) =>
         myRef.numVehicleCrossing = myRef.numVehicleCrossing - 1
         // metti a true la entry nella tabella temporanea
         if(myRef.vehicleFreeTempMap.contains(comingFrom)) {

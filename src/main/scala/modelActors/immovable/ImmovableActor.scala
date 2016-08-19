@@ -153,6 +153,10 @@ class ImmovableActor extends PersistentActor with AtLeastOnceDelivery with Actor
   var numVehicleCrossing = 0
   var vehicleFreeTempMap = Map[String, Boolean]()
   
+  // variabili per gestione incroci classic e roundabout
+  var crossroadLock = true
+  var vehicleDestinationRequests = Map[String, List[(String, ActorRef)]]()
+  
   // BUS / TRAM STOP
   // coda non persistente dei pedoni che sono in attesa alla fermata
   // non persistente perchè in caso di ripristino i pedoni partiranno da capo della bus/tram_stop

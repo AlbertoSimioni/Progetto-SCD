@@ -110,15 +110,15 @@ object Messages {
   case class PredecessorChanged(laneId : String, predecessorId : String, predecessorRef : ActorRef)
   
   // inviato da una entità mobile all'entità precedente della lane per avvisare che si è arrivati nella nuova lane
-  case class VehicleBusy(comingFrom : String)
+  case class VehicleBusy(comingFrom : String, goingTo : String)
   // inviato da una entità mobile all'entità precedente della lane per avvisare che la soglia è stata superata
-  case class VehicleFree(comingFrom : String)
+  case class VehicleFree(comingFrom : String, goingTo : String)
   // inviato da un pedone alle strisce per notificare l'avvenuto passaggio
   case object CrossFree
   
   
   // inviato da un veicolo per richiedere di passare
-  case class Vehicle_In(comingFrom : String)
+  case class Vehicle_In(comingFrom : String, goingTo : String)
   // inviato da un pedone per richiedere di passare
   case object Cross_In
   // inviato dalle strisce per garantire il passaggio ad un veicolo
@@ -255,14 +255,14 @@ object Messages {
             log = log + "PredecessorChanged(" + laneId + ")"
           case SuccessorChanged(laneId, successorId, successorRef) =>
             log = log + "SuccessorChanged(" + laneId + ")"
-          case VehicleBusy(comingFrom) =>
-            log = log + "VehicleBusy(" + comingFrom + ")"
-          case VehicleFree(comingFrom) =>
-            log = log + "VehicleFree(" + comingFrom + ")"
+          case VehicleBusy(comingFrom, goingTo) =>
+            log = log + "VehicleBusy(" + comingFrom + " - " + goingTo + ")"
+          case VehicleFree(comingFrom, goingTo) =>
+            log = log + "VehicleFree(" + comingFrom + " - " + goingTo + ")"
           case CrossFree =>
             log = log + "CrossFree"
-          case Vehicle_In(comingFrom) =>
-            log = log + "VehicleIn(" + comingFrom + ")"
+          case Vehicle_In(comingFrom, goingTo) =>
+            log = log + "VehicleIn(" + comingFrom + " - " + goingTo + ")"
           case Cross_In =>
             log = log + "CrossIn"
           case Vehicle_Out =>

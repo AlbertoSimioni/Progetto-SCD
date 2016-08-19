@@ -77,20 +77,20 @@ object BusStop {
         
       case FromCar(message) =>
         message match {
-          case Vehicle_In(comingFrom) =>
+          case Vehicle_In(comingFrom, goingTo) =>
             FromVehicle(myRef, myId, senderId, senderRef, message)
-          case VehicleBusy(comingFrom) =>
+          case VehicleBusy(comingFrom, goingTo) =>
             FromVehicle(myRef, myId, senderId, senderRef, message)
-          case VehicleFree(comingFrom) =>
+          case VehicleFree(comingFrom, goingTo) =>
             FromVehicle(myRef, myId, senderId, senderRef, message)
         }
       case FromBus(message) =>
         message match {
-          case Vehicle_In(comingFrom) =>
+          case Vehicle_In(comingFrom, goingTo) =>
             FromVehicle(myRef, myId, senderId, senderRef, message)
-          case VehicleBusy(comingFrom) =>
+          case VehicleBusy(comingFrom, goingTo) =>
             FromVehicle(myRef, myId, senderId, senderRef, message)
-          case VehicleFree(comingFrom) =>
+          case VehicleFree(comingFrom, goingTo) =>
             FromVehicle(myRef, myId, senderId, senderRef, message)
           case GetOut(travellers, numTravellers) =>
             // rendi subito persistente l'arrivo dei viaggiatori
@@ -116,11 +116,11 @@ object BusStop {
         }
       case FromTram(message) =>
         message match {
-          case Vehicle_In(comingFrom) =>
+          case Vehicle_In(comingFrom, goingTo) =>
             FromVehicle(myRef, myId, senderId, senderRef, message)
-          case VehicleBusy(comingFrom) =>
+          case VehicleBusy(comingFrom, goingTo) =>
             FromVehicle(myRef, myId, senderId, senderRef, message)
-          case VehicleFree(comingFrom) =>
+          case VehicleFree(comingFrom, goingTo) =>
             FromVehicle(myRef, myId, senderId, senderRef, message)
         }
     }
@@ -157,7 +157,7 @@ object BusStop {
   // modella la risposta ad un generico veicolo
   def FromVehicle(myRef : ImmovableActor, myId : String, senderId : String, senderRef : ActorRef, message : Any) : Unit = {
     message match {
-      case Vehicle_In(comingFrom) =>
+      case Vehicle_In(comingFrom, goingTo) =>
         if(myRef.vehicleFreeTempMap.get(comingFrom).getOrElse(true)) {
           // poni il corrispondente vehicleFree a false
           if(myRef.vehicleFreeTempMap.contains(comingFrom)) {
@@ -178,7 +178,7 @@ object BusStop {
           val tuple = (senderId, senderRef)
           myRef.vehicleRequests = myRef.vehicleRequests + (comingFrom -> tuple)
         }
-      case VehicleBusy(comingFrom) =>
+      case VehicleBusy(comingFrom, goingTo) =>
         // per sicurezza, metti a false anche la entry nella tabella temporanea
         if(myRef.vehicleFreeTempMap.contains(comingFrom)) {
           myRef.vehicleFreeTempMap = myRef.vehicleFreeTempMap.updated(comingFrom, false)
@@ -196,7 +196,7 @@ object BusStop {
           myRef.state.vehicleFreeMap = myRef.state.vehicleFreeMap + (comingFrom -> false)
         }
         // persist body end
-      case VehicleFree(comingFrom) =>
+      case VehicleFree(comingFrom, goingTo) =>
         // metti a true la entry nella tabella temporanea
         if(myRef.vehicleFreeTempMap.contains(comingFrom)) {
           myRef.vehicleFreeTempMap = myRef.vehicleFreeTempMap.updated(comingFrom, true)
