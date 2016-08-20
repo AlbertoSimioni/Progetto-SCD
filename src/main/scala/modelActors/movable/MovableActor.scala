@@ -238,6 +238,7 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
                       // persist body begin
                       state.currentPointsSequence = currentPointsSequence
                       state.currentPointIndex = 0
+                      state.previousPointIndex = -1
                       state.beginOfTheStep = false
                       // persist body end
                     }
@@ -575,9 +576,12 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
         val timestamp = java.lang.System.currentTimeMillis()
         state.currentRoute(state.index) match {
           case road_step(road, direction) =>
-            // LANCIA EVENTO LEGATO AL PUNTO CORRENTE
-            val currentPoint = state.currentPointsSequence(0)(state.currentPointIndex)
-            publisherGuiHandler ! pedestrianPosition(id, currentPoint.x, currentPoint.y, getGuiDirection(direction))
+            if(state.previousPointIndex != state.currentPointIndex) {
+              state.previousPointIndex = state.currentPointIndex
+              // LANCIA EVENTO LEGATO AL PUNTO CORRENTE
+              val currentPoint = state.currentPointsSequence(0)(state.currentPointIndex)
+              publisherGuiHandler ! pedestrianPosition(id, currentPoint.x, currentPoint.y, getGuiDirection(direction))
+            }
             
             // esamina dove siamo nella sequenza di punti
             if(state.currentPointIndex == state.currentPointsSequence(0).length-1) {
@@ -593,46 +597,49 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
               // persist body end
             }
           case lane_step(lane, direction) =>
-            // LANCIA EVENTO LEGATO AL PUNTO CORRENTE
-            val currentPoint = state.currentPointsSequence(0)(state.currentPointIndex)
-            if(getMyLength() == car_length) {
-              publisherGuiHandler ! carPosition(id, currentPoint.x, currentPoint.y, getGuiDirection(direction))
-            }
-            else if(getMyLength() == bus_length) {
-              publisherGuiHandler ! busPosition(id, currentPoint.x, currentPoint.y, getGuiDirection(direction))
-            }
-            else {
-              // tram
-              publisherGuiHandler ! tramPosition(id, currentPoint.x, currentPoint.y, getGuiDirection(direction))
-            }
-            
-            // manda l'update della posizione alla lane
-            sendToImmovable(id, self, lane.id, envelope(id, lane.id, Advanced(lane.id, currentPoint)))
-            // c'è un veicolo dietro?
-            if(previousVehicle != null) {
-              // c'è qualcuno, manda update della posizione
-              sendToMovable(id, self, previousVehicle, envelope(id, state.previousVehicleId, Advanced(lane.id, currentPoint)))
-            }
-            // qualora sia stata raggiunta la vehicle length + 1, manda all'entità precedente un messaggio vehicle free
-            // per approccio conservativo, utilizziamo la bus_length (nella tratta del tram gira un solo tram sempre)
-            // attenzione: se partivamo da una zona, NON dobbiamo mandare la vehicle free
-            // attenzione: se siamo usciti da un incrocio nil o angle, dobbiamo mandare la vehicle free come in tutti gli altri casi
-            // attenzione: se l'incrocio angle era parte di un incrocio doppio, anche
-            if(state.fromZone() == false && state.currentPointIndex == bus_length + 1) {
-              var previousStepId = state.getPreviousStepId
-              // recupera anche l'id della lane da cui provenivamo
-              var previousLaneId : String = null
-              if(state.fromDoubleCrossroad() == false) {
-                previousLaneId = state.getStepIdAt(-2)
+            if(state.previousPointIndex != state.currentPointIndex) {
+              state.previousPointIndex = state.currentPointIndex
+              // LANCIA EVENTO LEGATO AL PUNTO CORRENTE
+              val currentPoint = state.currentPointsSequence(0)(state.currentPointIndex)
+              if(getMyLength() == car_length) {
+                publisherGuiHandler ! carPosition(id, currentPoint.x, currentPoint.y, getGuiDirection(direction))
+              }
+              else if(getMyLength() == bus_length) {
+                publisherGuiHandler ! busPosition(id, currentPoint.x, currentPoint.y, getGuiDirection(direction))
               }
               else {
-                // avevamo due incroci prima
-                val previousCrossroad = JSONReader.getCrossroad(current_map, previousStepId).get
-                val targetCrossroad = getClassicCrossroad(previousCrossroad)
-                previousStepId = targetCrossroad.id
-                previousLaneId = state.getStepIdAt(-3)
+                // tram
+                publisherGuiHandler ! tramPosition(id, currentPoint.x, currentPoint.y, getGuiDirection(direction))
               }
-              sendToImmovable(id, self, previousStepId, envelope(id, previousStepId, VehicleFree(previousLaneId, lane.id)))
+              
+              // manda l'update della posizione alla lane
+              sendToImmovable(id, self, lane.id, envelope(id, lane.id, Advanced(lane.id, currentPoint)))
+              // c'è un veicolo dietro?
+              if(previousVehicle != null) {
+                // c'è qualcuno, manda update della posizione
+                sendToMovable(id, self, previousVehicle, envelope(id, state.previousVehicleId, Advanced(lane.id, currentPoint)))
+              }
+              // qualora sia stata raggiunta la vehicle length + 1, manda all'entità precedente un messaggio vehicle free
+              // per approccio conservativo, utilizziamo la bus_length (nella tratta del tram gira un solo tram sempre)
+              // attenzione: se partivamo da una zona, NON dobbiamo mandare la vehicle free
+              // attenzione: se siamo usciti da un incrocio nil o angle, dobbiamo mandare la vehicle free come in tutti gli altri casi
+              // attenzione: se l'incrocio angle era parte di un incrocio doppio, anche
+              if(state.fromZone() == false && state.currentPointIndex == bus_length + 1) {
+                var previousStepId = state.getPreviousStepId
+                // recupera anche l'id della lane da cui provenivamo
+                var previousLaneId : String = null
+                if(state.fromDoubleCrossroad() == false) {
+                  previousLaneId = state.getStepIdAt(-2)
+                }
+                else {
+                  // avevamo due incroci prima
+                  val previousCrossroad = JSONReader.getCrossroad(current_map, previousStepId).get
+                  val targetCrossroad = getClassicCrossroad(previousCrossroad)
+                  previousStepId = targetCrossroad.id
+                  previousLaneId = state.getStepIdAt(-3)
+                }
+                sendToImmovable(id, self, previousStepId, envelope(id, previousStepId, VehicleFree(previousLaneId, lane.id)))
+              }
             }
             // GESTIONE PUNTO SUCCESSIVO
             // flag che ci segnala se possiamo avanzare o no
@@ -1230,6 +1237,7 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
       case BeginOfTheStep(currentPointsSequence) =>
         state.currentPointsSequence = currentPointsSequence
         state.currentPointIndex = 0
+        state.previousPointIndex = -1
         state.beginOfTheStep = false
       case IncrementPointIndex =>
         state.currentPointIndex = state.currentPointIndex + 1

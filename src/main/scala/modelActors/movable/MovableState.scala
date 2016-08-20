@@ -29,6 +29,7 @@ object MovableState {
       beginOfTheStep : Boolean,
       currentPointsSequence : List[List[point]],
       currentPointIndex : Int,
+      previousPointIndex : Int,
       currentTime : TimeValue,
       nextVehicleId : String,
       previousVehicleId : String,
@@ -52,6 +53,7 @@ object MovableState {
         snapshot.beginOfTheStep,
         snapshot.currentPointsSequence,
         snapshot.currentPointIndex,
+        snapshot.previousPointIndex,
         currentTime,
         snapshot.nextVehicleId,
         snapshot.previousVehicleId,
@@ -404,6 +406,8 @@ class MovableState {
   
   var currentPointIndex = 0
   
+  var previousPointIndex = -1
+  
   // TIME
   // tempo corrente
   var currentTime = TimeValue(0, 0)
@@ -476,6 +480,7 @@ class MovableState {
         beginOfTheStep,
         currentPointsSequence,
         currentPointIndex,
+        previousPointIndex,
         currentTime,
         nextVehicleId,
         previousVehicleId,
@@ -498,6 +503,7 @@ class MovableState {
     beginOfTheStep = snapshot.beginOfTheStep
     currentPointsSequence = snapshot.currentPointsSequence
     currentPointIndex = snapshot.currentPointIndex
+    previousPointIndex = snapshot.previousPointIndex
     currentTime = snapshot.currentTime
     nextVehicleId = snapshot.nextVehicleId
     previousVehicleId = snapshot.previousVehicleId

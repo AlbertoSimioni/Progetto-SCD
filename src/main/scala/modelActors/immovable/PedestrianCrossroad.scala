@@ -44,6 +44,7 @@ object PedestrianCrossroad {
               myRef.pedestrianRequests = myRef.pedestrianRequests + (senderId -> senderRef)
             }
           case CrossFree =>
+            assert(myRef.numPedestrianCrossing > 0)
             myRef.numPedestrianCrossing = myRef.numPedestrianCrossing - 1
             if(myRef.numPedestrianCrossing == 0) {
               if(myRef.vehicleRequests.size > 0) {
@@ -110,7 +111,7 @@ object PedestrianCrossroad {
   def FromVehicle(myRef : ImmovableActor, myId : String, senderId : String, senderRef : ActorRef, message : Any) : Unit = {
     message match {
       case Vehicle_In(comingFrom, goingTo) =>
-        if((myRef.pedestrianRequests.size == 0 && myRef.numPedestrianCrossing == 0) && myRef.vehicleFreeTempMap.get(comingFrom).getOrElse(true)) {
+        if((myRef.pedestrianRequests.size == 0 && myRef.numPedestrianCrossing == 0) && myRef.vehicleFreeTempMap.get(comingFrom).getOrElse(true) && myRef.state.vehicleFreeMap.get(comingFrom).getOrElse(true)) {
           myRef.numVehicleCrossing = myRef.numVehicleCrossing + 1
           // poni il corrispondente vehicleFree a false
           if(myRef.vehicleFreeTempMap.contains(comingFrom)) {
@@ -148,6 +149,7 @@ object PedestrianCrossroad {
         }
         // persist body end
       case VehicleFree(comingFrom, goingTo) =>
+        assert(myRef.numVehicleCrossing > 0)
         myRef.numVehicleCrossing = myRef.numVehicleCrossing - 1
         // metti a true la entry nella tabella temporanea
         if(myRef.vehicleFreeTempMap.contains(comingFrom)) {
@@ -179,7 +181,7 @@ object PedestrianCrossroad {
         else {
           // controlla se c'è una richiesta relativa alla corsia
           if(myRef.vehicleRequests.contains(comingFrom)) {
-            val entry = myRef.vehicleRequests.get(comingFrom).get
+            val entry = myRef.vehicleRequests(comingFrom)
             myRef.numVehicleCrossing = myRef.numVehicleCrossing + 1
             myRef.sendToMovable(myId, entry._2, envelope(myId, entry._1, Vehicle_Out))
             myRef.vehicleRequests = myRef.vehicleRequests - comingFrom

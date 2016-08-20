@@ -81,6 +81,7 @@ object Car {
               // persist body begin
               myRef.state.currentPointsSequence = currentPointsSequence
               myRef.state.currentPointIndex = 0
+              myRef.state.previousPointIndex = -1
               myRef.state.beginOfTheStep = false
               // persist body end
             }

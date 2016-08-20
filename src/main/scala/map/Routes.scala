@@ -344,25 +344,18 @@ object Routes {
    * 2) non vi siano due posti sulla stessa strada
    */
   def createPlaces() : (String,String,String) = {
-    // scegli un houseplace a caso
-    var houseplace = shuffle(getAllZones(map).filter { zone => zone.variety == variety.houseplace }).head
-    // scegli un workplace a caso
-    var workplace = shuffle(getAllZones(map).filter { zone => zone.variety == variety.workplace }).head
-    // scegli un funplace a caso
-    var funplace = shuffle(getAllZones(map).filter { zone => zone.variety == variety.funplace }).head
-    // non accettare i punti se almeno due di essi risiedono sulla stessa strada
-    var ok = false
-    while(ok == false) {
-      if((houseplace.road == workplace.road) || (workplace.road == funplace.road) || (houseplace.road == funplace.road)) {
-        houseplace = shuffle(getAllZones(map).filter { zone => zone.variety == variety.houseplace }).head
-        workplace = shuffle(getAllZones(map).filter { zone => zone.variety == variety.workplace }).head
-        funplace = shuffle(getAllZones(map).filter { zone => zone.variety == variety.funplace }).head
-      }
-      else {
-        ok = true
+    val houseList = getAllZones(map).filter { zone => zone.variety == variety.houseplace }
+    val workList = getAllZones(map).filter { zone => zone.variety == variety.workplace }
+    val funList = getAllZones(map).filter { zone => zone.variety == variety.funplace }
+    while(true) {
+      val houseplace = houseList(nextInt(houseList.length))
+      val workplace = workList(nextInt(workList.length))
+      val funplace = funList(nextInt(funList.length))
+      if(((houseplace.road == workplace.road) || (workplace.road == funplace.road) || (houseplace.road == funplace.road)) == false) {
+        return (houseplace.id, workplace.id, funplace.id)
       }
     }
-    return (houseplace.id, workplace.id, funplace.id)
+    return (null, null, null)
   }
   
   /*
