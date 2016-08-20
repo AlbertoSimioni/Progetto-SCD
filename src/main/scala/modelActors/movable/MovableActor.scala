@@ -65,7 +65,8 @@ object MovableActor {
   // DEFER
   // serve per garantire che i persistAsync siano stati tutti effettuati prima di procedere
   // case object DeferObject
-  
+
+
 }
 
 class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery {
@@ -80,14 +81,16 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
   
   // PERSISTENCE
   override def persistenceId: String = "MovableActor-" + id
-  
+
+  // SHARDING
+  // Permette di comunicare con altri ImmovableActor utilizzando il loro identificativo invece che il loro indirizzo
+  val shardRegion = ClusterSharding(context.system).shardRegion(ImmovableActor.typeOfEntries)
+
   // PERSISTENCE
   // Permette di effettuare il salvataggio dello snapshot ogni 10 secondi
   // val snapshotTimer = context.system.scheduler.schedule(60 seconds, 10 seconds, self, SaveSnapshot)
   
-  // SHARDING
-  // Permette di comunicare con altri ImmovableActor utilizzando il loro identificativo invece che il loro indirizzo
-  val shardRegion = ClusterSharding(context.system).shardRegion(ImmovableActor.typeOfEntries)
+
   
   // TIME
   // Recupera l'attore che gli permette di ricevere gli eventi temporali e si sottoscrive immediatamente
@@ -214,11 +217,11 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
           // manda ack al mittente
           senderRef ! ToMovable(senderRef, ToPersistentMessages.FromMovable(id, self, Ack(deliveryId)))
           // controlla che il messaggio non sia duplicato
-          if(state.isNewMessage(senderId, deliveryId) == true) {
+          if(state.isNewMessage(senderRef.path.toSerializationFormat, deliveryId) == true) {
             // messaggio nuovo
             // persistAsync(NoDuplicate(senderId, deliveryId)) { msg => }
             // persist body begin
-            state.updateFilter(senderId, deliveryId)
+            state.updateFilter(senderRef.path.toSerializationFormat, deliveryId)
             // persist body end
             // handling vero e proprio del messaggio
             printMessage(senderId, id, command)
@@ -1206,6 +1209,7 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
     
     case evt : Event => evt match {
       case NoDuplicate(senderId, deliveryId) =>
+        assert(false)
         state.updateFilter(senderId, deliveryId)
       case NextStepEvent =>
         state.index = state.index + 1
@@ -1237,8 +1241,8 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
         state.previousLaneId = previousLaneId
         
       // AT LEAST ONCE
-      case PersistDeliveryId(deliveryId) =>
-        state.deliveryId = deliveryId
+     /* case PersistDeliveryId(deliveryId) =>
+        state.deliveryId = deliveryId*/
         
       // DORMI/VEGLIA
       case SleepingStatusChange(alreadyHidden) =>
@@ -1283,7 +1287,6 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
   // Funzione che permette l'invio di un messaggio ad un attore immobile, effettuando l'enveloping adeguato
   def sendToImmovable(senderId : String, senderRef : ActorRef, destinationId : String, command : Command) : Unit = {
     deliver(shardRegion.path, deliveryId => {
-      if(deliveryId >= state.deliveryId) {
         /*command match {
           case ReCreateMe(id) =>
             persist(PersistDeliveryId(deliveryId)) { evt => }
@@ -1303,9 +1306,7 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
               persistAsync(PersistDeliveryId(deliveryId)) { evt => }
             }
         }*/
-        state.deliveryId = deliveryId
-      }
-      else {
+
         // potremmo essere dopo un ripristino
         /*command match {
           case ReCreateMe(id) =>
@@ -1326,10 +1327,8 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
               persistAsync(PersistDeliveryId(state.deliveryId + deliveryId)) { evt => }
             }
         }*/
-        state.deliveryId = state.deliveryId + deliveryId
-      }
-      val updatedCommand = updateCommand(command, state.deliveryId)
-      ToImmovable(destinationId, ToPersistentMessages.FromMovable(senderId, senderRef, Request(state.deliveryId, updatedCommand)))
+      val updatedCommand = updateCommand(command,deliveryId)
+      ToImmovable(destinationId, ToPersistentMessages.FromMovable(senderId, senderRef, Request(deliveryId, updatedCommand)))
     })
   }
   
@@ -1337,17 +1336,8 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
   // Funzione che permette l'invio di un messaggio ad un attore mobile, effettuando l'enveloping adeguato
   def sendToMovable(senderId : String, senderRef : ActorRef, destinationRef : ActorRef, command : Command) : Unit = {
     deliver(destinationRef.path, deliveryId => {
-      if(deliveryId >= state.deliveryId) {
-        // persistAsync(PersistDeliveryId(deliveryId)) { evt => }
-        state.deliveryId = deliveryId
-      }
-      else {
-        // potremmo essere dopo un ripristino
-        // persistAsync(PersistDeliveryId(state.deliveryId + deliveryId)) { evt => }
-        state.deliveryId = state.deliveryId + deliveryId
-      }
-      val updatedCommand = updateCommand(command, state.deliveryId)
-      ToMovable(destinationRef, ToPersistentMessages.FromMovable(senderId, senderRef, Request(state.deliveryId, updatedCommand)))
+      val updatedCommand = updateCommand(command, deliveryId)
+      ToMovable(destinationRef, ToPersistentMessages.FromMovable(senderId, senderRef, Request(deliveryId, updatedCommand)))
     })
   }
   
@@ -1396,7 +1386,6 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
         snapshot.travellers,
         snapshot.previousLaneId,
         snapshot.lastMessages,
-        deliveryId,
         snapshot.alreadyHidden
     )
   }

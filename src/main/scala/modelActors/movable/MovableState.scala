@@ -36,7 +36,6 @@ object MovableState {
       travellers : Map[String, (String, MovableStateSnapshot)],
       previousLaneId : String,
       lastMessages : Map[String, Long],
-      deliveryId : Long,
       alreadyHidden : Boolean
   )
   
@@ -436,9 +435,7 @@ class MovableState {
     }
   }
   
-  // AT-LEAST-ONCE
-  // ultima delivery id utilizzata, per ripristino
-  var deliveryId = MinValue
+
   
   // DORMI/VEGLIA
   // serve per garantire un solo evento di dormita e un solo evento di risveglio verso l'interfaccia grafica
@@ -462,7 +459,6 @@ class MovableState {
         travellers,
         previousLaneId,
         lastMessages,
-        deliveryId,
         alreadyHidden
       )
     return snapshot
@@ -485,7 +481,6 @@ class MovableState {
     travellers = snapshot.travellers
     previousLaneId = snapshot.previousLaneId
     lastMessages = snapshot.lastMessages
-    deliveryId = snapshot.deliveryId
     alreadyHidden = snapshot.alreadyHidden
   }
   

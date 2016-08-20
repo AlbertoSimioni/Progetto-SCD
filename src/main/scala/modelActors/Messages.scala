@@ -142,7 +142,7 @@ object Messages {
   case class NoDuplicate(senderId : String, deliveryId : Long) extends Event
   
   // evento per il salvataggio del deliveryId corrente
-  case class PersistDeliveryId(deliveryId : Long) extends Event
+  //case class PersistDeliveryId(deliveryId : Long) extends Event
   
   // evento per la definizione dell'entità immobile
   case class IdentityArrived(id : String) extends Event
@@ -280,7 +280,7 @@ object Messages {
         }
     }
     if(flag) {
-      println(log)
+      //println(log)
     }
   }
   

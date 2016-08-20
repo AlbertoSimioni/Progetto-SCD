@@ -23,7 +23,6 @@ object ImmovableState {
       vehicleFreeMap : Map[String, Boolean],
       vehicleFree : Boolean,
       lastMessages : Map[String, Long],
-      deliveryId : Long,
       id : String,
       kind : String,
       bus_stopData : bus_stop,
@@ -118,11 +117,8 @@ class ImmovableState {
       lastMessages = lastMessages + (actorId -> deliveryId)
     }
   }
-  
-  // AT-LEAST-ONCE
-  // ultima delivery id utilizzata, per ripristino
-  var deliveryId = MinValue
-  
+
+
   var id : String = null
   var kind : String = null
   
@@ -141,7 +137,6 @@ class ImmovableState {
         vehicleFreeMap,
         vehicleFree,
         lastMessages,
-        deliveryId,
         id,
         kind,
         bus_stopData,
@@ -161,7 +156,6 @@ class ImmovableState {
     vehicleFreeMap = snapshot.vehicleFreeMap
     vehicleFree = snapshot.vehicleFree
     lastMessages = snapshot.lastMessages
-    deliveryId = snapshot.deliveryId
     id = snapshot.id
     kind = snapshot.kind
     bus_stopData = snapshot.bus_stopData

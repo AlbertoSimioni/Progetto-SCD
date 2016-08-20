@@ -82,7 +82,8 @@ object ImmovableActor {
   
   // CROSSROAD
   case object SemaphoreSwitch
-  
+
+
 }
 
 class ImmovableActor extends PersistentActor with AtLeastOnceDelivery with ActorLogging {
@@ -105,7 +106,7 @@ class ImmovableActor extends PersistentActor with AtLeastOnceDelivery with Actor
   // PERSISTENCE
   // Permette di effettuare il salvataggio dello snapshot ogni 10 secondi
   // val snapshotTimer = context.system.scheduler.schedule(180 seconds, 20 seconds, self, SaveSnapshot)
-  
+
   // SHARDING
   // Permette di comunicare con altri TestActor utilizzando il loro identificativo invece che il loro indirizzo
   val shardRegion = ClusterSharding(context.system).shardRegion(ImmovableActor.typeOfEntries)
@@ -244,11 +245,11 @@ class ImmovableActor extends PersistentActor with AtLeastOnceDelivery with Actor
           // manda ack al mittente
           senderRef ! ToMovable(senderRef, ToPersistentMessages.FromImmovable(destinationId, Ack(deliveryId)))
           // controlla che il messaggio non sia duplicato
-          if(state.isNewMessage(senderId, deliveryId) == true) {
+          if(state.isNewMessage(senderRef.path.toSerializationFormat, deliveryId) == true) {
         	  // messaggio nuovo
         	  // persistAsync(NoDuplicate(senderId, deliveryId)) { msg => }
             // persist body begin
-            state.updateFilter(senderId, deliveryId)
+            state.updateFilter(senderRef.path.toSerializationFormat, deliveryId)
             // persist body end
         	  // handling vero e proprio del messaggio
             printMessage(senderId, destinationId, command)
@@ -549,6 +550,7 @@ class ImmovableActor extends PersistentActor with AtLeastOnceDelivery with Actor
   override def receiveRecover: Receive = {
     case evt : Event => evt match {
       case NoDuplicate(senderId, deliveryId) =>
+        assert(false)
         state.updateFilter(senderId, deliveryId)
       case IdentityArrived(id) =>
         state.id = id
@@ -591,8 +593,8 @@ class ImmovableActor extends PersistentActor with AtLeastOnceDelivery with Actor
         state.addSleepingActor(id, wakeupTime, snapshot)
         
       // AT LEAST ONCE
-      case PersistDeliveryId(deliveryId) =>
-        state.deliveryId = deliveryId
+      /*case PersistDeliveryId(deliveryId) =>
+        state.deliveryId = deliveryId*/
         
       case BusStopEvent(event) =>
         BusStop.eventHandler(event, state)
@@ -652,16 +654,7 @@ class ImmovableActor extends PersistentActor with AtLeastOnceDelivery with Actor
   // Funzione che permette l'invio di un messaggio ad un attore immobile, effettuando l'enveloping adeguato
   def sendToImmovable(senderId : String, destinationId : String, command : Command) : Unit = {
     deliver(shardRegion.path, deliveryId => {
-      if(deliveryId >= state.deliveryId) {
-        // persistAsync(PersistDeliveryId(deliveryId)) { evt => }
-        state.deliveryId = deliveryId
-      }
-      else {
-        // potremmo essere dopo un ripristino
-        // persistAsync(PersistDeliveryId(state.deliveryId + deliveryId)) { evt => }
-        state.deliveryId = state.deliveryId + deliveryId
-      }
-      ToImmovable(destinationId, ToPersistentMessages.FromImmovable(senderId, Request(state.deliveryId, command)))
+      ToImmovable(destinationId, ToPersistentMessages.FromImmovable(senderId, Request(deliveryId, command)))
     })
   }
   
@@ -669,16 +662,7 @@ class ImmovableActor extends PersistentActor with AtLeastOnceDelivery with Actor
   // Funzione che permette l'invio di un messaggio ad un attore mobile, effettuando l'enveloping adeguato
   def sendToMovable(senderId : String, destinationRef : ActorRef, command : Command) : Unit = {
     deliver(destinationRef.path, deliveryId => {
-      if(deliveryId >= state.deliveryId) {
-        // persistAsync(PersistDeliveryId(deliveryId)) { evt => }
-        state.deliveryId = deliveryId
-      }
-      else {
-        // potremmo essere dopo un ripristino
-        // persistAsync(PersistDeliveryId(state.deliveryId + deliveryId)) { evt => }
-        state.deliveryId = state.deliveryId + deliveryId
-      }
-      ToMovable(destinationRef, ToPersistentMessages.FromImmovable(senderId, Request(state.deliveryId, command)))
+      ToMovable(destinationRef, ToPersistentMessages.FromImmovable(senderId, Request(deliveryId, command)))
     })
   }
   
