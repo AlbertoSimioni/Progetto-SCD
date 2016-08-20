@@ -91,22 +91,14 @@ window.onload = function() {
             //paper.view.draw();
             fitMap();
         }
-        else if(msg.type == "positions"){
-            var positions = msg.positions;
-            for(var pos in positions){
-                showPosition(positions[pos]);
+        else if(msg.type == "buffer"){
+            var msgs = msg.msgs;
+            for(var i in msgs){
+                showPosition(msgs[i]);
             }
         }
 
-        else if(msg.type == "SemaphoreState"){
-            var semaphore = mapRegistry.crossroads[msg.info.id];
-            if (semaphore.category == "semaphore"){
-                semaphore.changeLights(msg.info.up,msg.info.right,msg.info.down,msg.info.left,msg.info.tram)
-            }
-            else{
-                console.log("We shouldn't be here")
-            }
-        }
+
         else if(msg.type == "time"){
             var minutes = msg.info.minutes;
             var hours = msg.info.hours;
@@ -241,6 +233,15 @@ function showPosition(msg){
             var pedestrian = registry.findPedestrian(msg.info.id);
             if(pedestrian != null){
                 pedestrian.hide();
+            }
+        }
+        else if(msg.type == "SemaphoreState"){
+            var semaphore = mapRegistry.crossroads[msg.info.id];
+            if (semaphore.category == "semaphore"){
+                semaphore.changeLights(msg.info.up,msg.info.right,msg.info.down,msg.info.left,msg.info.tram)
+            }
+            else{
+                console.log("We shouldn't be here")
             }
         }
 }

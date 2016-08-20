@@ -43,9 +43,9 @@ class ActiveConnections extends Actor with ActorLogging {
   val entityPaths = mutable.HashMap[String,String]()
   val zoneStates = mutable.HashMap[String,String]()
   var bufferPositions : StringBuilder =  new StringBuilder
-  bufferPositions ++=  s"""{"type": "positions", "positions":["""
+  bufferPositions ++=  s"""{"type": "buffer", "msgs":["""
   var bufferEmpty = true;
-  val autoTick = context.system.scheduler.schedule(0 millis, 95 millis, self, "sendBuff")
+  val autoTick = context.system.scheduler.schedule(0 millis, 50 millis, self, "sendBuff")
 
 
   override def receive = {
@@ -160,7 +160,7 @@ class ActiveConnections extends Actor with ActorLogging {
     case ActiveConnections.updateSemaphoreState(id, state) =>
       val semaphore = semaphoreStates.get(id)
       semaphoreStates.put(id,state)
-      self ! ActiveConnections.SendMessageToClients(state,false)
+      self ! ActiveConnections.SendMessageToClients(state,true)
 
     case ActiveConnections.entityPath(id,path) =>
       //println("path received " + id)
@@ -183,7 +183,7 @@ class ActiveConnections extends Actor with ActorLogging {
         for (client <- clients) client.send(positions)
         bufferPositions = new StringBuilder()
         bufferEmpty = true;
-        bufferPositions ++=  s"""{"type": "positions", "positions":["""
+        bufferPositions ++=  s"""{"type": "buffer", "msgs":["""
       }
   }
 
