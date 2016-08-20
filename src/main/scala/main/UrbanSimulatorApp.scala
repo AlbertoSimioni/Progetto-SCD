@@ -66,7 +66,7 @@ object UrbanSimulatorApp extends App with ReactiveApi with MainActors with React
     system.actorOf(Props(classOf[Subscriber], "modelEvent"), "subscriberModel")
   }
   if(role == "worker") {
-    Console.setOut(new FileOutputStream("output.txt"))
+    //Console.setOut(new FileOutputStream("output.txt"))
   }
 
   system.eventStream.subscribe(system.actorOf(Props(classOf[DeadLetterListener]),"deadLetterListener"), classOf[DeadLetter])
