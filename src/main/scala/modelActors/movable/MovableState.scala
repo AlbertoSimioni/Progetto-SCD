@@ -36,7 +36,6 @@ object MovableState {
       predecessorGoneSent : Boolean,
       travellers : Map[String, (String, MovableStateSnapshot)],
       previousLaneId : String,
-      lastMessages : Map[String, Long],
       alreadyHidden : Boolean
   )
   
@@ -60,7 +59,6 @@ object MovableState {
         snapshot.predecessorGoneSent,
         snapshot.travellers,
         snapshot.previousLaneId,
-        snapshot.lastMessages,
         snapshot.alreadyHidden
     )
   }
@@ -487,7 +485,6 @@ class MovableState {
         predecessorGoneSent,
         travellers,
         previousLaneId,
-        lastMessages,
         alreadyHidden
       )
     return snapshot
@@ -510,7 +507,6 @@ class MovableState {
     predecessorGoneSent = snapshot.predecessorGoneSent
     travellers = snapshot.travellers
     previousLaneId = snapshot.previousLaneId
-    lastMessages = snapshot.lastMessages
     alreadyHidden = snapshot.alreadyHidden
   }
   
