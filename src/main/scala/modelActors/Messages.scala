@@ -85,7 +85,7 @@ object Messages {
   // inviato dalla lane ad un veicolo per fornire l'actorref di chi sta davanti
   case class NextVehicleResponse(id : String, ref : ActorRef)
   // messaggio per gestire il campo lastVehicle della lane
-  case object HandleLastVehicle
+  case class HandleLastVehicle(id : String, ref : ActorRef)
   // messaggio per dichiararsi come ultimo della lane
   case object LastOfTheLane
   // inviato da un veicolo per chiedere di entrare nella lane a partire da una zona
@@ -232,7 +232,7 @@ object Messages {
             log = log + "NextVehicleRequest"
           case NextVehicleResponse(id, ref) =>
             log = log + "NextVehicleResponse"
-          case HandleLastVehicle =>
+          case HandleLastVehicle(id, ref) =>
             log = log + "HandleLastVehicle"
           case LastOfTheLane =>
             log = log + "LastOfTheLane"
@@ -280,7 +280,7 @@ object Messages {
         }
     }
     if(flag) {
-      //println(log)
+      println(log)
     }
   }
   

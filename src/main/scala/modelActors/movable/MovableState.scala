@@ -39,6 +39,30 @@ object MovableState {
       alreadyHidden : Boolean
   )
   
+  // UTILITY
+  // aggiorna il timevalue di uno snapshot
+  def updateSnapshot(snapshot : MovableStateSnapshot, currentTime : TimeValue) : MovableStateSnapshot = {
+    return MovableStateSnapshot(
+        snapshot.pedestrianRoute,
+        snapshot.carRoute,
+        snapshot.busRoute,
+        snapshot.tramRoute,
+        snapshot.currentRoute,
+        snapshot.index,
+        snapshot.beginOfTheStep,
+        snapshot.currentPointsSequence,
+        snapshot.currentPointIndex,
+        currentTime,
+        snapshot.nextVehicleId,
+        snapshot.previousVehicleId,
+        snapshot.predecessorGoneSent,
+        snapshot.travellers,
+        snapshot.previousLaneId,
+        snapshot.lastMessages,
+        snapshot.alreadyHidden
+    )
+  }
+  
 }
 
 class MovableState {

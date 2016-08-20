@@ -52,7 +52,7 @@ object Lane {
             FromVehicle(myRef, myId, senderId, senderRef, message)
           case Advanced(laneId, lastPosition) =>
             FromVehicle(myRef, myId, senderId, senderRef, message)
-          case HandleLastVehicle =>
+          case HandleLastVehicle(id, ref) =>
             FromVehicle(myRef, myId, senderId, senderRef, message)  
           case LastOfTheLane =>
             FromVehicle(myRef, myId, senderId, senderRef, message)  
@@ -69,7 +69,7 @@ object Lane {
             FromVehicle(myRef, myId, senderId, senderRef, message)
           case Advanced(laneId, lastPosition) =>
             FromVehicle(myRef, myId, senderId, senderRef, message)
-          case HandleLastVehicle =>
+          case HandleLastVehicle(id, ref) =>
             FromVehicle(myRef, myId, senderId, senderRef, message)  
           case LastOfTheLane =>
             FromVehicle(myRef, myId, senderId, senderRef, message)
@@ -86,7 +86,7 @@ object Lane {
             FromVehicle(myRef, myId, senderId, senderRef, message)
           case Advanced(laneId, lastPosition) =>
             FromVehicle(myRef, myId, senderId, senderRef, message)
-          case HandleLastVehicle =>
+          case HandleLastVehicle(id, ref) =>
             FromVehicle(myRef, myId, senderId, senderRef, message)  
           case LastOfTheLane =>
             FromVehicle(myRef, myId, senderId, senderRef, message)
@@ -174,12 +174,13 @@ object Lane {
             }
           }
         }
-      case HandleLastVehicle =>
+      case HandleLastVehicle(id, ref) =>
         // spedito da un veicolo per avvisarci della suo trasferimento di lane
         // qualora lui fosse il nostro lastVehicle corrente, bisogna riportarlo a null
+        // nel messaggio viene indicato il nuovo last vehicle, qualora ci fosse, o null
         if(myRef.lastVehicleEnteredId == senderId) {
-          myRef.lastVehicleEnteredId = null
-          myRef.lastVehicleEntered = null
+          myRef.lastVehicleEnteredId = id
+          myRef.lastVehicleEntered = ref
         }
       case LastOfTheLane =>
         // aggiorniamo i nostri campi

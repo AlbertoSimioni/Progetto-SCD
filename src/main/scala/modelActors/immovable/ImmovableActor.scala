@@ -35,7 +35,8 @@ import map.Routes._
 import time.TimeMessages._
 import pubsub.PublisherInstance
 import pubsub.Messages._
-import modelActors.movable.MovableState.MovableStateSnapshot
+import modelActors.movable.MovableState
+import modelActors.movable.MovableState._
 
 /**
  * @author Matteo Pozza
@@ -245,11 +246,12 @@ class ImmovableActor extends PersistentActor with AtLeastOnceDelivery with Actor
           // manda ack al mittente
           senderRef ! ToMovable(senderRef, ToPersistentMessages.FromImmovable(destinationId, Ack(deliveryId)))
           // controlla che il messaggio non sia duplicato
-          if(state.isNewMessage(senderRef.path.toSerializationFormat, deliveryId) == true) {
+          val actorPath = senderRef.path.toSerializationFormat
+          if(state.isNewMessage(actorPath, deliveryId) == true) {
         	  // messaggio nuovo
-        	  // persistAsync(NoDuplicate(senderId, deliveryId)) { msg => }
+        	  // persistAsync(NoDuplicate(actorPath, deliveryId)) { msg => }
             // persist body begin
-            state.updateFilter(senderRef.path.toSerializationFormat, deliveryId)
+            state.updateFilter(actorPath, deliveryId)
             // persist body end
         	  // handling vero e proprio del messaggio
             printMessage(senderId, destinationId, command)
@@ -480,7 +482,7 @@ class ImmovableActor extends PersistentActor with AtLeastOnceDelivery with Actor
           state.removeSleepingActor(id._1)
           // persist body end
           val wakenUpEntity = context.actorOf(MovableActor.props(id._1)/*.withDispatcher("custom-dispatcher")*/)
-          sendToMovable(state.id, wakenUpEntity, MovableStateSnapshotOffer(id._2))
+          sendToMovable(state.id, wakenUpEntity, MovableStateSnapshotOffer(MovableState.updateSnapshot(id._2, timeValue)))
           sendToMovable(state.id, wakenUpEntity, ResumeExecution)
         }
       }

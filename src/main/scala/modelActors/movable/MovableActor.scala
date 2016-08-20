@@ -217,11 +217,12 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
           // manda ack al mittente
           senderRef ! ToMovable(senderRef, ToPersistentMessages.FromMovable(id, self, Ack(deliveryId)))
           // controlla che il messaggio non sia duplicato
-          if(state.isNewMessage(senderRef.path.toSerializationFormat, deliveryId) == true) {
+          val actorPath = senderRef.path.toSerializationFormat
+          if(state.isNewMessage(actorPath, deliveryId) == true) {
             // messaggio nuovo
-            // persistAsync(NoDuplicate(senderId, deliveryId)) { msg => }
+            // persistAsync(NoDuplicate(actorPath, deliveryId)) { msg => }
             // persist body begin
-            state.updateFilter(senderRef.path.toSerializationFormat, deliveryId)
+            state.updateFilter(actorPath, deliveryId)
             // persist body end
             // handling vero e proprio del messaggio
             printMessage(senderId, id, command)
@@ -298,7 +299,7 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
                         // se c'è una qualche previousLane, avvisala di modificare i campi lastVehicle (qualora fossimo stati l'unico veicolo) e di cancellare la nostra posizione
                         if(state.previousLaneId != null) {
                           sendToImmovable(id, self, state.previousLaneId, envelope(id, state.previousLaneId, RemovePosition))
-                          sendToImmovable(id, self, state.previousLaneId, envelope(id, state.previousLaneId, HandleLastVehicle))
+                          sendToImmovable(id, self, state.previousLaneId, envelope(id, state.previousLaneId, HandleLastVehicle(null, null)))
                           // persistAsync(PreviousLaneChanged(null)) { evt => }
                           // persist body begin
                           state.previousLaneId = null
@@ -790,7 +791,12 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
                     
                   }
                   // notifichiamo la lane che gestisca la nostra uscita di scena
-                  sendToImmovable(id, self, lane.id, envelope(id, lane.id, HandleLastVehicle))
+                  if(nextVehicle != null) {
+                    sendToImmovable(id, self, lane.id, envelope(id, lane.id, HandleLastVehicle(state.nextVehicleId, nextVehicle)))
+                  }
+                  else {
+                    sendToImmovable(id, self, lane.id, envelope(id, lane.id, HandleLastVehicle(null, null)))
+                  }
                   sendToImmovable(id, self, lane.id, envelope(id, lane.id, RemovePosition))
                   // persistAsync(PreviousLaneChanged(null)) { evt => }
                   // persist body begin
@@ -1287,48 +1293,49 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
   // Funzione che permette l'invio di un messaggio ad un attore immobile, effettuando l'enveloping adeguato
   def sendToImmovable(senderId : String, senderRef : ActorRef, destinationId : String, command : Command) : Unit = {
     deliver(shardRegion.path, deliveryId => {
-        /*command match {
-          case ReCreateMe(id) =>
-            persist(PersistDeliveryId(deliveryId)) { evt => }
-          case PauseExecution(wakeupTime) =>
-            persist(PersistDeliveryId(deliveryId)) { evt => }
-          case _ =>
-            val content = develope(command)
-            if(content != null) {
-              content match {
-                case WaitForPublicTransport(nextStop) =>
-                  persist(PersistDeliveryId(deliveryId)) { evt => }
-                case _ =>
-                  persistAsync(PersistDeliveryId(deliveryId)) { evt => }
-              }
+      /*
+      command match {
+        case ReCreateMe(id) =>
+          persist(PersistDeliveryId(deliveryId)) { evt => }
+        case PauseExecution(wakeupTime) =>
+          persist(PersistDeliveryId(deliveryId)) { evt => }
+        case _ =>
+          val content = develope(command)
+          if(content != null) {
+            content match {
+              case WaitForPublicTransport(nextStop) =>
+                persist(PersistDeliveryId(deliveryId)) { evt => }
+              case _ =>
+                persistAsync(PersistDeliveryId(deliveryId)) { evt => }
             }
-            else {
-              persistAsync(PersistDeliveryId(deliveryId)) { evt => }
+          }
+          else {
+            persistAsync(PersistDeliveryId(deliveryId)) { evt => }
+          }
+      }
+      // potremmo essere dopo un ripristino
+      command match {
+        case ReCreateMe(id) =>
+          persist(PersistDeliveryId(state.deliveryId + deliveryId)) { evt => }
+        case PauseExecution(wakeupTime) =>
+          persist(PersistDeliveryId(state.deliveryId + deliveryId)) { evt => }
+        case _ =>
+          val content = develope(command)
+          if(content != null) {
+            content match {
+              case WaitForPublicTransport(nextStop) =>
+                persist(PersistDeliveryId(state.deliveryId + deliveryId)) { evt => }
+              case _ =>
+                persistAsync(PersistDeliveryId(state.deliveryId + deliveryId)) { evt => }
             }
-        }*/
-
-        // potremmo essere dopo un ripristino
-        /*command match {
-          case ReCreateMe(id) =>
-            persist(PersistDeliveryId(state.deliveryId + deliveryId)) { evt => }
-          case PauseExecution(wakeupTime) =>
-            persist(PersistDeliveryId(state.deliveryId + deliveryId)) { evt => }
-          case _ =>
-            val content = develope(command)
-            if(content != null) {
-              content match {
-                case WaitForPublicTransport(nextStop) =>
-                  persist(PersistDeliveryId(state.deliveryId + deliveryId)) { evt => }
-                case _ =>
-                  persistAsync(PersistDeliveryId(state.deliveryId + deliveryId)) { evt => }
-              }
-            }
-            else {
-              persistAsync(PersistDeliveryId(state.deliveryId + deliveryId)) { evt => }
-            }
-        }*/
+          }
+          else {
+            persistAsync(PersistDeliveryId(state.deliveryId + deliveryId)) { evt => }
+          }
+      }
       val updatedCommand = updateCommand(command,deliveryId)
-      ToImmovable(destinationId, ToPersistentMessages.FromMovable(senderId, senderRef, Request(deliveryId, updatedCommand)))
+      */
+      ToImmovable(destinationId, ToPersistentMessages.FromMovable(senderId, senderRef, Request(deliveryId, command)))
     })
   }
   
@@ -1336,8 +1343,8 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
   // Funzione che permette l'invio di un messaggio ad un attore mobile, effettuando l'enveloping adeguato
   def sendToMovable(senderId : String, senderRef : ActorRef, destinationRef : ActorRef, command : Command) : Unit = {
     deliver(destinationRef.path, deliveryId => {
-      val updatedCommand = updateCommand(command, deliveryId)
-      ToMovable(destinationRef, ToPersistentMessages.FromMovable(senderId, senderRef, Request(deliveryId, updatedCommand)))
+      // val updatedCommand = updateCommand(command, deliveryId)
+      ToMovable(destinationRef, ToPersistentMessages.FromMovable(senderId, senderRef, Request(deliveryId, command)))
     })
   }
   
@@ -1366,6 +1373,7 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
     getLengthFromId(id)
   }
   
+  /*
   // UTILITY
   // aggiorna la deliveryId di uno snapshot
   def updateSnapshot(snapshot : MovableStateSnapshot, deliveryId : Long) : MovableStateSnapshot = {
@@ -1435,5 +1443,6 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
         }
     }
   }
+  */
   
 }
