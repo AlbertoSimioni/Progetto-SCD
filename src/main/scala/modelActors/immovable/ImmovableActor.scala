@@ -140,6 +140,8 @@ class ImmovableActor extends PersistentActor with AtLeastOnceDelivery with Actor
   var positionsMap = Map[String, (ActorRef, point)]()
   // Richieste pendenti per chi deve entrare a metà della lane
   var pendingLaneRequests = Map[String, (ActorRef, point, direction)]()
+  // Mappa che modella le relazioni tra predecessori e successori
+  var predecessorMap = Map[String, (String, ActorRef)]()
   
   // VARIABILI PER STRISCE PEDONALI
   // vehicle_pass => gestisce se si è in attraversamento pedoni o attraversamento veicoli
@@ -299,6 +301,16 @@ class ImmovableActor extends PersistentActor with AtLeastOnceDelivery with Actor
                 val actorRef = handledMobileEntitiesMap.get(id).getOrElse(null)
                 // spedisci indietro
                 sendToMovable(state.id, senderRef, MovableActorResponse(id, actorRef))
+              case PreviousVehicleRequest =>
+                // recupera i dati dell'eventuale predecessore
+                var predecessorId : String = null
+                var predecessorRef : ActorRef = null
+                if(predecessorMap.contains(senderId)) {
+                  val entry = predecessorMap(senderId)
+                  predecessorId = entry._1
+                  predecessorRef = entry._2
+                }
+                sendToMovable(state.id, senderRef, PreviousVehicleResponse(predecessorId, predecessorRef))
                 
         	    case ToBusStop(command) =>
         	      BusStop.fromMovableHandler(this, destinationId, senderId, sender, command)

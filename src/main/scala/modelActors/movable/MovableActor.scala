@@ -121,6 +121,12 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
   var currentNonPersistentPointsSequence : List[List[point]] = null
   var currentNonPersistentPointIndex : Int = 0
   
+  // RIFERIMENTI REMOTI
+  // la variabile permette di chiedere alla lane precedente se il nostro riferimento precedente alla nostra ricreazione è stato dato a qualcuno
+  // in tal caso, la lane ci manda indietro l'identità di chi ha ricevuto il nostro vecchio riferimento
+  // la variabile è di default a false, il che significa che viene eseguita solo la prima volta ad una ricreazione dell'attore mobile
+  var predecessorRetrieved = false
+  
   // PERSISTENCE
   // Lo stato dell'attore deve essere modellato da un var
   var state = new MovableState()
@@ -188,6 +194,17 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
               case MovableActorResponse(id, ref) =>
                 // per il momento, l'unico caso in cui possiamo ricevere questa risposta è per la richiesta del previousVehicle
                 assert(id == state.previousVehicleId)
+                previousVehicle = ref
+                // fai ripartire l'esecuzione
+                sendToMovable(this.id, self, self, ExecuteCurrentStep)
+              case PreviousVehicleResponse(id, ref) =>
+                // abbiamo ricevuto la risposta, impostiamo il flag
+                predecessorRetrieved = true
+                // impostiamo i dati
+                // myRef.persistAsync(PreviousVehicleIdArrived(senderId)) { evt => }
+                // persist body begin
+                state.previousVehicleId = id
+                // persist body end
                 previousVehicle = ref
                 // fai ripartire l'esecuzione
                 sendToMovable(this.id, self, self, ExecuteCurrentStep)
@@ -270,7 +287,22 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
                           previousLaneId = state.getStepIdAt(-3)
                         }
                         // manda un messaggio di richiesta del veicolo in questione
-                        sendToImmovable(id, self, state.previousLaneId, MovableActorRequest(state.previousVehicleId))
+                        sendToImmovable(id, self, previousLaneId, MovableActorRequest(state.previousVehicleId))
+                      }
+                      // potremmo essere nel caso in cui il nostro riferimento vecchio è stato fornito a qualcuno, che sta cercando di utilizzarlo invano
+                      // in tal caso, recuperiamo dalla lane precedente il riferimento a questo qualcuno, in modo tale da avvisarlo poi 
+                      else if(state.previousVehicleId == null && predecessorRetrieved == false) {
+                        // recupera id della lane precedente
+                        var previousLaneId : String = null
+                        if(state.fromDoubleCrossroad() == false) {
+                          previousLaneId = state.getStepIdAt(-2)
+                        }
+                        else {
+                          // avevamo due incroci prima
+                          previousLaneId = state.getStepIdAt(-3)
+                        }
+                        // manda un messaggio di richiesta del veicolo in questione
+                        sendToImmovable(id, self, previousLaneId, PreviousVehicleRequest)
                       }
                       else {
                         // per prima cosa, qualora vi fosse un veicolo predecessore, informalo che non deve più seguirci

@@ -74,6 +74,10 @@ object Messages {
   case class MovableActorRequest(id : String) extends Command
   // messaggio di risposta associato
   case class MovableActorResponse(id : String, ref : ActorRef) extends Command
+  // messaggio per chiedere se vi era qualcuno a cui è stato dato il nostro riferimento dopo che ci siamo trasferiti di nodo
+  case object PreviousVehicleRequest extends Command
+  // messaggio di risposta
+  case class PreviousVehicleResponse(id : String, ref : ActorRef) extends Command
   // offerta di snapshot per l'attore mobile
   case class MovableStateSnapshotOffer(snapshot : MovableStateSnapshot) extends Command
   
@@ -221,6 +225,10 @@ object Messages {
         log = log + "MovableActorRequest"
       case MovableActorResponse(_, _) =>
         log = log + "MovableActorResponse"
+      case PreviousVehicleRequest =>
+        log = log + "PreviousVehicleRequest"
+      case PreviousVehicleResponse(id, ref) =>
+        log = log + "PreviousVehicleResponse"
       case MovableStateSnapshotOffer(snapshot) =>
         log = log + "MovableStateSnapshotOffer"
       case _ =>

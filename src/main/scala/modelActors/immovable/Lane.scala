@@ -107,6 +107,8 @@ object Lane {
   def FromVehicle(myRef : ImmovableActor, myId : String, senderId : String, senderRef : ActorRef, message : Any) : Unit = {
     message match {
       case NextVehicleFirstRequest =>
+        // aggiorna la tabella dei link
+        addToPredecessorMap(myRef, myRef.lastVehicleEnteredId, myRef.lastVehicleEntered, senderId, senderRef)
         // restituisci il riferimento all'ultimo veicolo entrato
         myRef.sendToMovable(myId, senderRef, envelope(myId, senderId, NextVehicleResponse(myRef.lastVehicleEnteredId, myRef.lastVehicleEntered)))
         // aggiorna i tuoi campi, visto che un nuovo veicolo è entrato
@@ -120,6 +122,8 @@ object Lane {
         }
         // restituisci il riferimento al veicolo da tabella
         val correspondingRef = myRef.handledMobileEntitiesMap.get(id).getOrElse(null)
+        // aggiorna la tabella dei link
+        addToPredecessorMap(myRef, id, correspondingRef, senderId, senderRef)
         if(correspondingRef == null) {
           myRef.sendToMovable(myId, senderRef, envelope(myId, senderId, NextVehicleResponse(null, correspondingRef)))
         }
@@ -164,6 +168,10 @@ object Lane {
                     myRef.positionsMap = myRef.positionsMap + (entry._1 -> tuple)
                   }
                 }
+                // aggiorna la tabella dei link
+                // sempre prima il predecessore, e poi il successore
+                addToPredecessorMap(myRef, entry._1, entry._2._1, neighbours._1, predecessorRef)
+                addToPredecessorMap(myRef, neighbours._2, successorRef, entry._1, entry._2._1)
                 myRef.sendToMovable(myId, entry._2._1, envelope(myId, entry._1, LaneAccessGranted(neighbours._1, predecessorRef, neighbours._2, successorRef)))
                 satisfied = satisfied :+ entry._1
               }
@@ -182,6 +190,8 @@ object Lane {
           myRef.lastVehicleEnteredId = id
           myRef.lastVehicleEntered = ref
         }
+        // aggiorna la tabella dei link
+        removeFromPredecessorMap(myRef, senderId)
       case LastOfTheLane =>
         // aggiorniamo i nostri campi
         myRef.lastVehicleEnteredId = senderId
@@ -212,6 +222,10 @@ object Lane {
               myRef.positionsMap = myRef.positionsMap + (senderId -> tuple)
             }
           }
+          // aggiorna la tabella dei link
+          // sempre prima il predecessore, e poi il successore
+          addToPredecessorMap(myRef, senderId, senderRef, neighbours._1, predecessorRef)
+          addToPredecessorMap(myRef, neighbours._2, successorRef, senderId, senderRef)
           myRef.sendToMovable(myId, senderRef, envelope(myId, senderId, LaneAccessGranted(neighbours._1, predecessorRef, neighbours._2, successorRef)))
         }
         else {
@@ -247,6 +261,10 @@ object Lane {
                   myRef.positionsMap = myRef.positionsMap + (entry._1 -> tuple)
                 }
               }
+              // aggiorna la tabella dei link
+              // sempre prima il predecessore, e poi il successore
+              addToPredecessorMap(myRef, entry._1, entry._2._1, neighbours._1, predecessorRef)
+              addToPredecessorMap(myRef, neighbours._2, successorRef, entry._1, entry._2._1)
               myRef.sendToMovable(myRef.state.id, entry._2._1, envelope(myRef.state.id, entry._1, LaneAccessGranted(neighbours._1, predecessorRef, neighbours._2, successorRef)))
               satisfied = satisfied :+ entry._1
             }
@@ -536,6 +554,75 @@ object Lane {
           }
         }
         return (predecessor, successor)
+    }
+  }
+  
+  // UTILITY
+  // aggiunge la entry dalla mappa dei predecessori
+  def addToPredecessorMap(myRef : ImmovableActor, id : String, ref : ActorRef, predecessorId : String, predecessorRef : ActorRef) : Unit = {
+    if(id != null && ref != null && predecessorId != null && predecessorRef != null) {
+      if(myRef.predecessorMap.contains(id)) {
+        // deve essere vero che l'associazione è già ok
+        assert(myRef.predecessorMap(id)._1 == predecessorId)
+      }
+      else {
+        // id è stato dato a predecessorId come veicolo successivo
+        // potremmo essere nel caso in cui predecessorId abbia già un altro veicolo successivo
+        val filteredMap = myRef.predecessorMap.filter(entry => entry._2._1 == predecessorId)
+        if(filteredMap.size == 0) {
+          // aggiungiamo semplicemente la nuova entry
+          val tuple = (predecessorId, predecessorRef)
+          myRef.predecessorMap = myRef.predecessorMap + (id -> tuple)
+        }
+        else {
+          assert(filteredMap.size == 1)
+          // dobbiamo fare una rimozione e due aggiunte
+          val tuple1 = (predecessorId, predecessorRef)
+          val tuple2 = (id, ref)
+          val key = filteredMap.keys.head
+          myRef.predecessorMap = myRef.predecessorMap - key
+          myRef.predecessorMap = myRef.predecessorMap + (key -> tuple2)
+          myRef.predecessorMap = myRef.predecessorMap + (id -> tuple1)
+        }
+      }
+    }
+  }
+  
+  // UTILITY
+  // rimuove la entry dalla mappa dei predecessori
+  def removeFromPredecessorMap(myRef : ImmovableActor, id : String) : Unit = {
+    if(id != null) {
+      if(myRef.predecessorMap.contains(id)) {
+        // il suo riferimento è stato dato a qualcuno
+        // controlliamo anche se ha chiesto il riferimento di qualcuno
+        val filteredMap = myRef.predecessorMap.filter(entry => entry._2._1 == id)
+        if(filteredMap.size == 0) {
+          // rimuoviamo semplicemente la entry dalla tabella
+          myRef.predecessorMap = myRef.predecessorMap - id
+        }
+        else {
+          assert(filteredMap.size == 1)
+          // dobbiamo ricostruire il collegamento
+          val value = myRef.predecessorMap(id)
+          val key = filteredMap.keys.head
+          myRef.predecessorMap = myRef.predecessorMap - id
+          myRef.predecessorMap = myRef.predecessorMap - key
+          myRef.predecessorMap = myRef.predecessorMap + (key -> value)
+        }
+      }
+      else {
+        // il suo riferimento non è stato dato a nessuno
+        // controlliamo anche se ha chiesto il riferimento di qualcuno
+        val filteredMap = myRef.predecessorMap.filter(entry => entry._2._1 == id)
+        if(filteredMap.size == 0) {
+          // nulla da fare
+        }
+        else {
+          assert(filteredMap.size == 1)
+          val key = filteredMap.keys.head
+          myRef.predecessorMap = myRef.predecessorMap - key
+        }
+      }
     }
   }
   
