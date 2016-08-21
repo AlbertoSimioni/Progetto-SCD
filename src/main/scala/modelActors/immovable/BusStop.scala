@@ -171,7 +171,7 @@ object BusStop {
         }
         else {
           var text = myId + ": sto facendo aspettare " + senderId + " nonostante abbia appena fatto richiesta a causa di vehiclefree"
-          println(text)
+          //println(text)
           // accodamento
           // PRECONDIZIONE: non vi possono essere richieste presenti relative alla stessa lane
           assert(myRef.vehicleRequests.contains(comingFrom) == false)

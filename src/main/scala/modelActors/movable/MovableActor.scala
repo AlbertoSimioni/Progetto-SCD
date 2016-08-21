@@ -536,7 +536,7 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
                     // seconda cosa: compara il tempo attuale con il tempo corrispondente
                     if(isLate(comparedTime, state.currentTime)) {
                       // se in ritardo, vai al prossimo step
-                      println(id + ": sono in ritardo")
+                      //println(id + ": sono in ritardo")
                       sendToMovable(id, self, self, PersistAndNextStep)
                       // evento grafico associato
                       if(state.alreadyHidden == true) {
@@ -550,8 +550,8 @@ class MovableActor(id : String) extends PersistentActor with AtLeastOnceDelivery
                     else {
                       // se in anticipo, vai a dormire
                       // assicuriamoci di aver completato le persistAsync prima di procedere
-                      println(id + ": sono in anticipo")
-                      println(id + ": e ora me ne vado a dormire")
+                      //println(id + ": sono in anticipo")
+                      //println(id + ": e ora me ne vado a dormire")
                       val immovableActorId = state.getCurrentStepId
                       sendToImmovable(id, self, immovableActorId, PauseExecution(comparedTime, state.getSnapshot()))
                       shutdown()

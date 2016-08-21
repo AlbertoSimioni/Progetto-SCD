@@ -63,7 +63,7 @@ object UrbanSimulatorApp extends App with ReactiveApi with MainActors with React
     // We could use IO(UHttp) here instead of killing the "/user/IO-HTTP" actor
     IO(Http) ! Http.Bind(rootService, Configuration.host, Configuration.portHttp)
     sys.addShutdownHook({ IO(UHttp) ! Http.Unbind; IO(Http) ! Http.Unbind; system.shutdown })
-    system.actorOf(Props(classOf[Subscriber], "modelEvent"), "subscriberModel")
+    //system.actorOf(Props(classOf[Subscriber], "modelEvent"), "subscriberModel")
   }
   if(role == "worker") {
     //Console.setOut(new FileOutputStream("output.txt"))
