@@ -338,7 +338,7 @@ class ImmovableActor extends PersistentActor with AtLeastOnceDelivery with Actor
       }
       case ToPersistentMessages.FromNonPersistent(senderRef, command) => command match {
         case Identity(id) =>
-          println("Identità arrivata: " + id)
+          //println("Identità arrivata: " + id)
           // messaggio dell'injector, per definirsi
           val entity = id.charAt(0) match {
             case 'R' =>
@@ -488,7 +488,7 @@ class ImmovableActor extends PersistentActor with AtLeastOnceDelivery with Actor
       val toBeWakenUp = state.actorsToBeWakenUp(timeValue)
       if(toBeWakenUp.isEmpty == false) {
         for(id <- toBeWakenUp) {
-          println(state.id + ": sto svegliando " + id._1 + " perchè sono le " + timeValue)
+          //println(state.id + ": sto svegliando " + id._1 + " perchè sono le " + timeValue)
           // persistAsync(MobileEntityWakingUp(id)) { evt => }
           // persist body begin
           state.removeSleepingActor(id._1)
