@@ -21,15 +21,15 @@ object UrbanSimulatorApp extends App with ReactiveApi with MainActors with React
   // l'override della porta non funziona a causa della keyword "lazy"
   // pertanto è necessario scrivere la porta in file di configurazione PRIMA dell'accensione del sistema
   // la riga sottostante non è necessaria
-  
+
   // crea la configurazione
   //val config = ConfigFactory.parseString("akka.remote.netty.tcp.port = " + args(0))
   //                  .withFallback(ConfigFactory.parseString(""" akka.cluster.roles = ["""" + args(1) + """"]"""))
   //                  .withFallback(ConfigFactory.load())
-	
+
   // crea l'ActorSystem
 	implicit lazy val system : akka.actor.ActorSystem = ActorSystem("UrbanSimulator", ConfigFactory.load())
-  
+
   // inizializza il DB
 	// un DB comune in un solo nodo, il seed
 	//startUpDB(system, port)
@@ -48,7 +48,7 @@ object UrbanSimulatorApp extends App with ReactiveApi with MainActors with React
 	 *   rebalancing logic
 	 * @return the actor ref of the [[ShardRegion]] that is to be responsible for the shard
 	 */
-	
+
   /*val shardRegionActor = ClusterSharding(system).start(
 	  typeName = UrbanElement.typeOfEntries,
 		entryProps = Some(UrbanElement.props()),
@@ -63,7 +63,7 @@ object UrbanSimulatorApp extends App with ReactiveApi with MainActors with React
     // We could use IO(UHttp) here instead of killing the "/user/IO-HTTP" actor
     IO(Http) ! Http.Bind(rootService, Configuration.host, Configuration.portHttp)
     sys.addShutdownHook({ IO(UHttp) ! Http.Unbind; IO(Http) ! Http.Unbind; system.shutdown })
-    //system.actorOf(Props(classOf[Subscriber], "modelEvent"), "subscriberModel")
+    system.actorOf(Props(classOf[Subscriber], "modelEvent"), "subscriberModel")
   }
   if(role == "worker") {
     //Console.setOut(new FileOutputStream("output.txt"))
@@ -96,7 +96,7 @@ object UrbanSimulatorApp extends App with ReactiveApi with MainActors with React
 			val controller = system.actorOf(Props[controllerActors.Controller])
 		}
 	}
-  
+
 }
 
 // configurazione per Server HTTP
